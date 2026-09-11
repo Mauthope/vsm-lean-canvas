@@ -342,6 +342,14 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
               <span>80% (Média Corporativa)</span>
               <span>100% (Perfeito)</span>
             </div>
+
+            {/* Didactic explanation for %C&A */}
+            <div className="mt-2.5 p-2.5 rounded-lg bg-purple-950/40 border border-purple-500/25 text-[11px] text-purple-200/90 leading-relaxed font-sans">
+              <span className="font-bold text-purple-300 font-mono block mb-0.5">
+                💡 O que significa %C&A (Percent Complete and Accurate)?
+              </span>
+              Mede quantas vezes em cada 100 entregas esta etapa recebe o trabalho da etapa anterior <strong>100% correto</strong>, sem dados faltando e sem necessidade de devolução ou retrabalho. Ex: se de 10 formulários recebidos, 2 vieram com dados incompletos, o %C&A é <strong>80%</strong>.
+            </div>
           </div>
 
           {/* Desperdícios Lean (Muda) */}

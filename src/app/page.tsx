@@ -36,6 +36,7 @@ import { VsmAbstractCanvas } from '@/components/vsm/VsmAbstractCanvas';
 import { VsmStepModal } from '@/components/vsm/VsmStepModal';
 import { VsmKaizenBoard } from '@/components/vsm/VsmKaizenBoard';
 import { VsmSummaryReportModal } from '@/components/vsm/VsmSummaryReportModal';
+import { VsmGlossaryModal } from '@/components/vsm/VsmGlossaryModal';
 import { Toast, ToastItem } from '@/components/Toast';
 
 const STORAGE_KEY = 'vsm_session_standalone_v1';
@@ -70,6 +71,13 @@ export default function VsmHomePage() {
   const [insertAtIndex, setInsertAtIndex] = useState<number | undefined>(undefined);
   const [isKaizenBoardOpen, setIsKaizenBoardOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isGlossaryModalOpen, setIsGlossaryModalOpen] = useState(false);
+  const [glossaryTopic, setGlossaryTopic] = useState<string>('ca');
+
+  const handleOpenGlossary = (topic: string = 'ca') => {
+    setGlossaryTopic(topic);
+    setIsGlossaryModalOpen(true);
+  };
 
   // Initialize from LocalStorage or default to R&S Template
   useEffect(() => {
@@ -335,6 +343,7 @@ export default function VsmHomePage() {
         onNewStep={() => handleOpenNewStepModal()}
         onOpenKaizenBoard={() => setIsKaizenBoardOpen(true)}
         onOpenReportModal={() => setIsReportModalOpen(true)}
+        onOpenGlossary={handleOpenGlossary}
         onExportJson={handleExportJson}
         onImportJson={handleImportJson}
         onResetSession={handleResetSession}
@@ -351,6 +360,7 @@ export default function VsmHomePage() {
           const s = steps.find(x => x.id === stepId);
           if (s) handleOpenEditStepModal(s);
         }}
+        onOpenGlossary={handleOpenGlossary}
       />
 
       {/* 3. View Switcher & Quick Filters */}
@@ -487,6 +497,7 @@ export default function VsmHomePage() {
               setEditingStep(step);
               setIsStepModalOpen(true);
             }}
+            onOpenGlossary={handleOpenGlossary}
           />
 
           {/* Connected Timeline Ladder below abstract canvas */}
@@ -633,6 +644,12 @@ export default function VsmHomePage() {
         department={department}
         steps={steps}
         metrics={metrics}
+      />
+
+      <VsmGlossaryModal
+        isOpen={isGlossaryModalOpen}
+        onClose={() => setIsGlossaryModalOpen(false)}
+        initialTopic={glossaryTopic}
       />
 
       {/* Standalone Toast Alerts */}

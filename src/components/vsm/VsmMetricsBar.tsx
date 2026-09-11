@@ -9,7 +9,8 @@ import {
   Flame,
   Layers,
   ArrowRight,
-  TrendingDown
+  TrendingDown,
+  HelpCircle
 } from 'lucide-react';
 import { BottleneckAnalysis, VSMStep } from '@/types/vsm';
 import {
@@ -22,12 +23,14 @@ interface VsmMetricsBarProps {
   metrics: BottleneckAnalysis;
   steps: VSMStep[];
   onSelectStep?: (stepId: string) => void;
+  onOpenGlossary?: (topic?: string) => void;
 }
 
 export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
   metrics,
   steps,
-  onSelectStep
+  onSelectStep,
+  onOpenGlossary
 }) => {
   const {
     totalLeadTimeHours,
@@ -53,16 +56,31 @@ export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
       <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl relative overflow-hidden flex flex-col justify-between group hover:border-slate-700/80 transition-all">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <span className="text-[10px] sm:text-xs uppercase font-bold tracking-wider text-slate-400 block">
-              Lead Time Total (LT)
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] sm:text-xs uppercase font-bold tracking-wider text-slate-400 block font-mono">
+                Lead Time Total (LT)
+              </span>
+              <button
+                type="button"
+                onClick={() => onOpenGlossary?.('lt')}
+                className="text-slate-500 hover:text-amber-400 transition-colors p-0.5 cursor-pointer"
+                title="O que é Lead Time? Clique para aprender."
+              >
+                <HelpCircle className="w-3 h-3" />
+              </button>
+            </div>
             <span className="text-[10px] text-amber-400 font-semibold font-mono">
               Tempo de ponta a ponta
             </span>
           </div>
-          <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-400">
+          <button
+            type="button"
+            onClick={() => onOpenGlossary?.('lt')}
+            className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer"
+            title="Aprender sobre Lead Time"
+          >
             <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
+          </button>
         </div>
 
         <div className="mt-2.5">
@@ -90,16 +108,31 @@ export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
       <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl flex flex-col justify-between group hover:border-cyan-500/30 transition-all">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <span className="text-[10px] sm:text-xs uppercase font-bold tracking-wider text-slate-400 block">
-              Tempo de Esforço (PT)
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] sm:text-xs uppercase font-bold tracking-wider text-slate-400 block font-mono">
+                Tempo de Esforço (PT)
+              </span>
+              <button
+                type="button"
+                onClick={() => onOpenGlossary?.('pt')}
+                className="text-slate-500 hover:text-cyan-400 transition-colors p-0.5 cursor-pointer"
+                title="O que é Process Time (PT)? Clique para aprender."
+              >
+                <HelpCircle className="w-3 h-3" />
+              </button>
+            </div>
             <span className="text-[10px] text-cyan-400/90 font-semibold font-mono">
               Valor Agregado Real
             </span>
           </div>
-          <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/25 text-cyan-400">
+          <button
+            type="button"
+            onClick={() => onOpenGlossary?.('pt')}
+            className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 hover:bg-cyan-500/20 transition-all cursor-pointer"
+            title="Aprender sobre Process Time"
+          >
             <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
+          </button>
         </div>
 
         <div className="mt-2.5">
@@ -127,22 +160,37 @@ export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
       <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl flex flex-col justify-between group hover:border-emerald-500/30 transition-all">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <span className="text-[10px] sm:text-xs uppercase font-bold tracking-wider text-slate-400 block">
-              Eficiência de Fluxo
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] sm:text-xs uppercase font-bold tracking-wider text-slate-400 block font-mono">
+                Eficiência de Fluxo
+              </span>
+              <button
+                type="button"
+                onClick={() => onOpenGlossary?.('fe')}
+                className="text-slate-500 hover:text-emerald-400 transition-colors p-0.5 cursor-pointer"
+                title="O que é Eficiência de Fluxo? Clique para ver fórmula."
+              >
+                <HelpCircle className="w-3 h-3" />
+              </button>
+            </div>
             <span className="text-[10px] text-slate-400 font-semibold font-mono">
               PT ÷ LT × 100%
             </span>
           </div>
-          <div className={`p-2 rounded-xl border ${
-            flowEfficiency >= 15
-              ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
-              : flowEfficiency >= 5
-              ? 'bg-amber-500/10 border-amber-500/25 text-amber-400'
-              : 'bg-rose-500/10 border-rose-500/25 text-rose-400'
-          }`}>
+          <button
+            type="button"
+            onClick={() => onOpenGlossary?.('fe')}
+            className={`p-2 rounded-xl border transition-all cursor-pointer ${
+              flowEfficiency >= 15
+                ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400 hover:bg-emerald-500/20'
+                : flowEfficiency >= 5
+                ? 'bg-amber-500/10 border-amber-500/25 text-amber-400 hover:bg-amber-500/20'
+                : 'bg-rose-500/10 border-rose-500/25 text-rose-400 hover:bg-rose-500/20'
+            }`}
+            title="Aprender sobre Eficiência de Fluxo"
+          >
             <Percent className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
+          </button>
         </div>
 
         <div className="mt-2.5">
@@ -181,20 +229,35 @@ export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
         </div>
       </div>
 
-      {/* 4. ROLLED FIRST PASS YIELD (RFPY) */}
+      {/* 4. ROLLED FIRST PASS YIELD (RFPY / %C&A) */}
       <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl flex flex-col justify-between group hover:border-purple-500/30 transition-all">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <span className="text-[10px] sm:text-xs uppercase font-bold tracking-wider text-slate-400 block">
-              Rolled Yield (RFPY)
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] sm:text-xs uppercase font-bold tracking-wider text-purple-300 block font-mono">
+                Rolled Yield (RFPY)
+              </span>
+              <button
+                type="button"
+                onClick={() => onOpenGlossary?.('ca')}
+                className="text-purple-400 hover:text-white transition-colors p-0.5 cursor-pointer"
+                title="O que é %C&A e RFPY? Clique para aprender."
+              >
+                <HelpCircle className="w-3 h-3" />
+              </button>
+            </div>
             <span className="text-[10px] text-purple-400 font-semibold font-mono">
-              Multiplicação %C&A
+              Efeito Cascata %C&A
             </span>
           </div>
-          <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/25 text-purple-400">
+          <button
+            type="button"
+            onClick={() => onOpenGlossary?.('ca')}
+            className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/25 text-purple-400 hover:bg-purple-500/20 transition-all cursor-pointer"
+            title="Aprender sobre %C&A e Rolled Yield"
+          >
             <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
+          </button>
         </div>
 
         <div className="mt-2.5">
@@ -230,16 +293,31 @@ export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
       <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl flex flex-col justify-between group hover:border-rose-500/30 transition-all">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <span className="text-[10px] sm:text-xs uppercase font-bold tracking-wider text-rose-400 block">
-              Gargalo Crítico
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] sm:text-xs uppercase font-bold tracking-wider text-rose-400 block font-mono">
+                Gargalo Crítico
+              </span>
+              <button
+                type="button"
+                onClick={() => onOpenGlossary?.('bottleneck')}
+                className="text-slate-500 hover:text-rose-400 transition-colors p-0.5 cursor-pointer"
+                title="O que é o Gargalo no Lean? Teoria das Restrições."
+              >
+                <HelpCircle className="w-3 h-3" />
+              </button>
+            </div>
             <span className="text-[10px] text-slate-400 font-semibold font-mono">
               Maior Fila / Espera (WT)
             </span>
           </div>
-          <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-400">
+          <button
+            type="button"
+            onClick={() => onOpenGlossary?.('bottleneck')}
+            className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-400 hover:bg-rose-500/20 transition-all cursor-pointer"
+            title="Aprender sobre Teoria das Restrições / Gargalo"
+          >
             <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
+          </button>
         </div>
 
         <div className="mt-2.5">
@@ -269,8 +347,8 @@ export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
 
           {lowestAccuracyStep && lowestAccuracyStep.percentCompleteAndAccurate < 80 && (
             <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mt-1.5 pt-1.5 border-t border-slate-800/70">
-              <span className="text-rose-400/90 truncate">Gargalo %C&A:</span>
-              <span className="text-rose-300 font-bold shrink-0">
+              <span className="text-purple-400 truncate">Gargalo %C&A:</span>
+              <span className="text-purple-300 font-bold shrink-0">
                 #{lowestAccuracyStep.order} ({lowestAccuracyStep.percentCompleteAndAccurate}%)
               </span>
             </div>

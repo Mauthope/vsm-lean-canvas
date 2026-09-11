@@ -14,7 +14,8 @@ import {
   FolderOpen,
   ChevronDown,
   Building2,
-  Pencil
+  Pencil,
+  BookOpen
 } from 'lucide-react';
 import { VSMTemplate, VSMStep } from '@/types/vsm';
 import { VSM_TEMPLATES } from '@/data/vsmTemplates';
@@ -27,6 +28,7 @@ interface VsmHeaderProps {
   onNewStep: () => void;
   onOpenKaizenBoard: () => void;
   onOpenReportModal: () => void;
+  onOpenGlossary?: (topic?: string) => void;
   onExportJson: () => void;
   onImportJson: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onResetSession: () => void;
@@ -43,6 +45,7 @@ export const VsmHeader: React.FC<VsmHeaderProps> = ({
   onNewStep,
   onOpenKaizenBoard,
   onOpenReportModal,
+  onOpenGlossary,
   onExportJson,
   onImportJson,
   onResetSession,
@@ -171,6 +174,17 @@ export const VsmHeader: React.FC<VsmHeaderProps> = ({
             </div>
           )}
         </div>
+
+        {/* Lean Guide / Educational Glossary Button */}
+        <button
+          type="button"
+          onClick={() => onOpenGlossary?.('ca')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-950/40 border border-purple-500/40 text-purple-300 hover:bg-purple-900/50 hover:text-white transition-all cursor-pointer shadow-sm"
+          title="Guia Didático e Glossário Lean: Aprenda conceitos e métricas (%C&A, PT, WT, etc.)"
+        >
+          <BookOpen className="w-3.5 h-3.5 text-purple-400" />
+          <span>Guia Lean</span>
+        </button>
 
         {/* Kaizen Bursts Drawer Button */}
         <button
