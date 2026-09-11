@@ -32,6 +32,7 @@ import { VsmHeader } from '@/components/vsm/VsmHeader';
 import { VsmMetricsBar } from '@/components/vsm/VsmMetricsBar';
 import { VsmCanvas } from '@/components/vsm/VsmCanvas';
 import { VsmTimelineLadder } from '@/components/vsm/VsmTimelineLadder';
+import { VsmAbstractCanvas } from '@/components/vsm/VsmAbstractCanvas';
 import { VsmStepModal } from '@/components/vsm/VsmStepModal';
 import { VsmKaizenBoard } from '@/components/vsm/VsmKaizenBoard';
 import { VsmSummaryReportModal } from '@/components/vsm/VsmSummaryReportModal';
@@ -58,7 +59,7 @@ export default function VsmHomePage() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   // UI View Controls
-  const [activeTab, setActiveTab] = useState<'canvas' | 'ladder' | 'table'>('canvas');
+  const [activeTab, setActiveTab] = useState<'canvas' | 'abstract' | 'ladder' | 'table'>('canvas');
   const [roleFilter, setRoleFilter] = useState<string>('todos');
   const [wasteFilter, setWasteFilter] = useState<WasteType | 'todos'>('todos');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -356,7 +357,7 @@ export default function VsmHomePage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-md">
         
         {/* BagTime Segmented View Switcher */}
-        <div className="inline-flex p-1 rounded-xl bg-slate-950 border border-slate-800 shadow-inner">
+        <div className="inline-flex p-1 rounded-xl bg-slate-950 border border-slate-800 shadow-inner flex-wrap">
           <button
             type="button"
             onClick={() => setActiveTab('canvas')}
@@ -367,7 +368,20 @@ export default function VsmHomePage() {
             }`}
           >
             <Workflow className="w-3.5 h-3.5" />
-            <span>Whiteboard Canvas</span>
+            <span>Whiteboard Detalhado</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('abstract')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'abstract'
+                ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 shadow-md shadow-cyan-950/40'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Mapa Abstrato (Macro)</span>
           </button>
           
           <button
@@ -452,6 +466,30 @@ export default function VsmHomePage() {
           />
 
           {/* Connected Timeline Ladder below canvas */}
+          <VsmTimelineLadder
+            steps={steps}
+            metrics={metrics}
+            onSelectStep={stepId => {
+              const s = steps.find(x => x.id === stepId);
+              if (s) handleOpenEditStepModal(s);
+            }}
+          />
+        </div>
+      )}
+
+      {activeTab === 'abstract' && (
+        <div className="space-y-6">
+          <VsmAbstractCanvas
+            steps={filteredSteps}
+            metrics={metrics}
+            onEditStep={handleOpenEditStepModal}
+            onOpenKaizenNotes={step => {
+              setEditingStep(step);
+              setIsStepModalOpen(true);
+            }}
+          />
+
+          {/* Connected Timeline Ladder below abstract canvas */}
           <VsmTimelineLadder
             steps={steps}
             metrics={metrics}
