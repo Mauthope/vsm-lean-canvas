@@ -21,7 +21,10 @@ interface VsmStepModalProps {
   onSave: (stepData: Omit<VSMStep, 'id' | 'order'> & { id?: string; order?: number }) => void;
   initialStep?: VSMStep | null;
   insertAtIndex?: number;
+  existingRoles?: string[];
 }
+
+const ROLES_STORAGE_KEY = 'vsm_custom_roles_v1';
 
 const COMMON_ROLES = [
   'Recrutador',
@@ -42,12 +45,13 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
   onClose,
   onSave,
   initialStep,
-  insertAtIndex
+  insertAtIndex,
+  existingRoles = []
 }) => {
   const [title, setTitle] = useState('');
-  const [role, setRole] = useState('Recrutador');
-  const [customRole, setCustomRole] = useState('');
-  const [isCustomRole, setIsCustomRole] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('Recrutador');
+  const [typedRole, setTypedRole] = useState('');
+  const [customRoles, setCustomRoles] = useState<string[]>([]);
   const [description, setDescription] = useState('');
   const [processTime, setProcessTime] = useState<number>(30);
   const [processTimeUnit, setProcessTimeUnit] = useState<TimeUnit>('minutos');
@@ -59,6 +63,27 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
   const [isParallel, setIsParallel] = useState(false);
 
   useEffect(() => {
+    if (!isOpen) return;
+
+    // 1. Carregar papéis customizados salvos no LocalStorage
+    let saved: string[] = [];
+    try {
+      const raw = localStorage.getItem(ROLES_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          saved = parsed.filter(Boolean);
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar papéis customizados:', e);
+    }
+
+    // 2. Unificar com papéis já existentes nas etapas do projeto
+    const fromProps = (existingRoles || []).filter(r => r && !COMMON_ROLES.includes(r));
+    const merged = Array.from(new Set([...saved, ...fromProps]));
+    setCustomRoles(merged);
+
     if (initialStep) {
       setTitle(initialStep.title || '');
       setDescription(initialStep.description || '');
@@ -75,12 +100,12 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
       setKaizenNotes(initialStep.kaizenNotes || '');
       setIsParallel(Boolean(initialStep.isParallel));
 
-      if (COMMON_ROLES.includes(initialStep.role)) {
-        setRole(initialStep.role);
-        setIsCustomRole(false);
-      } else {
-        setIsCustomRole(true);
-        setCustomRole(initialStep.role);
+      const stepRole = initialStep.role?.trim() || 'Recrutador';
+      setSelectedRole(stepRole);
+      setTypedRole('');
+
+      if (!COMMON_ROLES.includes(stepRole) && !merged.includes(stepRole)) {
+        setCustomRoles(prev => [...prev, stepRole]);
       }
     } else {
       // Reset defaults for new step
@@ -94,11 +119,10 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
       setWasteTypes([]);
       setKaizenNotes('');
       setIsParallel(false);
-      setRole('Recrutador');
-      setIsCustomRole(false);
-      setCustomRole('');
+      setSelectedRole('Recrutador');
+      setTypedRole('');
     }
-  }, [initialStep, isOpen]);
+  }, [initialStep, isOpen, existingRoles]);
 
   if (!isOpen) return null;
 
@@ -108,9 +132,63 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
     );
   };
 
+  // Quando o usuário digita no campo de novo papel
+  const handleTypedRoleChange = (val: string) => {
+    setTypedRole(val);
+    const trimmed = val.trim();
+    if (trimmed) {
+      setSelectedRole(trimmed);
+    }
+  };
+
+  // Fixar papel digitado permanentemente na lista de botões e LocalStorage
+  const handleCommitTypedRole = (roleToCommit?: string) => {
+    const target = (roleToCommit || typedRole).trim();
+    if (!target) return;
+
+    if (!COMMON_ROLES.includes(target) && !customRoles.includes(target)) {
+      const updated = [...customRoles, target];
+      setCustomRoles(updated);
+      try {
+        localStorage.setItem(ROLES_STORAGE_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Erro ao persistir novo papel:', e);
+      }
+    }
+    setSelectedRole(target);
+    setTypedRole('');
+  };
+
+  // Remover papel customizado da lista
+  const handleRemoveCustomRole = (r: string) => {
+    const updated = customRoles.filter(x => x !== r);
+    setCustomRoles(updated);
+    try {
+      localStorage.setItem(ROLES_STORAGE_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.error('Erro ao remover papel customizado:', e);
+    }
+    if (selectedRole === r) {
+      setSelectedRole('Recrutador');
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalRole = isCustomRole ? (customRole.trim() || 'Outro') : role;
+    const finalRole = (typedRole.trim() && selectedRole === typedRole.trim())
+      ? typedRole.trim()
+      : selectedRole.trim() || 'Recrutador';
+
+    // Salvar papel customizado permanentemente se for novo
+    if (finalRole && !COMMON_ROLES.includes(finalRole) && !customRoles.includes(finalRole)) {
+      const updated = [...customRoles, finalRole];
+      setCustomRoles(updated);
+      try {
+        localStorage.setItem(ROLES_STORAGE_KEY, JSON.stringify(updated));
+      } catch (err) {
+        console.error('Erro ao salvar papel no LocalStorage:', err);
+      }
+    }
 
     onSave({
       id: initialStep?.id,
@@ -182,23 +260,31 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
 
           {/* Role / Responsável */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 font-mono">
-              Papel / Responsável (Swimlane)
-            </label>
-            <div className="flex flex-wrap gap-1.5 mb-2">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">
+                Papel / Responsável (Swimlane) <span className="text-rose-400">*</span>
+              </label>
+              <span className="text-[11px] text-slate-400 font-mono">
+                Selecionado: <strong className="text-cyan-300 font-bold">{selectedRole}</strong>
+              </span>
+            </div>
+
+            {/* Role Buttons Pool (Built-in + Custom + Real-time typing) */}
+            <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-xl bg-slate-900/60 border border-slate-800/80 mb-2 max-h-44 overflow-y-auto custom-scrollbar">
+              {/* 1. Common Built-in Roles */}
               {COMMON_ROLES.map(r => {
-                const isSelected = !isCustomRole && role === r;
+                const isSelected = selectedRole === r && !typedRole.trim();
                 return (
                   <button
                     key={r}
                     type="button"
                     onClick={() => {
-                      setRole(r);
-                      setIsCustomRole(false);
+                      setSelectedRole(r);
+                      setTypedRole('');
                     }}
                     className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                        ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 shadow-md shadow-cyan-500/25 font-black scale-[1.02]'
                         : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
                     }`}
                   >
@@ -206,28 +292,105 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
                   </button>
                 );
               })}
-              <button
-                type="button"
-                onClick={() => setIsCustomRole(true)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  isCustomRole
-                    ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
-                    : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'
-                }`}
-              >
-                + Outro
-              </button>
+
+              {/* 2. Custom Roles Added by User / Existing in Process */}
+              {customRoles.map(r => {
+                const isSelected = selectedRole === r && !typedRole.trim();
+                return (
+                  <div key={r} className="inline-flex items-center group">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedRole(r);
+                        setTypedRole('');
+                      }}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 shadow-md shadow-cyan-500/25 font-black scale-[1.02]'
+                          : 'bg-slate-900 border border-cyan-500/30 text-cyan-300 hover:text-white hover:border-cyan-400'
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-slate-950' : 'bg-cyan-400'}`} />
+                      <span>{r}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveCustomRole(r);
+                      }}
+                      className="p-1 -ml-1 text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      title={`Remover "${r}" da lista de botões`}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                );
+              })}
+
+              {/* 3. Real-time Live Button while typing a new role */}
+              {typedRole.trim() &&
+                !COMMON_ROLES.includes(typedRole.trim()) &&
+                !customRoles.includes(typedRole.trim()) && (
+                  <button
+                    type="button"
+                    onClick={() => handleCommitTypedRole()}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 text-slate-950 shadow-lg shadow-cyan-500/30 ring-2 ring-cyan-400 ring-offset-1 ring-offset-slate-950 animate-in zoom-in-95 duration-150 cursor-pointer"
+                    title="Clique para fixar este papel permanentemente como botão"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-slate-950 animate-pulse" />
+                    <span>{typedRole.trim()}</span>
+                    <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-slate-950/25 font-mono">
+                      + Novo
+                    </span>
+                  </button>
+                )}
             </div>
 
-            {isCustomRole && (
-              <input
-                type="text"
-                placeholder="Digite o nome do papel ou departamento..."
-                value={customRole}
-                onChange={e => setCustomRole(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 transition-all mt-1"
-              />
-            )}
+            {/* Input field to type a new role */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder="Digite um novo papel (ex: Qualidade, Almoxarifado, Jurídico)..."
+                  value={typedRole}
+                  onChange={e => handleTypedRoleChange(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleCommitTypedRole();
+                    }
+                  }}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-3.5 pr-8 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-sans"
+                />
+                {typedRole && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTypedRole('');
+                      if (selectedRole === typedRole.trim()) {
+                        setSelectedRole('Recrutador');
+                      }
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white cursor-pointer"
+                    title="Limpar campo"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleCommitTypedRole()}
+                disabled={!typedRole.trim()}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-900 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500 hover:text-slate-950 disabled:opacity-35 disabled:hover:bg-slate-900 disabled:hover:text-cyan-300 transition-all cursor-pointer shrink-0 shadow-sm"
+                title="Adicionar à lista de botões permanentes"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Adicionar Botão</span>
+              </button>
+            </div>
           </div>
 
           {/* Description */}

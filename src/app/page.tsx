@@ -794,6 +794,7 @@ export default function VsmHomePage() {
         onSave={handleSaveStep}
         initialStep={editingStep}
         insertAtIndex={insertAtIndex}
+        existingRoles={availableRoles}
       />
 
       <VsmKaizenBoard
