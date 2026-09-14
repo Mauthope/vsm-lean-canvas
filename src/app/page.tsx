@@ -335,8 +335,10 @@ export default function VsmHomePage() {
   return (
     <div className={`space-y-6 ${isFullscreen ? 'p-4 bg-[#060a13] min-h-screen' : ''}`}>
       
-      {/* 1. Header Toolbar */}
-      <VsmHeader
+      {/* Main Interactive App Workspace (Hidden in @media print) */}
+      <div className="space-y-6 no-print">
+        {/* 1. Header Toolbar */}
+        <VsmHeader
         projectName={projectName}
         department={department}
         onUpdateProjectInfo={(name, dept) => {
@@ -624,6 +626,7 @@ export default function VsmHomePage() {
           </div>
         </div>
       )}
+      </div>
 
       {/* 5. Modals & Drawers */}
       <VsmStepModal

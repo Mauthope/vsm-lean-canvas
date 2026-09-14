@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   X,
   FileText,
@@ -162,8 +162,51 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
   });
 
   const handlePrint = () => {
-    window.print();
+    // 1. Force paper mode immediately so all JSX conditionals render in pristine paper mode
+    setViewMode('paper');
+
+    // 2. Temporarily remove .dark class from html to prevent any dark: class from overriding light styles
+    const htmlEl = document.documentElement;
+    const hadDark = htmlEl.classList.contains('dark');
+    if (hadDark) {
+      htmlEl.classList.remove('dark');
+    }
+    document.body.classList.add('vsm-print-active');
+
+    // 3. Trigger print on next tick
+    setTimeout(() => {
+      window.print();
+      // Restoration will happen in afterprint or fallback timeout
+      setTimeout(() => {
+        if (hadDark) {
+          htmlEl.classList.add('dark');
+        }
+        document.body.classList.remove('vsm-print-active');
+      }, 1000);
+    }, 150);
   };
+
+  useEffect(() => {
+    const handleBeforePrint = () => {
+      setViewMode('paper');
+      document.documentElement.classList.remove('dark');
+      document.body.classList.add('vsm-print-active');
+    };
+    const handleAfterPrint = () => {
+      document.documentElement.classList.add('dark');
+      document.body.classList.remove('vsm-print-active');
+    };
+
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
+      document.documentElement.classList.add('dark');
+      document.body.classList.remove('vsm-print-active');
+    };
+  }, []);
 
   const handleCopyMarkdown = () => {
     let md = `# 📊 DOSSIÊ EXECUTIVO DE MAPEAMENTO DE FLUXO DE VALOR (VSM)\n\n`;
@@ -287,7 +330,10 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
       id="vsm-print-modal-container"
       className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
     >
-      <div className="w-full max-w-5xl bg-slate-950 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[96vh]">
+      <div
+        id="vsm-print-card-wrapper"
+        className="w-full max-w-5xl bg-slate-950 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[96vh]"
+      >
         
         {/* ================================================================= */}
         {/* TOP INTERACTIVE TOOLBAR (ALWAYS HIDDEN IN @media print)           */}
@@ -547,6 +593,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
         {/* DOSSIER BODY (PRINT READY CONTAINER: #vsm-printable-dossier)       */}
         {/* ================================================================= */}
         <div
+          id="vsm-print-scroll-container"
           className={`flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-8 md:p-10 transition-colors ${
             isPaper
               ? 'bg-slate-200 text-slate-900'

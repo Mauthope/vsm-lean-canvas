@@ -63,27 +63,33 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 }
 
 /* ==========================================================================
-   HIGH-FIDELITY PRINT STYLES FOR EXECUTIVE LEAN DOSSIERS
+   HIGH-FIDELITY PRINT STYLES FOR EXECUTIVE LEAN DOSSIERS (A4 PORTRAIT)
    ========================================================================== */
 @media print {
   @page {
     size: A4 portrait;
-    margin: 10mm 12mm;
+    margin: 8mm 10mm;
   }
 
-  /* Reset body and background for crisp ink saving */
-  html, body {
+  /* Reset body, html and root: force pure white paper background and dark ink */
+  html,
+  html.dark,
+  body,
+  body.vsm-print-active {
     background: #ffffff !important;
+    background-color: #ffffff !important;
     color: #0f172a !important;
-    font-size: 10pt !important;
+    font-size: 9.5pt !important;
     line-height: 1.35 !important;
     margin: 0 !important;
     padding: 0 !important;
+    width: 100% !important;
+    min-width: 100% !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* Hide normal app layout and non-printable UI elements */
+  /* Hide app navigation and non-printable UI elements */
   .no-print,
   nav,
   header,
@@ -93,38 +99,148 @@ h1, h2, h3, h4, h5, h6, .font-heading {
     display: none !important;
   }
 
-  /* Ensure modal backdrop does not obscure or darken print output */
-  .fixed.bg-black\/85,
-  .fixed.bg-black\/80,
-  .fixed.backdrop-blur-md {
+  /* Neutralize main layout container */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Modal overlay reset: neutralize fixed backdrop and flex centering */
+  #vsm-print-modal-container {
     position: static !important;
+    display: block !important;
     background: transparent !important;
+    background-color: transparent !important;
     backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
   }
 
-  /* Printable dossier container styles */
+  /* Card wrapper reset: strip out dark background, borders, rounded corners, max-h */
+  #vsm-print-card-wrapper,
+  #vsm-print-modal-container > div {
+    position: static !important;
+    display: block !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Scroll container reset: eliminate overflow-y-auto and gray padding */
+  #vsm-print-scroll-container,
+  #vsm-print-modal-container > div > div:not(.no-print) {
+    position: static !important;
+    display: block !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Printable dossier container: full A4 page width without modal border/shadow */
   #vsm-printable-dossier {
     display: block !important;
     background: #ffffff !important;
+    background-color: #ffffff !important;
     color: #0f172a !important;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     border: none !important;
+    border-radius: 0 !important;
     box-shadow: none !important;
     overflow: visible !important;
     max-height: none !important;
   }
 
+  /* Force print color fidelity */
+  #vsm-printable-dossier * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Force override any dark classes to ensure clean, light paper appearance */
+  html.dark #vsm-printable-dossier,
+  .dark #vsm-printable-dossier {
+    color: #0f172a !important;
+    background-color: #ffffff !important;
+  }
+
+  #vsm-printable-dossier .text-white,
+  html.dark #vsm-printable-dossier .text-white,
+  .dark #vsm-printable-dossier .text-white {
+    color: #0f172a !important;
+  }
+
+  #vsm-printable-dossier .text-slate-100,
+  #vsm-printable-dossier .text-slate-200,
+  #vsm-printable-dossier .text-slate-300,
+  html.dark #vsm-printable-dossier .text-slate-100,
+  html.dark #vsm-printable-dossier .text-slate-200,
+  html.dark #vsm-printable-dossier .text-slate-300 {
+    color: #1e293b !important;
+  }
+
+  #vsm-printable-dossier .text-slate-400,
+  html.dark #vsm-printable-dossier .text-slate-400 {
+    color: #475569 !important;
+  }
+
+  #vsm-printable-dossier .bg-slate-950,
+  #vsm-printable-dossier .bg-slate-900,
+  #vsm-printable-dossier .bg-slate-900\/80,
+  #vsm-printable-dossier .bg-slate-900\/60,
+  html.dark #vsm-printable-dossier .bg-slate-950,
+  html.dark #vsm-printable-dossier .bg-slate-900,
+  html.dark #vsm-printable-dossier .bg-slate-900\/80,
+  html.dark #vsm-printable-dossier .bg-slate-900\/60 {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+  }
+
+  #vsm-printable-dossier .border-slate-800,
+  #vsm-printable-dossier .border-slate-800\/80,
+  #vsm-printable-dossier .border-slate-800\/60,
+  html.dark #vsm-printable-dossier .border-slate-800 {
+    border-color: #cbd5e1 !important;
+  }
+
   /* Page break rules */
   .print-page-break {
-    page-break-after: always !important;
-    break-after: page !important;
+    page-break-before: always !important;
+    break-before: page !important;
+    margin-top: 16pt !important;
+    padding-top: 14pt !important;
   }
 
   .print-avoid-break {
@@ -136,12 +252,12 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   table {
     border-collapse: collapse !important;
     width: 100% !important;
-    font-size: 9pt !important;
+    font-size: 8.5pt !important;
   }
 
   th, td {
     border: 1px solid #cbd5e1 !important;
-    padding: 5px 8px !important;
+    padding: 4px 6px !important;
     color: #0f172a !important;
   }
 
