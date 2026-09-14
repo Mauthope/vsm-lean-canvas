@@ -18,7 +18,7 @@ export const Toast: React.FC<ToastProps> = ({ toasts, onClose }) => {
   if (!toasts || toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-md w-full pointer-events-none px-4">
+    <div className="fixed bottom-5 right-5 z-[120] flex flex-col gap-2.5 max-w-md w-full pointer-events-none px-4">
       {toasts.map(toast => {
         let icon = <Info className="w-5 h-5 text-cyan-400 shrink-0" />;
         let borderColor = 'border-cyan-500/30';

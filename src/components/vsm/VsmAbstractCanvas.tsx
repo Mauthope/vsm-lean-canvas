@@ -232,8 +232,8 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
   const handleToggleFullscreen = () => {
     if (!isFullscreen) {
       setIsFullscreen(true);
-      if (wrapperRef.current && wrapperRef.current.requestFullscreen) {
-        wrapperRef.current.requestFullscreen().catch(() => {});
+      if (document.documentElement && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
       }
     } else {
       setIsFullscreen(false);
@@ -485,7 +485,7 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
       ref={wrapperRef}
       className={`select-none transition-all duration-200 ${
         isFullscreen
-          ? 'fixed inset-0 z-50 w-screen h-screen bg-[#050811] flex flex-col p-2 sm:p-4 overflow-hidden'
+          ? 'fixed inset-0 z-40 w-screen h-screen bg-[#050811] flex flex-col p-2 sm:p-4 overflow-hidden'
           : 'rounded-3xl bg-[#050811] border border-slate-800/90 shadow-2xl overflow-hidden relative'
       }`}
     >

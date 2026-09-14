@@ -170,7 +170,7 @@ export const VsmGlossaryModal: React.FC<VsmGlossaryModalProps> = ({
   const currentConcept = LEAN_CONCEPTS.find(c => c.id === selectedConceptId) || LEAN_CONCEPTS[0];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
       <div className="w-full max-w-4xl bg-slate-950 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Modal Header */}

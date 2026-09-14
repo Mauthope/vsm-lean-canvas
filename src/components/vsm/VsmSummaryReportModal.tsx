@@ -328,7 +328,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
   return (
     <div
       id="vsm-print-modal-container"
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
     >
       <div
         id="vsm-print-card-wrapper"
