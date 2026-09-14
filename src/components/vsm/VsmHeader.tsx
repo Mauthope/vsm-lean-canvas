@@ -26,6 +26,7 @@ interface VsmHeaderProps {
   department: string;
   onUpdateProjectInfo: (name: string, dept: string) => void;
   onLoadTemplate: (templateId: string) => void;
+  onStartBlankWorkshop?: () => void;
   onNewStep: () => void;
   onOpenKaizenBoard: () => void;
   onOpenReportModal: () => void;
@@ -45,6 +46,7 @@ export const VsmHeader: React.FC<VsmHeaderProps> = ({
   department,
   onUpdateProjectInfo,
   onLoadTemplate,
+  onStartBlankWorkshop,
   onNewStep,
   onOpenKaizenBoard,
   onOpenReportModal,
@@ -152,12 +154,46 @@ export const VsmHeader: React.FC<VsmHeaderProps> = ({
           </button>
 
           {isTemplateMenuOpen && (
-            <div className="absolute left-0 lg:right-0 lg:left-auto mt-2 w-72 bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+            <div className="absolute left-0 lg:right-0 lg:left-auto mt-2 w-80 bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+              
+              {/* Botão Adicionar: Começar Workshop do Zero */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsTemplateMenuOpen(false);
+                  if (onStartBlankWorkshop) {
+                    onStartBlankWorkshop();
+                  } else {
+                    onResetSession();
+                  }
+                }}
+                className="w-full text-left p-2.5 rounded-xl bg-gradient-to-r from-cyan-950/70 via-slate-900 to-teal-950/70 border border-cyan-500/40 hover:border-cyan-400 hover:from-cyan-900/60 transition-all text-xs text-white block group shadow-lg cursor-pointer mb-2"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-cyan-400 to-teal-400 text-slate-950 flex items-center justify-center font-black shrink-0 shadow-sm">
+                      <Plus className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="font-bold text-white group-hover:text-cyan-300 transition-colors">
+                      Novo Workshop em Branco
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold">
+                    Do Zero
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-300 mt-1 pl-8 leading-tight">
+                  Inicie com o canvas limpo (0 etapas) para mapear a dinâmica ao vivo com a equipe.
+                </div>
+              </button>
+
+              <div className="border-t border-slate-800/80 my-2" />
+
               <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider px-2 py-1 block font-mono">
-                Carregar Fluxo Modelo:
+                Ou Carregue um Modelo Pré-configurado:
               </span>
               <div className="space-y-1">
-                {VSM_TEMPLATES.map(tpl => (
+                {VSM_TEMPLATES.filter(tpl => tpl.id !== 'template-blank').map(tpl => (
                   <button
                     key={tpl.id}
                     type="button"

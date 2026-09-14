@@ -172,11 +172,26 @@ export default function VsmHomePage() {
     showToast(`Modelo "${tpl.name}" carregado com sucesso!`, 'success');
   };
 
+  // Handler: Start Blank Workshop from scratch
+  const handleStartBlankWorkshop = () => {
+    if (steps.length > 0) {
+      const confirmReset = window.confirm(
+        'Deseja iniciar um novo workshop em branco? Todas as anotações e etapas não salvas serão limpas para começar do zero.'
+      );
+      if (!confirmReset) return;
+    }
+
+    setProjectName('Novo Workshop VSM');
+    setDepartment('Operações / Geral');
+    setSteps([]);
+    setRoleFilter('todos');
+    setWasteFilter('todos');
+    showToast('Workshop em branco iniciado! O canvas está pronto para adicionar as etapas da dinâmica.', 'success');
+  };
+
   // Handler: Reset Session
   const handleResetSession = () => {
-    if (confirm('Deseja iniciar um novo mapeamento em branco? Todas as anotações não exportadas serão limpas.')) {
-      handleLoadTemplate('template-blank');
-    }
+    handleStartBlankWorkshop();
   };
 
   // Handler: Insert or Edit Step
@@ -347,6 +362,7 @@ export default function VsmHomePage() {
           setDepartment(dept);
         }}
         onLoadTemplate={handleLoadTemplate}
+        onStartBlankWorkshop={handleStartBlankWorkshop}
         onNewStep={() => handleOpenNewStepModal()}
         onOpenKaizenBoard={() => setIsKaizenBoardOpen(true)}
         onOpenReportModal={() => setIsReportModalOpen(true)}

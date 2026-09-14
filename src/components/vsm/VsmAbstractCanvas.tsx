@@ -33,7 +33,8 @@ import {
   Unlock,
   Plus,
   Copy,
-  Trash2
+  Trash2,
+  Workflow
 } from 'lucide-react';
 import { VSMStep, BottleneckAnalysis } from '@/types/vsm';
 import {
@@ -796,6 +797,33 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
           <Move className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
           <span>Arraste para mover tela • Ctrl + Scroll para zoom</span>
         </div>
+
+        {/* Empty State Overlay */}
+        {steps.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+            <div className="p-6 sm:p-8 rounded-2xl bg-slate-950/95 border border-slate-800 text-center max-w-sm pointer-events-auto shadow-2xl backdrop-blur-md space-y-3">
+              <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center mx-auto">
+                <Workflow className="w-7 h-7" />
+              </div>
+              <h4 className="text-base font-bold text-white font-heading">
+                Mapa Abstrato em Branco
+              </h4>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Nenhuma etapa cadastrada ainda. Comece adicionando a primeira etapa da dinâmica para visualizar o fluxo em rede.
+              </p>
+              {onNewStep && (
+                <button
+                  type="button"
+                  onClick={() => onNewStep(0)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/20 cursor-pointer transition-all active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Adicionar Primeira Etapa</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Transformable Canvas Surface */}
         <div
