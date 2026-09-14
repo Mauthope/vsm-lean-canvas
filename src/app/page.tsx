@@ -37,6 +37,7 @@ import { VsmStepModal } from '@/components/vsm/VsmStepModal';
 import { VsmKaizenBoard } from '@/components/vsm/VsmKaizenBoard';
 import { VsmSummaryReportModal } from '@/components/vsm/VsmSummaryReportModal';
 import { VsmGlossaryModal } from '@/components/vsm/VsmGlossaryModal';
+import { VsmAiDiagnosticModal } from '@/components/vsm/VsmAiDiagnosticModal';
 import { Toast, ToastItem } from '@/components/Toast';
 
 const STORAGE_KEY = 'vsm_session_standalone_v1';
@@ -72,6 +73,7 @@ export default function VsmHomePage() {
   const [isKaizenBoardOpen, setIsKaizenBoardOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isGlossaryModalOpen, setIsGlossaryModalOpen] = useState(false);
+  const [isAiDiagnosticOpen, setIsAiDiagnosticOpen] = useState(false);
   const [glossaryTopic, setGlossaryTopic] = useState<string>('ca');
 
   const handleOpenGlossary = (topic: string = 'ca') => {
@@ -344,6 +346,7 @@ export default function VsmHomePage() {
         onOpenKaizenBoard={() => setIsKaizenBoardOpen(true)}
         onOpenReportModal={() => setIsReportModalOpen(true)}
         onOpenGlossary={handleOpenGlossary}
+        onOpenAiDiagnostic={() => setIsAiDiagnosticOpen(true)}
         onExportJson={handleExportJson}
         onImportJson={handleImportJson}
         onResetSession={handleResetSession}
@@ -361,6 +364,7 @@ export default function VsmHomePage() {
           if (s) handleOpenEditStepModal(s);
         }}
         onOpenGlossary={handleOpenGlossary}
+        onOpenAiDiagnostic={() => setIsAiDiagnosticOpen(true)}
       />
 
       {/* 3. View Switcher & Quick Filters */}
@@ -498,6 +502,7 @@ export default function VsmHomePage() {
               setIsStepModalOpen(true);
             }}
             onOpenGlossary={handleOpenGlossary}
+            onOpenAiDiagnostic={() => setIsAiDiagnosticOpen(true)}
           />
 
           {/* Connected Timeline Ladder below abstract canvas */}
@@ -650,6 +655,15 @@ export default function VsmHomePage() {
         isOpen={isGlossaryModalOpen}
         onClose={() => setIsGlossaryModalOpen(false)}
         initialTopic={glossaryTopic}
+      />
+
+      <VsmAiDiagnosticModal
+        isOpen={isAiDiagnosticOpen}
+        onClose={() => setIsAiDiagnosticOpen(false)}
+        projectName={projectName}
+        department={department}
+        steps={steps}
+        metrics={metrics}
       />
 
       {/* Standalone Toast Alerts */}

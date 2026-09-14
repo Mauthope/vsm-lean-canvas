@@ -29,6 +29,7 @@ interface VsmHeaderProps {
   onOpenKaizenBoard: () => void;
   onOpenReportModal: () => void;
   onOpenGlossary?: (topic?: string) => void;
+  onOpenAiDiagnostic?: () => void;
   onExportJson: () => void;
   onImportJson: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onResetSession: () => void;
@@ -46,6 +47,7 @@ export const VsmHeader: React.FC<VsmHeaderProps> = ({
   onOpenKaizenBoard,
   onOpenReportModal,
   onOpenGlossary,
+  onOpenAiDiagnostic,
   onExportJson,
   onImportJson,
   onResetSession,
@@ -215,6 +217,17 @@ export const VsmHeader: React.FC<VsmHeaderProps> = ({
         >
           <FileText className="w-3.5 h-3.5 text-purple-400" />
           <span className="hidden sm:inline">Relatório</span>
+        </button>
+
+        {/* AI Diagnostic Button */}
+        <button
+          type="button"
+          onClick={onOpenAiDiagnostic}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500 text-white hover:from-purple-500 hover:via-indigo-500 hover:to-cyan-400 shadow-lg shadow-purple-950/40 active:scale-95 transition-all cursor-pointer"
+          title="Gerar Diagnóstico Aprofundado com Inteligência Artificial"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-cyan-200 animate-pulse" />
+          <span>Diagnóstico IA</span>
         </button>
 
         {/* Export / Import JSON */}

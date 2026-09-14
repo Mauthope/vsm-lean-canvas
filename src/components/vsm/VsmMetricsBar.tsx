@@ -10,7 +10,8 @@ import {
   Layers,
   ArrowRight,
   TrendingDown,
-  HelpCircle
+  HelpCircle,
+  Sparkles
 } from 'lucide-react';
 import { BottleneckAnalysis, VSMStep } from '@/types/vsm';
 import {
@@ -24,13 +25,15 @@ interface VsmMetricsBarProps {
   steps: VSMStep[];
   onSelectStep?: (stepId: string) => void;
   onOpenGlossary?: (topic?: string) => void;
+  onOpenAiDiagnostic?: () => void;
 }
 
 export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
   metrics,
   steps,
   onSelectStep,
-  onOpenGlossary
+  onOpenGlossary,
+  onOpenAiDiagnostic
 }) => {
   const {
     totalLeadTimeHours,
@@ -357,9 +360,21 @@ export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
 
         <div className="mt-2.5 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs">
           <span className="text-slate-400">Alvo Kaizen:</span>
-          <span className="font-mono font-bold text-rose-400">
-            {maxWaitStep ? 'Reduzir Espera' : 'Mapear Etapas'}
-          </span>
+          {onOpenAiDiagnostic ? (
+            <button
+              type="button"
+              onClick={onOpenAiDiagnostic}
+              className="font-mono font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 cursor-pointer transition-colors"
+              title="Executar Diagnóstico Executivo com Inteligência Artificial"
+            >
+              <Sparkles className="w-3 h-3 text-cyan-300 animate-pulse" />
+              <span>Diagnosticar com IA</span>
+            </button>
+          ) : (
+            <span className="font-mono font-bold text-rose-400">
+              {maxWaitStep ? 'Reduzir Espera' : 'Mapear Etapas'}
+            </span>
+          )}
         </div>
       </div>
 

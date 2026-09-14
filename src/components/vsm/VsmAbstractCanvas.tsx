@@ -24,7 +24,11 @@ import {
   Maximize,
   RotateCcw,
   Move,
-  GripHorizontal
+  GripHorizontal,
+  Hand,
+  MousePointer,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { VSMStep, BottleneckAnalysis } from '@/types/vsm';
 import {
@@ -39,9 +43,11 @@ interface VsmAbstractCanvasProps {
   onEditStep: (step: VSMStep) => void;
   onOpenKaizenNotes: (step: VSMStep) => void;
   onOpenGlossary?: (topic?: string) => void;
+  onOpenAiDiagnostic?: () => void;
 }
 
 type HeatmapMode = 'bottlenecks' | 'accuracy' | 'roles';
+type CanvasMode = 'pan' | 'select';
 
 interface NodePos {
   x: number;
@@ -71,11 +77,14 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
   metrics,
   onEditStep,
   onOpenKaizenNotes,
-  onOpenGlossary
+  onOpenGlossary,
+  onOpenAiDiagnostic
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [heatmapMode, setHeatmapMode] = useState<HeatmapMode>('bottlenecks');
+  const [canvasMode, setCanvasMode] = useState<CanvasMode>('pan');
+  const [isLocked, setIsLocked] = useState(false);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [showCaExplainer, setShowCaExplainer] = useState(false);
   const [showMinimap, setShowMinimap] = useState(true);
@@ -157,7 +166,7 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
     [steps, selectedStepId]
   );
 
-  // Fit view to screen (Auto-Zoom to show entire macro structure)
+  // Fit view to screen (Auto-Zoom to show entire macro structure without scrolling)
   const handleFitToView = useCallback(() => {
     if (!containerRef.current || steps.length === 0) return;
 
@@ -181,10 +190,10 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
 
     const scaleX = (containerW - 80) / contentWidth;
     const scaleY = (containerH - 80) / contentHeight;
-    const newZoom = Math.min(Math.max(Math.min(scaleX, scaleY), 0.35), 1.1);
+    const newZoom = Math.min(Math.max(Math.min(scaleX, scaleY), 0.35), 1.05);
 
-    const centerX = (containerW - (maxX - minX) * newZoom) / 2 - minX * newZoom;
-    const centerY = (containerH - (maxY - minY) * newZoom) / 2 - minY * newZoom;
+    const centerX = (containerW - (maxX - minX + NODE_WIDTH) * newZoom) / 2 - minX * newZoom;
+    const centerY = (containerH - (maxY - minY + NODE_HEIGHT) * newZoom) / 2 - minY * newZoom;
 
     setZoom(newZoom);
     setPan({ x: centerX, y: centerY });
@@ -206,20 +215,50 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
     }, 50);
   };
 
-  // Zoom controls
-  const handleZoomIn = () => setZoom(z => Math.min(2.2, z + 0.15));
-  const handleZoomOut = () => setZoom(z => Math.max(0.3, z - 0.15));
+  // Zoom preset handlers
+  const handleSetZoom = (targetZoom: number) => {
+    if (!containerRef.current) {
+      setZoom(targetZoom);
+      return;
+    }
+    const containerW = containerRef.current.clientWidth || 900;
+    const containerH = containerRef.current.clientHeight || 550;
+    const centerX = containerW / 2;
+    const centerY = containerH / 2;
 
-  // Wheel zoom handler
+    const newPanX = centerX - (centerX - pan.x) * (targetZoom / zoom);
+    const newPanY = centerY - (centerY - pan.y) * (targetZoom / zoom);
+
+    setZoom(targetZoom);
+    setPan({ x: newPanX, y: newPanY });
+  };
+
+  const handleZoomIn = () => handleSetZoom(Math.min(2.5, zoom + 0.15));
+  const handleZoomOut = () => handleSetZoom(Math.max(0.35, zoom - 0.15));
+
+  // Wheel zoom handler: Only zoom if Ctrl/Meta is pressed to protect native page scrolling!
   const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
-    setZoom(z => Math.min(2.2, Math.max(0.3, z * zoomFactor)));
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const zoomFactor = e.deltaY < 0 ? 1.12 : 0.88;
+      const newZoom = Math.min(2.5, Math.max(0.35, zoom * zoomFactor));
+
+      const newPanX = mouseX - (mouseX - pan.x) * (newZoom / zoom);
+      const newPanY = mouseY - (mouseY - pan.y) * (newZoom / zoom);
+
+      setZoom(newZoom);
+      setPan({ x: newPanX, y: newPanY });
+    }
+    // If Ctrl is not pressed, normal page scroll continues untouched!
   };
 
   // Canvas Pan Handlers
   const handleCanvasPointerDown = (e: React.PointerEvent) => {
-    // Only pan if clicking canvas background (not on an interactive node or button)
     if ((e.target as HTMLElement).closest('[data-interactive="true"]')) {
       return;
     }
@@ -237,8 +276,7 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
       return;
     }
 
-    // If dragging a node
-    if (draggingNodeId) {
+    if (draggingNodeId && !isLocked) {
       const deltaX = (e.clientX - dragStartPosRef.current.mouseX) / zoom;
       const deltaY = (e.clientY - dragStartPosRef.current.mouseY) / zoom;
 
@@ -263,6 +301,7 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
 
   // Node Drag Initiator
   const handleNodeDragStart = (e: React.PointerEvent, stepId: string) => {
+    if (isLocked) return;
     e.stopPropagation();
     setDraggingNodeId(stepId);
     const currPos = activePositions[stepId] || { x: 0, y: 0 };
@@ -279,7 +318,6 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
     const list: EdgeConnection[] = [];
     if (steps.length < 2) return list;
 
-    // Group steps by stages
     const stages: VSMStep[][] = [];
     let currentParallel: VSMStep[] = [];
 
@@ -388,17 +426,30 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
               Mapa Macro Dinâmico com Ramificação Interativa
             </h2>
             <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-[10px] font-mono text-cyan-300 font-bold">
-              Whiteboard Interativo
+              Whiteboard Macro
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            Arraste etapas livremente, use zoom para visão macro completa e acompanhe as bifurcações paralelas com conexões Bézier ao vivo.
+            Visão panorâmica em tela cheia com arraste fluido, ajuste automático de escala e ramificações Bézier.
           </p>
         </div>
 
-        {/* Heatmap Mode Selector & Educational Buttons */}
+        {/* Heatmap Mode Selector & Action Buttons */}
         <div className="flex items-center gap-2.5 flex-wrap">
           
+          {/* AI Diagnostic Trigger Button */}
+          {onOpenAiDiagnostic && (
+            <button
+              type="button"
+              onClick={onOpenAiDiagnostic}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500 text-white text-xs font-bold shadow-lg shadow-purple-950/40 hover:from-purple-500 hover:to-cyan-400 active:scale-95 transition-all cursor-pointer"
+              title="Gerar Diagnóstico Executivo com Inteligência Artificial"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-cyan-200 animate-pulse" />
+              <span>Diagnóstico IA</span>
+            </button>
+          )}
+
           {/* Quick %C&A Button */}
           <button
             type="button"
@@ -512,27 +563,49 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
         onPointerDown={handleCanvasPointerDown}
         onPointerMove={handleCanvasPointerMove}
         onPointerUp={handleCanvasPointerUp}
-        className={`relative w-full h-[620px] overflow-hidden bg-[#060a13] bg-[radial-gradient(#1e293b_1.2px,transparent_1.2px)] [background-size:24px_24px] ${
-          isPanning ? 'cursor-grabbing' : 'cursor-grab'
+        className={`relative w-full h-[640px] overflow-hidden bg-[#060a13] bg-[radial-gradient(#1e293b_1.2px,transparent_1.2px)] [background-size:24px_24px] ${
+          isPanning ? 'cursor-grabbing' : canvasMode === 'pan' ? 'cursor-grab' : 'cursor-default'
         }`}
       >
         
-        {/* Floating Canvas Camera Controls (Top Left) */}
+        {/* Floating Canvas Camera & Mode Toolbar (Top Left) */}
         <div
           data-interactive="true"
-          className="absolute top-4 left-4 z-30 flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-950/90 border border-slate-800 shadow-2xl backdrop-blur-md"
+          className="absolute top-4 left-4 z-30 flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-950/95 border border-slate-800 shadow-2xl backdrop-blur-md flex-wrap"
         >
-          <button
-            type="button"
-            onClick={handleZoomIn}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
-            title="Aproximar (+)"
-          >
-            <ZoomIn className="w-4 h-4" />
-          </button>
-          <span className="px-2 text-xs font-mono font-bold text-cyan-400 min-w-[42px] text-center">
-            {Math.round(zoom * 100)}%
-          </span>
+          {/* Mode Switcher: Pan vs Select */}
+          <div className="inline-flex p-0.5 rounded-xl bg-slate-900 border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setCanvasMode('pan')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                canvasMode === 'pan'
+                  ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Modo Mover Tela: clique e arraste em qualquer lugar para navegar"
+            >
+              <Hand className="w-3.5 h-3.5" />
+              <span>Mover Tela</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCanvasMode('select')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                canvasMode === 'select'
+                  ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Modo Seleção: clique nos cartões para abrir detalhes e editar"
+            >
+              <MousePointer className="w-3.5 h-3.5" />
+              <span>Selecionar</span>
+            </button>
+          </div>
+
+          <div className="w-px h-4 bg-slate-800 mx-0.5" />
+
+          {/* Zoom Buttons & Percentage */}
           <button
             type="button"
             onClick={handleZoomOut}
@@ -542,17 +615,57 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
             <ZoomOut className="w-4 h-4" />
           </button>
 
+          {/* Preset Zoom Pills */}
+          <div className="inline-flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => handleSetZoom(0.5)}
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-colors cursor-pointer ${
+                Math.abs(zoom - 0.5) < 0.08 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              50%
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSetZoom(0.75)}
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-colors cursor-pointer ${
+                Math.abs(zoom - 0.75) < 0.08 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              75%
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSetZoom(1.0)}
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-colors cursor-pointer ${
+                Math.abs(zoom - 1.0) < 0.08 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              100%
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+            title="Aproximar (+)"
+          >
+            <ZoomIn className="w-4 h-4" />
+          </button>
+
           <div className="w-px h-4 bg-slate-800 mx-0.5" />
 
           {/* Fit to View button: Satisfies "visualizar toda a estrutura na tela" */}
           <button
             type="button"
             onClick={handleFitToView}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/25 transition-all cursor-pointer shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/25 transition-all cursor-pointer shadow-sm"
             title="Ajustar toda a estrutura na tela (Visão Macro Panorâmica)"
           >
             <Maximize className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Ajustar à Tela</span>
+            <span>Ajustar à Tela</span>
           </button>
 
           {/* Reset layout */}
@@ -564,12 +677,24 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
           >
             <RotateCcw className="w-4 h-4" />
           </button>
+
+          {/* Lock / Unlock Dragging toggle */}
+          <button
+            type="button"
+            onClick={() => setIsLocked(!isLocked)}
+            className={`p-1.5 rounded-xl transition-all cursor-pointer ${
+              isLocked ? 'text-amber-400 bg-amber-500/15 border border-amber-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+            title={isLocked ? 'Posições bloqueadas (clique para destravar e arrastar nós)' : 'Posições destravadas (clique para travar nós)'}
+          >
+            {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+          </button>
         </div>
 
-        {/* Floating Hint Tag */}
-        <div className="absolute top-4 right-4 z-20 pointer-events-none hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/80 border border-slate-800 text-[11px] font-mono text-slate-400 shadow-xl backdrop-blur-md">
+        {/* Floating Hint Tag (Top Right) */}
+        <div className="absolute top-4 right-4 z-20 pointer-events-none hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/80 border border-slate-800 text-[11px] font-mono text-slate-400 shadow-xl backdrop-blur-md">
           <Move className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-          <span>Arraste os cartões para reposicionar • Role para dar zoom</span>
+          <span>Arraste para mover tela • Ctrl + Scroll para zoom</span>
         </div>
 
         {/* Transformable Canvas Surface */}
@@ -587,7 +712,6 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
             style={{ width: '100%', height: '100%' }}
           >
             <defs>
-              {/* Arrowhead markers */}
               <marker
                 id="arrow-cyan"
                 viewBox="0 0 10 10"
@@ -624,7 +748,6 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
                 <path d="M 0 1 L 9 5 L 0 9 z" fill="#a855f7" />
               </marker>
 
-              {/* Glowing Laser Filter */}
               <filter id="glow-rose" x="-20%" y="-20%" width="140%" height="140%">
                 <feGaussianBlur stdDeviation="3" result="blur" />
                 <feMerge>
@@ -636,10 +759,8 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
 
             {edges.map((edge, idx) => {
               const dx = Math.max(Math.abs(edge.toX - edge.fromX) * 0.55, 60);
-              // Cubic bezier curve path
               const pathD = `M ${edge.fromX} ${edge.fromY} C ${edge.fromX + dx} ${edge.fromY}, ${edge.toX - dx} ${edge.toY}, ${edge.toX} ${edge.toY}`;
 
-              // Midpoint for queue badge
               const midX = (edge.fromX + edge.toX) / 2;
               const midY = (edge.fromY + edge.toY) / 2;
 
@@ -659,7 +780,6 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
               return (
                 <g key={`edge-${edge.fromId}-${edge.toId}-${idx}`}>
                   
-                  {/* Background wider glow line for bottleneck */}
                   {edge.isBottleneck && (
                     <path
                       d={pathD}
@@ -671,7 +791,6 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
                     />
                   )}
 
-                  {/* Main Connector Path */}
                   <path
                     d={pathD}
                     fill="none"
@@ -721,7 +840,7 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
             })}
           </svg>
 
-          {/* Interactive Draggable Step Node Cards */}
+          {/* Interactive Step Node Cards */}
           {steps.map(step => {
             const pos = activePositions[step.id] || { x: 100, y: 250 };
             const ptHours = convertTimeToHours(step.processTime, step.processTimeUnit, true);
@@ -777,7 +896,7 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
                   width: `${NODE_WIDTH}px`,
                   height: `${NODE_HEIGHT}px`
                 }}
-                className={`absolute pointer-events-auto rounded-2xl p-3.5 border flex flex-col justify-between transition-shadow backdrop-blur-md ${nodeBorder} ${nodeBg} ${nodeGlow} ${
+                className={`absolute pointer-events-auto rounded-2xl p-3.5 border flex flex-col justify-between transition-shadow backdrop-blur-md cursor-pointer ${nodeBorder} ${nodeBg} ${nodeGlow} ${
                   isSelected ? 'ring-2 ring-cyan-400 scale-[1.02] z-30 shadow-2xl' : 'hover:border-slate-700'
                 } ${isDraggingThis ? 'cursor-grabbing z-40 opacity-95 scale-[1.03] shadow-2xl' : ''}`}
                 onClick={() => setSelectedStepId(step.id === selectedStepId ? null : step.id)}
@@ -786,8 +905,10 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
                 {/* Node Drag Handle Header */}
                 <div
                   onPointerDown={(e) => handleNodeDragStart(e, step.id)}
-                  className="flex items-center justify-between gap-1 pb-1.5 border-b border-slate-800/80 cursor-grab active:cursor-grabbing group/drag"
-                  title="Clique e arraste para reposicionar no canvas"
+                  className={`flex items-center justify-between gap-1 pb-1.5 border-b border-slate-800/80 group/drag ${
+                    isLocked ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'
+                  }`}
+                  title={isLocked ? 'Posições travadas' : 'Clique e arraste para reposicionar no canvas'}
                 >
                   <div className="flex items-center gap-1.5 truncate">
                     <span className="w-5 h-5 rounded-md bg-slate-950 border border-slate-800 text-[10px] font-mono font-black text-cyan-400 flex items-center justify-center shrink-0">
@@ -815,7 +936,9 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
                       </div>
                     )}
 
-                    <GripHorizontal className="w-3.5 h-3.5 text-slate-600 group-hover/drag:text-cyan-400 transition-colors" />
+                    {!isLocked && (
+                      <GripHorizontal className="w-3.5 h-3.5 text-slate-600 group-hover/drag:text-cyan-400 transition-colors" />
+                    )}
                   </div>
                 </div>
 
