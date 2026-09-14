@@ -47,6 +47,7 @@ interface VsmSummaryReportModalProps {
   metrics: BottleneckAnalysis;
   aiReport?: (AiDiagnosticReport & { provider?: string; isLiveAi?: boolean }) | null;
   onRunAiDiagnostic?: () => void;
+  onSaveAiReport?: (report: AiDiagnosticReport & { provider?: string; isLiveAi?: boolean }) => void;
 }
 
 export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
@@ -57,11 +58,14 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
   steps,
   metrics,
   aiReport,
-  onRunAiDiagnostic
+  onRunAiDiagnostic,
+  onSaveAiReport
 }) => {
   // View mode: 'paper' (Clean White A4 sheet) or 'dark' (Executive Dark Screen)
   const [viewMode, setViewMode] = useState<'paper' | 'dark'>('paper');
   const [copied, setCopied] = useState(false);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [internalAiReport, setInternalAiReport] = useState<(AiDiagnosticReport & { provider?: string; isLiveAi?: boolean }) | null>(aiReport || null);
 
   // Editable dossier metadata
   const [consultantName, setConsultantName] = useState('Mauricio Grigol Prestes');
@@ -77,13 +81,65 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
   const [includeRoadmap, setIncludeRoadmap] = useState(true);
   const [includeSignatures, setIncludeSignatures] = useState(true);
 
+  // Sync internal state when external aiReport changes
+  React.useEffect(() => {
+    if (aiReport) setInternalAiReport(aiReport);
+  }, [aiReport]);
+
   // Generate fallback heuristic analysis
   const fallbackReport: AiDiagnosticReport = useMemo(() => {
     return generateVsmAiDiagnostic(projectName, department, steps, metrics, 'all');
   }, [projectName, department, steps, metrics]);
 
   // Use the active AI diagnostic if available, otherwise fallback
-  const diagnosticReport = aiReport || fallbackReport;
+  const diagnosticReport = internalAiReport || aiReport || fallbackReport;
+
+  // Auto-fetch AI diagnostic as soon as modal is opened if not already generated!
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    if (!internalAiReport && !aiReport) {
+      handleAutoFetchAi();
+    }
+  }, [isOpen]);
+
+  const handleAutoFetchAi = async () => {
+    setIsGeneratingAi(true);
+    try {
+      let savedKey: string | undefined = undefined;
+      try {
+        savedKey = localStorage.getItem('vsm_user_ai_key') || undefined;
+      } catch (e) {}
+
+      const res = await fetch('/api/ai-diagnostic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectName,
+          department,
+          steps,
+          metrics,
+          focusArea: 'all',
+          userApiKey: savedKey
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setInternalAiReport(data);
+        onSaveAiReport?.(data);
+      } else {
+        setInternalAiReport(fallbackReport);
+        onSaveAiReport?.(fallbackReport);
+      }
+    } catch (err) {
+      console.warn('Falha no auto-fetch da IA para o dossiê:', err);
+      setInternalAiReport(fallbackReport);
+      onSaveAiReport?.(fallbackReport);
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -457,42 +513,32 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
         {/* AI INTEGRATION STATUS BANNER (ALWAYS HIDDEN IN @media print)       */}
         {/* ================================================================= */}
         <div className="no-print px-4 py-2.5 bg-slate-900/90 border-b border-slate-800">
-          {aiReport ? (
+          {isGeneratingAi ? (
+            <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-purple-950/40 border border-purple-500/40 text-xs text-purple-200 animate-pulse">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-cyan-400 animate-spin" />
+                <span>
+                  <strong>Inteligência Artificial Ativa:</strong> Analisando tempos de ciclo, filas e causas-raiz para consolidar o parecer executivo do dossiê...
+                </span>
+              </div>
+              <span className="text-[10px] font-mono text-cyan-300">Processando...</span>
+            </div>
+          ) : (
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-xs">
               <div className="flex items-center gap-2 text-emerald-300">
                 <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span>
-                  <strong>Parecer Estratégico IA Integrado ao Dossiê:</strong> Veredito e recomendações gerados por <strong className="text-white font-mono">{aiReport.provider || 'Inteligência Artificial'}</strong> ({aiReport.isLiveAi ? 'Ao Vivo' : 'Motor Especialista'}).
+                  <strong>Dossiê Completo com Parecer IA:</strong> Analisado e emitido via <strong className="text-white font-mono">{diagnosticReport.provider || 'Inteligência Artificial'}</strong> ({diagnosticReport.isLiveAi ? 'Ao Vivo' : 'Motor Especialista'}).
                 </span>
               </div>
-              {onRunAiDiagnostic && (
-                <button
-                  type="button"
-                  onClick={onRunAiDiagnostic}
-                  className="px-3 py-1 rounded-lg text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors shrink-0 cursor-pointer"
-                >
-                  Recalcular com IA
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs">
-              <div className="flex items-center gap-2 text-amber-300">
-                <Sparkles className="w-4 h-4 text-amber-400 animate-pulse shrink-0" />
-                <span>
-                  <strong>Parecer IA Pendente:</strong> Este dossiê está exibindo a análise preliminar. Execute o <strong>Diagnóstico IA</strong> para enriquecer com o veredito oficial do consultor e causas-raiz detalhadas.
-                </span>
-              </div>
-              {onRunAiDiagnostic && (
-                <button
-                  type="button"
-                  onClick={onRunAiDiagnostic}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 hover:brightness-105 shadow-sm transition-all shrink-0 cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Executar Diagnóstico IA Agora</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={handleAutoFetchAi}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors shrink-0 cursor-pointer"
+                title="Recalcular diagnóstico com a IA"
+              >
+                Recalcular IA
+              </button>
             </div>
           )}
         </div>

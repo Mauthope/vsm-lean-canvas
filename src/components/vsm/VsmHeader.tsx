@@ -210,39 +210,29 @@ export const VsmHeader: React.FC<VsmHeaderProps> = ({
           )}
         </button>
 
-        {/* Executive Dossier & Print Report Button */}
+        {/* Primary Executive Dossier & Print Report Button */}
         <button
           type="button"
           onClick={onOpenReportModal}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-            hasAiDiagnostic
-              ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-300 hover:bg-emerald-900/50 shadow-sm'
-              : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:text-white hover:border-cyan-500/50'
-          }`}
-          title={
-            hasAiDiagnostic
-              ? 'Dossiê com Parecer IA Pronto para Impressão / PDF'
-              : 'Dossiê Executivo e Relatório para Impressão / PDF'
-          }
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 text-slate-950 hover:opacity-95 shadow-md shadow-cyan-500/25 active:scale-95 transition-all cursor-pointer"
+          title="Abrir diretamente a página de impressão com o Dossiê Executivo completo e Diagnóstico de IA"
         >
-          <FileText className={`w-3.5 h-3.5 ${hasAiDiagnostic ? 'text-emerald-400' : 'text-cyan-400'}`} />
-          <span className="hidden sm:inline">Dossiê / Imprimir</span>
-          {hasAiDiagnostic && (
-            <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold">
-              IA ✓
-            </span>
-          )}
+          <Printer className="w-4 h-4 text-slate-950" />
+          <span>Relatório / Imprimir</span>
+          <span className="px-1.5 py-0.2 rounded-full bg-slate-950/90 text-cyan-300 text-[10px] font-mono font-bold">
+            IA
+          </span>
         </button>
 
         {/* AI Diagnostic Button */}
         <button
           type="button"
           onClick={onOpenAiDiagnostic}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500 text-white hover:from-purple-500 hover:via-indigo-500 hover:to-cyan-400 shadow-lg shadow-purple-950/40 active:scale-95 transition-all cursor-pointer"
-          title="Gerar Diagnóstico Aprofundado com Inteligência Artificial"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900/90 border border-purple-500/40 text-purple-300 hover:text-white hover:border-purple-400 shadow-sm active:scale-95 transition-all cursor-pointer"
+          title="Abrir painel interativo de Diagnóstico por Inteligência Artificial"
         >
-          <Sparkles className="w-3.5 h-3.5 text-cyan-200 animate-pulse" />
-          <span>Diagnóstico IA</span>
+          <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+          <span className="hidden sm:inline">Painel IA</span>
         </button>
 
         {/* Export / Import JSON */}

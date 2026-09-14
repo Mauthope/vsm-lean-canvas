@@ -657,6 +657,7 @@ export default function VsmHomePage() {
           setIsReportModalOpen(false);
           setIsAiDiagnosticOpen(true);
         }}
+        onSaveAiReport={(report) => setAiReport(report)}
       />
 
       <VsmGlossaryModal
