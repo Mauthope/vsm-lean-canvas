@@ -15,7 +15,8 @@ import {
   ChevronDown,
   Building2,
   Pencil,
-  BookOpen
+  BookOpen,
+  Printer
 } from 'lucide-react';
 import { VSMTemplate, VSMStep } from '@/types/vsm';
 import { VSM_TEMPLATES } from '@/data/vsmTemplates';

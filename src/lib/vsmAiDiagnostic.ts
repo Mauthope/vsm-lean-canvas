@@ -9,6 +9,9 @@ export interface AiDiagnosticReport {
   timestamp: string;
   projectName: string;
   department: string;
+  provider?: string;
+  isLiveAi?: boolean;
+  note?: string;
   maturityScore: number;
   maturityLabel: string;
   maturityColor: string;
