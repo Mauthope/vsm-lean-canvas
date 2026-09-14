@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { VSMStep, BottleneckAnalysis } from '@/types/vsm';
 import { generateVsmAiDiagnostic } from '@/lib/vsmAiDiagnostic';
+import { HOURS_PER_WORK_DAY } from '@/lib/vsmCalculations';
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,10 +19,10 @@ export async function POST(req: NextRequest) {
     const openAiKey = userApiKey?.startsWith('sk-') ? userApiKey : process.env.OPENAI_API_KEY;
     const geminiKey = (userApiKey && !userApiKey.startsWith('sk-')) ? userApiKey : process.env.GEMINI_API_KEY;
 
-    // Build the fallback heuristic report first
+    // Base heuristic report always ready as fallback or base
     const heuristicReport = generateVsmAiDiagnostic(
-      projectName || 'Mapeamento VSM',
-      department || 'Corporativo',
+      projectName || 'Fluxo Operacional',
+      department || 'Operações',
       steps || [],
       metrics,
       focusArea || 'all'
@@ -31,13 +32,14 @@ export async function POST(req: NextRequest) {
     if (openAiKey) {
       try {
         const prompt = `Você é um Consultor Sênior Master Black Belt especialista em Lean Six Sigma e Mapeamento de Fluxo de Valor (VSM) para processos corporativos, de RH e administrativos.
+(Considere que 1 dia útil equivale a 8h48min ou 8.8 horas de trabalho).
 
 Analise o seguinte Mapeamento de Fluxo de Valor (VSM):
 - Nome do Projeto: ${projectName}
 - Área/Departamento: ${department}
-- Lead Time Total: ${(metrics.totalLeadTimeHours / 8).toFixed(1)} dias úteis (${metrics.totalLeadTimeHours.toFixed(1)} horas)
-- Tempo Ativo de Trabalho (PT): ${(metrics.totalProcessHours / 8).toFixed(1)} dias úteis (${metrics.totalProcessHours.toFixed(1)} horas)
-- Tempo em Fila/Espera (WT): ${(metrics.totalWaitHours / 8).toFixed(1)} dias úteis (${metrics.totalWaitHours.toFixed(1)} horas)
+- Lead Time Total: ${(metrics.totalLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis (${metrics.totalLeadTimeHours.toFixed(1)} horas)
+- Tempo Ativo de Trabalho (PT): ${(metrics.totalProcessHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis (${metrics.totalProcessHours.toFixed(1)} horas)
+- Tempo em Fila/Espera (WT): ${(metrics.totalWaitHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis (${metrics.totalWaitHours.toFixed(1)} horas)
 - Eficiência de Fluxo (PT/LT): ${metrics.flowEfficiency.toFixed(1)}%
 - Rendimento Cumulativo (%C&A Rolled Yield): ${metrics.overallYield.toFixed(1)}%
 - Maior Gargalo de Espera: Etapa #${metrics.maxWaitStep?.order} - "${metrics.maxWaitStep?.title}" (${metrics.maxWaitStep?.waitTime} ${metrics.maxWaitStep?.waitTimeUnit})
@@ -121,7 +123,7 @@ Retorne APENAS o JSON válido sem blocos de código adicionais.`;
         const prompt = `Você é um Consultor Sênior Master Black Belt em Lean Six Sigma.
 Analise o VSM:
 Projeto: ${projectName} (${department})
-Lead Time: ${(metrics.totalLeadTimeHours / 8).toFixed(1)}d (${metrics.totalLeadTimeHours.toFixed(1)}h) | Trabalho: ${(metrics.totalProcessHours / 8).toFixed(1)}d | Fila: ${(metrics.totalWaitHours / 8).toFixed(1)}d | Eficiência: ${metrics.flowEfficiency.toFixed(1)}% | RFPY (%C&A): ${metrics.overallYield.toFixed(1)}%
+Lead Time: ${(metrics.totalLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)}d (${metrics.totalLeadTimeHours.toFixed(1)}h, 8h48m/d) | Trabalho: ${(metrics.totalProcessHours / HOURS_PER_WORK_DAY).toFixed(1)}d | Fila: ${(metrics.totalWaitHours / HOURS_PER_WORK_DAY).toFixed(1)}d | Eficiência: ${metrics.flowEfficiency.toFixed(1)}% | RFPY (%C&A): ${metrics.overallYield.toFixed(1)}%
 Gargalo Espera: #${metrics.maxWaitStep?.order} ${metrics.maxWaitStep?.title} (${metrics.maxWaitStep?.waitTime} ${metrics.maxWaitStep?.waitTimeUnit})
 Pior %C&A: #${metrics.lowestAccuracyStep?.order} ${metrics.lowestAccuracyStep?.title} (${metrics.lowestAccuracyStep?.percentCompleteAndAccurate}%)
 

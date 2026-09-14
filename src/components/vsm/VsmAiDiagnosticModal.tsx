@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { VSMStep, BottleneckAnalysis } from '@/types/vsm';
 import { generateVsmAiDiagnostic, AiDiagnosticReport } from '@/lib/vsmAiDiagnostic';
+import { HOURS_PER_WORK_DAY } from '@/lib/vsmCalculations';
 
 interface VsmAiDiagnosticModalProps {
   isOpen: boolean;
@@ -170,7 +171,7 @@ ${r.keyInsights.map(i => `- ${i}`).join('\n')}
 
 ## 2. Diagnóstico de Gargalos Críticos
 ${r.bottleneckAnalysis.waitBottleneck ? `### Gargalo de Espera (WT): ${r.bottleneckAnalysis.waitBottleneck.stepTitle} (${r.bottleneckAnalysis.waitBottleneck.role})
-- **Tempo de Fila:** ${(r.bottleneckAnalysis.waitBottleneck.waitTimeHours / 8).toFixed(1)} dias úteis (${r.bottleneckAnalysis.waitBottleneck.percentageOfLeadTime}% do Lead Time total)
+- **Tempo de Fila:** ${(r.bottleneckAnalysis.waitBottleneck.waitTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis (${r.bottleneckAnalysis.waitBottleneck.percentageOfLeadTime}% do Lead Time total)
 - **Impacto:** ${r.bottleneckAnalysis.waitBottleneck.impact}
 - **Causas Raiz Prováveis:**
 ${r.bottleneckAnalysis.waitBottleneck.rootCauses.map(c => `  * ${c}`).join('\n')}` : ''}
@@ -184,7 +185,7 @@ ${r.bottleneckAnalysis.qualityBottleneck.rootCauses.map(c => `  * ${c}`).join('\
 ---
 
 ## 3. Simulação do Estado Futuro (Antes vs Depois)
-- **Lead Time:** ${(r.futureStateSimulation.currentLeadTimeHours / 8).toFixed(1)}d ➔ ${(r.futureStateSimulation.projectedLeadTimeHours / 8).toFixed(1)}d (-${r.futureStateSimulation.leadTimeReductionPercent}%)
+- **Lead Time:** ${(r.futureStateSimulation.currentLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)}d ➔ ${(r.futureStateSimulation.projectedLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)}d (-${r.futureStateSimulation.leadTimeReductionPercent}%)
 - **Eficiência de Fluxo:** ${r.futureStateSimulation.currentFlowEfficiency.toFixed(1)}% ➔ ${r.futureStateSimulation.projectedFlowEfficiency.toFixed(1)}%
 - **Rendimento sem Retrabalho (RFPY):** ${r.futureStateSimulation.currentYield.toFixed(1)}% ➔ ${r.futureStateSimulation.projectedYield}%
 
@@ -415,7 +416,7 @@ ${r.actionRoadmap.automationProjects.map(a => `- **${a.action}** [Impacto: ${a.i
                   <span className="text-xs text-slate-400 font-mono">de Lead Time</span>
                 </div>
                 <span className="text-[11px] font-mono text-slate-400">
-                  De {(activeReport.futureStateSimulation.currentLeadTimeHours / 8).toFixed(1)}d para ~{(activeReport.futureStateSimulation.projectedLeadTimeHours / 8).toFixed(1)}d úteis
+                  De {(activeReport.futureStateSimulation.currentLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)}d para ~{(activeReport.futureStateSimulation.projectedLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)}d úteis
                 </span>
               </div>
 
@@ -736,7 +737,7 @@ ${r.actionRoadmap.automationProjects.map(a => `- **${a.action}** [Impacto: ${a.i
                     <div className="space-y-2 pt-2">
                       <div className="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
                         <span className="text-slate-400">Lead Time Ponta a Ponta:</span>
-                        <strong className="text-amber-400 font-mono">{(activeReport.futureStateSimulation.currentLeadTimeHours / 8).toFixed(1)} dias úteis</strong>
+                        <strong className="text-amber-400 font-mono">{(activeReport.futureStateSimulation.currentLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis</strong>
                       </div>
                       <div className="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
                         <span className="text-slate-400">Eficiência de Fluxo:</span>
@@ -756,7 +757,7 @@ ${r.actionRoadmap.automationProjects.map(a => `- **${a.action}** [Impacto: ${a.i
                     <div className="space-y-2 pt-2">
                       <div className="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
                         <span className="text-slate-400">Lead Time Otimizado:</span>
-                        <strong className="text-emerald-400 font-mono">~{(activeReport.futureStateSimulation.projectedLeadTimeHours / 8).toFixed(1)} dias úteis (-{activeReport.futureStateSimulation.leadTimeReductionPercent}%)</strong>
+                        <strong className="text-emerald-400 font-mono">~{(activeReport.futureStateSimulation.projectedLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis (-{activeReport.futureStateSimulation.leadTimeReductionPercent}%)</strong>
                       </div>
                       <div className="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
                         <span className="text-slate-400">Eficiência de Fluxo:</span>

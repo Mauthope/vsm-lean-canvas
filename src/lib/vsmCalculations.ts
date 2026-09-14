@@ -1,5 +1,11 @@
 import { VSMStep, TimeUnit, WasteType, WasteMeta, BottleneckAnalysis } from '@/types/vsm';
 
+/**
+ * Convenção de jornada de trabalho:
+ * 1 dia útil = 8 horas e 48 minutos (44h semanais / 5 dias = 8.8 horas).
+ */
+export const HOURS_PER_WORK_DAY = 8.8;
+
 export function convertTimeToHours(value: number, unit: TimeUnit, isWorkingDay = true): number {
   if (isNaN(value) || value <= 0) return 0;
   switch (unit) {
@@ -8,7 +14,7 @@ export function convertTimeToHours(value: number, unit: TimeUnit, isWorkingDay =
     case 'horas':
       return value;
     case 'dias':
-      return isWorkingDay ? value * 8 : value * 24;
+      return isWorkingDay ? value * HOURS_PER_WORK_DAY : value * 24;
     default:
       return value;
   }
@@ -20,11 +26,11 @@ export function formatHours(hours: number): string {
     const mins = Math.round(hours * 60);
     return `${mins} min`;
   }
-  if (hours < 8) {
+  if (hours < HOURS_PER_WORK_DAY) {
     const formatted = hours % 1 === 0 ? hours.toFixed(0) : hours.toFixed(1);
     return `${formatted} h`;
   }
-  const days = hours / 8;
+  const days = hours / HOURS_PER_WORK_DAY;
   if (days >= 1) {
     const daysFormatted = days % 1 === 0 ? days.toFixed(0) : days.toFixed(1);
     return `${daysFormatted}d úteis (${hours.toFixed(1)}h)`;
@@ -36,7 +42,7 @@ export function formatHoursCompact(hours: number): string {
   if (hours <= 0) return '0m';
   if (hours < 1) return `${Math.round(hours * 60)}m`;
   if (hours < 24) return `${hours.toFixed(1)}h`;
-  const days = (hours / 8).toFixed(1);
+  const days = (hours / HOURS_PER_WORK_DAY).toFixed(1);
   return `${days}d`;
 }
 

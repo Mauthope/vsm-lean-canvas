@@ -17,7 +17,8 @@ import { BottleneckAnalysis, VSMStep } from '@/types/vsm';
 import {
   formatHours,
   getFlowEfficiencyClassification,
-  convertTimeToHours
+  convertTimeToHours,
+  HOURS_PER_WORK_DAY
 } from '@/lib/vsmCalculations';
 
 interface VsmMetricsBarProps {
@@ -47,10 +48,10 @@ export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
 
   const efficiencyMeta = getFlowEfficiencyClassification(flowEfficiency);
 
-  // Calcula dias úteis (8h)
-  const leadTimeDays = (totalLeadTimeHours / 8).toFixed(1);
-  const waitDays = (totalWaitHours / 8).toFixed(1);
-  const processDays = (totalProcessHours / 8).toFixed(1);
+  // Calcula dias úteis (8h48min = 8.8h)
+  const leadTimeDays = (totalLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1);
+  const waitDays = (totalWaitHours / HOURS_PER_WORK_DAY).toFixed(1);
+  const processDays = (totalProcessHours / HOURS_PER_WORK_DAY).toFixed(1);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
@@ -102,7 +103,7 @@ export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
         </div>
 
         <div className="mt-2.5 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs">
-          <span className="text-slate-400">Dias Úteis:</span>
+          <span className="text-slate-400" title="1 dia útil = 8h48min (8.8 horas)">Dias Úteis (8h48m):</span>
           <span className="font-mono font-bold text-amber-300">~{leadTimeDays} dias</span>
         </div>
       </div>

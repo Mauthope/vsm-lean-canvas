@@ -34,7 +34,8 @@ import {
   getFlowEfficiencyClassification,
   countWastes,
   WASTE_METAS,
-  convertTimeToHours
+  convertTimeToHours,
+  HOURS_PER_WORK_DAY
 } from '@/lib/vsmCalculations';
 import { generateVsmAiDiagnostic, AiDiagnosticReport } from '@/lib/vsmAiDiagnostic';
 
@@ -353,11 +354,11 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
     md += `\n---\n\n`;
 
     md += `## 2. Painel de Indicadores Mestres de Fluxo (Lean KPIs)\n\n`;
-    md += `| Indicador | Valor Obtido | Benchmark Lean & Interpretação |\n`;
+    md += `| Indicador | Valor Obtido | Benchmark Lean & Interpretação (Base: 8h48m / dia útil) |\n`;
     md += `| :--- | :--- | :--- |\n`;
-    md += `| **Lead Time Total (LT)** | **${formatHours(totalLeadTimeHours)}** (~${(totalLeadTimeHours / 8).toFixed(1)} dias úteis) | Tempo total do pedido até a entrega final |\n`;
-    md += `| **Tempo de Esforço Ativo (PT)** | **${formatHours(totalProcessHours)}** | Tempo efetivo com valor agregado real |\n`;
-    md += `| **Tempo de Fila / Espera (WT)** | **${formatHours(totalWaitHours)}** (${((totalWaitHours / totalLeadTimeHours) * 100).toFixed(1)}% do LT) | Tempo morto onde a tarefa fica ociosa em caixas de entrada |\n`;
+    md += `| **Lead Time Total (LT)** | **${formatHours(totalLeadTimeHours)}** (~${(totalLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis) | Tempo total do pedido até a entrega final |\n`;
+    md += `| **Tempo de Esforço Ativo (PT)** | **${formatHours(totalProcessHours)}** (~${(totalProcessHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis) | Tempo efetivo com valor agregado real |\n`;
+    md += `| **Tempo de Fila / Espera (WT)** | **${formatHours(totalWaitHours)}** (${totalLeadTimeHours > 0 ? ((totalWaitHours / totalLeadTimeHours) * 100).toFixed(1) : 0}% do LT) | Tempo morto onde a tarefa fica ociosa em caixas de entrada |\n`;
     md += `| **Eficiência de Fluxo (FE)** | **${flowEfficiency.toFixed(1)}%** | ${efficiencyMeta.label} (Meta Classe Mundial: > 25%) |\n`;
     md += `| **Rolled First Pass Yield (%C&A)** | **${overallYield.toFixed(1)}%** | Rendimento sem retrabalho (Taxa de devoluções: ${(100 - overallYield).toFixed(1)}%) |\n\n`;
     md += `---\n\n`;
@@ -379,7 +380,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
         const wb = diagnosticReport.bottleneckAnalysis.waitBottleneck;
         md += `### 🔴 Maior Gargalo de Fila / Lead Time:\n`;
         md += `- **Etapa**: ${wb.stepTitle} (${wb.role})\n`;
-        md += `- **Tempo em Fila**: ${wb.waitTimeHours.toFixed(1)} horas (~${(wb.waitTimeHours / 8).toFixed(1)} dias úteis), representando ${wb.percentageOfLeadTime.toFixed(1)}% de todo o Lead Time do processo.\n`;
+        md += `- **Tempo em Fila**: ${wb.waitTimeHours.toFixed(1)} horas (~${(wb.waitTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis), representando ${wb.percentageOfLeadTime.toFixed(1)}% de todo o Lead Time do processo.\n`;
         md += `- **Impacto**: ${wb.impact}\n`;
         md += `- **Causas Raiz Típicas**: ${wb.rootCauses.join(', ')}\n\n`;
       }
@@ -411,7 +412,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
       const fs = diagnosticReport.futureStateSimulation;
       md += `| Dimensão Analisada | Estado Atual (As-Is) | Estado Futuro Projetado (To-Be) | Ganho Estimado |\n`;
       md += `| :--- | :--- | :--- | :--- |\n`;
-      md += `| **Lead Time Ponta a Ponta** | ${(fs.currentLeadTimeHours / 8).toFixed(1)} dias úteis (${fs.currentLeadTimeHours.toFixed(1)}h) | **~${(fs.projectedLeadTimeHours / 8).toFixed(1)} dias úteis** (${fs.projectedLeadTimeHours.toFixed(1)}h) | **-${fs.leadTimeReductionPercent}% de redução** |\n`;
+      md += `| **Lead Time Ponta a Ponta** | ${(fs.currentLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis (${fs.currentLeadTimeHours.toFixed(1)}h) | **~${(fs.projectedLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis** (${fs.projectedLeadTimeHours.toFixed(1)}h) | **-${fs.leadTimeReductionPercent}% de redução** |\n`;
       md += `| **Eficiência de Fluxo (FE)** | ${fs.currentFlowEfficiency.toFixed(1)}% | **${fs.projectedFlowEfficiency.toFixed(1)}%** | **+${Math.round(fs.projectedFlowEfficiency - fs.currentFlowEfficiency)} pontos percentuais** |\n`;
       md += `| **Rendimento Rolled Yield (%C&A)** | ${fs.currentYield.toFixed(1)}% | **${fs.projectedYield}%** | **Eliminação massiva de devoluções** |\n\n`;
       md += `---\n\n`;
@@ -884,7 +885,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                     {formatHours(totalLeadTimeHours)}
                   </span>
                   <span className="text-[11px] text-amber-600 dark:text-amber-400 font-mono font-medium block mt-0.5">
-                    ~{(totalLeadTimeHours / 8).toFixed(1)} dias úteis
+                    ~{(totalLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis
                   </span>
                   <span className="text-[10px] text-slate-500 mt-1 block">
                     Do gatilho inicial até a entrega
@@ -902,7 +903,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                     {formatHours(totalProcessHours)}
                   </span>
                   <span className="text-[11px] text-cyan-700 dark:text-cyan-300 font-mono font-medium block mt-0.5">
-                    ~{(totalProcessHours / 8).toFixed(1)} dias úteis
+                    ~{(totalProcessHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis
                   </span>
                   <span className="text-[10px] text-slate-500 mt-1 block">
                     Tempo ativo agregando valor
@@ -1097,7 +1098,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                         <div className="flex justify-between border-b pb-1 border-amber-200 dark:border-amber-500/20 font-mono">
                           <span className="text-slate-600 dark:text-slate-400">Tempo em Espera:</span>
                           <strong className="text-amber-700 dark:text-amber-400">
-                            {diagnosticReport.bottleneckAnalysis.waitBottleneck.waitTimeHours.toFixed(1)} horas (~{(diagnosticReport.bottleneckAnalysis.waitBottleneck.waitTimeHours / 8).toFixed(1)}d)
+                            {diagnosticReport.bottleneckAnalysis.waitBottleneck.waitTimeHours.toFixed(1)} horas (~{(diagnosticReport.bottleneckAnalysis.waitBottleneck.waitTimeHours / HOURS_PER_WORK_DAY).toFixed(1)}d)
                           </strong>
                         </div>
                         <div className="flex justify-between border-b pb-1 border-amber-200 dark:border-amber-500/20 font-mono">
@@ -1299,7 +1300,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                         </span>
                       </div>
                       <span className="text-[11px] font-mono text-slate-600 dark:text-slate-400 block mt-1">
-                        De {(diagnosticReport.futureStateSimulation.currentLeadTimeHours / 8).toFixed(1)}d para <strong>~{(diagnosticReport.futureStateSimulation.projectedLeadTimeHours / 8).toFixed(1)} dias úteis</strong>
+                        De {(diagnosticReport.futureStateSimulation.currentLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)}d para <strong>~{(diagnosticReport.futureStateSimulation.projectedLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis</strong>
                       </span>
                     </div>
 

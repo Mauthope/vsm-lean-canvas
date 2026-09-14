@@ -270,7 +270,7 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
                 >
                   <option value="minutos">Minutos</option>
                   <option value="horas">Horas</option>
-                  <option value="dias">Dias úteis (8h)</option>
+                  <option value="dias">Dias úteis (8h48min)</option>
                 </select>
               </div>
               <span className="text-[10px] text-slate-400 font-mono block mt-1">
@@ -301,7 +301,7 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
                 >
                   <option value="minutos">Minutos</option>
                   <option value="horas">Horas</option>
-                  <option value="dias">Dias</option>
+                  <option value="dias">Dias úteis (8h48min)</option>
                 </select>
               </div>
               <span className="text-[10px] text-slate-400 font-mono block mt-1">

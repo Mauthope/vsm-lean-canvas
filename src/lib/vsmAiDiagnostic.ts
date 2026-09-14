@@ -2,7 +2,8 @@ import { VSMStep, BottleneckAnalysis, WasteType } from '@/types/vsm';
 import {
   convertTimeToHours,
   formatHours,
-  WASTE_METAS
+  WASTE_METAS,
+  HOURS_PER_WORK_DAY
 } from '@/lib/vsmCalculations';
 
 export interface AiDiagnosticReport {
@@ -109,8 +110,8 @@ export function generateVsmAiDiagnostic(
   }
 
   // 2. Executive Summary
-  const leadTimeDays = (totalLeadTimeHours / 8).toFixed(1);
-  const processTimeDays = (totalProcessHours / 8).toFixed(1);
+  const leadTimeDays = (totalLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1);
+  const processTimeDays = (totalProcessHours / HOURS_PER_WORK_DAY).toFixed(1);
   const waitPercentage = totalLeadTimeHours > 0 ? ((totalWaitHours / totalLeadTimeHours) * 100).toFixed(0) : '0';
 
   let executiveSummary = `O fluxo de "${projectName}" (${department}) possui um Lead Time total de aproximadamente ${leadTimeDays} dias úteis (${totalLeadTimeHours.toFixed(1)} horas), porém o esforço ativo real de trabalho agrega apenas ${processTimeDays} dias (${totalProcessHours.toFixed(1)} horas). Isso significa que ${waitPercentage}% do tempo total decorrido é desperdício puro de fila e espera (Muda de Espera).`;
@@ -165,7 +166,7 @@ export function generateVsmAiDiagnostic(
         'Falta de critérios pré-alinhados que exigem reuniões repetitivas de esclarecimento',
         'Comunicação fragmentada por e-mail ou mensagens assíncronas sem visibilidade de fila'
       ],
-      impact: `Consome ${(maxWtHours / 8).toFixed(1)} dias úteis de espera passiva, gerando ansiedade no requisitante e risco de perda de prazos.`
+      impact: `Consome ${(maxWtHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis de espera passiva, gerando ansiedade no requisitante e risco de perda de prazos.`
     };
   }
 
@@ -263,7 +264,7 @@ export function generateVsmAiDiagnostic(
     projectedFlowEfficiency,
     currentYield: overallYield,
     projectedYield,
-    summary: `Com a eliminação das filas nas etapas críticas e padronização das entradas, o tempo de entrega pode cair de ${(totalLeadTimeHours / 8).toFixed(1)} para ${(projectedLeadTimeHours / 8).toFixed(1)} dias úteis (${leadTimeReductionPercent}% de redução), elevando a Eficiência de Fluxo de ${flowEfficiency.toFixed(1)}% para ${projectedFlowEfficiency.toFixed(1)}%.`
+    summary: `Com a eliminação das filas nas etapas críticas e padronização das entradas, o tempo de entrega pode cair de ${(totalLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} para ${(projectedLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis (${leadTimeReductionPercent}% de redução), elevando a Eficiência de Fluxo de ${flowEfficiency.toFixed(1)}% para ${projectedFlowEfficiency.toFixed(1)}%.`
   };
 
   // 7. Action Roadmap (Kaizen 30-60-90)
