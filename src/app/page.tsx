@@ -664,6 +664,7 @@ export default function VsmHomePage() {
         department={department}
         steps={steps}
         metrics={metrics}
+        onOpenFullPrintReport={() => setIsReportModalOpen(true)}
       />
 
       {/* Standalone Toast Alerts */}

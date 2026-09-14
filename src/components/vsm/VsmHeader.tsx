@@ -208,15 +208,15 @@ export const VsmHeader: React.FC<VsmHeaderProps> = ({
           )}
         </button>
 
-        {/* Executive Report Button */}
+        {/* Executive Dossier & Print Report Button */}
         <button
           type="button"
           onClick={onOpenReportModal}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition-all cursor-pointer"
-          title="Gerar Relatório Executivo Lean"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-white hover:border-cyan-500/50 transition-all cursor-pointer"
+          title="Gerar Dossiê Executivo e Relatório Pronto para Impressão / PDF"
         >
-          <FileText className="w-3.5 h-3.5 text-purple-400" />
-          <span className="hidden sm:inline">Relatório</span>
+          <FileText className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="hidden sm:inline">Dossiê / Imprimir</span>
         </button>
 
         {/* AI Diagnostic Button */}

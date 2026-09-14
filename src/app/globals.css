@@ -61,3 +61,96 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   backdrop-filter: blur(20px);
   border: 1px solid rgba(51, 65, 85, 0.5);
 }
+
+/* ==========================================================================
+   HIGH-FIDELITY PRINT STYLES FOR EXECUTIVE LEAN DOSSIERS
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
+  }
+
+  /* Reset body and background for crisp ink saving */
+  html, body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 10pt !important;
+    line-height: 1.35 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide normal app layout and non-printable UI elements */
+  .no-print,
+  nav,
+  header,
+  aside,
+  button:not(.allow-print),
+  .custom-scrollbar::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* Ensure modal backdrop does not obscure or darken print output */
+  .fixed.bg-black\/85,
+  .fixed.bg-black\/80,
+  .fixed.backdrop-blur-md {
+    position: static !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Printable dossier container styles */
+  #vsm-printable-dossier {
+    display: block !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  /* Page break rules */
+  .print-page-break {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+
+  .print-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Tables in print */
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    font-size: 9pt !important;
+  }
+
+  th, td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 5px 8px !important;
+    color: #0f172a !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}

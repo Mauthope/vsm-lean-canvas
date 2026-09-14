@@ -35,6 +35,7 @@ interface VsmAiDiagnosticModalProps {
   department: string;
   steps: VSMStep[];
   metrics: BottleneckAnalysis;
+  onOpenFullPrintReport?: () => void;
 }
 
 export const VsmAiDiagnosticModal: React.FC<VsmAiDiagnosticModalProps> = ({
@@ -43,7 +44,8 @@ export const VsmAiDiagnosticModal: React.FC<VsmAiDiagnosticModalProps> = ({
   projectName,
   department,
   steps,
-  metrics
+  metrics,
+  onOpenFullPrintReport
 }) => {
   const [activeTab, setActiveTab] = useState<'summary' | 'bottlenecks' | 'futureState' | 'roadmap'>('summary');
   const [focusArea, setFocusArea] = useState<'all' | 'speed' | 'quality' | 'automation'>('all');
@@ -509,6 +511,20 @@ ${r.actionRoadmap.automationProjects.map(a => `- **${a.action}** [Impacto: ${a.i
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2">
+                {onOpenFullPrintReport && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenFullPrintReport();
+                    }}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 text-slate-950 hover:opacity-95 transition-all cursor-pointer shadow-md shadow-cyan-500/20 active:scale-95"
+                    title="Abrir Dossiê Executivo Completo para Impressão em A4 / Salvar PDF"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>Dossiê para Impressão (A4)</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={handleCopyMarkdown}
@@ -516,15 +532,6 @@ ${r.actionRoadmap.automationProjects.map(a => `- **${a.action}** [Impacto: ${a.i
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copied ? 'Copiado!' : 'Copiar Parecer (MD)'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handlePrint}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm"
-                  title="Imprimir relatório"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Imprimir</span>
                 </button>
               </div>
             </div>
