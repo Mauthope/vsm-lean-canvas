@@ -38,6 +38,7 @@ import { VsmKaizenBoard } from '@/components/vsm/VsmKaizenBoard';
 import { VsmSummaryReportModal } from '@/components/vsm/VsmSummaryReportModal';
 import { VsmGlossaryModal } from '@/components/vsm/VsmGlossaryModal';
 import { VsmAiDiagnosticModal } from '@/components/vsm/VsmAiDiagnosticModal';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AiDiagnosticReport } from '@/lib/vsmAiDiagnostic';
 import { Toast, ToastItem } from '@/components/Toast';
 
@@ -651,20 +652,22 @@ export default function VsmHomePage() {
         onUpdateKaizen={handleUpdateKaizen}
       />
 
-      <VsmSummaryReportModal
-        isOpen={isReportModalOpen}
-        onClose={() => setIsReportModalOpen(false)}
-        projectName={projectName}
-        department={department}
-        steps={steps}
-        metrics={metrics}
-        aiReport={aiReport}
-        onRunAiDiagnostic={() => {
-          setIsReportModalOpen(false);
-          setIsAiDiagnosticOpen(true);
-        }}
-        onSaveAiReport={(report) => setAiReport(report)}
-      />
+      <ErrorBoundary fallbackTitle="Instabilidade na Exibição do Dossiê">
+        <VsmSummaryReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          projectName={projectName}
+          department={department}
+          steps={steps}
+          metrics={metrics}
+          aiReport={aiReport}
+          onRunAiDiagnostic={() => {
+            setIsReportModalOpen(false);
+            setIsAiDiagnosticOpen(true);
+          }}
+          onSaveAiReport={(report) => setAiReport(report)}
+        />
+      </ErrorBoundary>
 
       <VsmGlossaryModal
         isOpen={isGlossaryModalOpen}

@@ -82,26 +82,150 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
   const [includeSignatures, setIncludeSignatures] = useState(true);
 
   // Sync internal state when external aiReport changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (aiReport) setInternalAiReport(aiReport);
   }, [aiReport]);
 
+  // Safe extraction of metrics with fallbacks
+  const {
+    totalLeadTimeHours = 0,
+    totalProcessHours = 0,
+    totalWaitHours = 0,
+    flowEfficiency = 0,
+    overallYield = 100,
+    maxWaitStep = null,
+    lowestAccuracyStep = null
+  } = metrics || {};
+
+  const efficiencyMeta = getFlowEfficiencyClassification(flowEfficiency || 0);
+  const wasteCounts = countWastes(steps || []);
+  const todayFormatted = new Date().toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric'
+  });
+
   // Generate fallback heuristic analysis
   const fallbackReport: AiDiagnosticReport = useMemo(() => {
-    return generateVsmAiDiagnostic(projectName, department, steps, metrics, 'all');
+    return generateVsmAiDiagnostic(projectName, department, steps || [], metrics || {
+      maxWaitStep: null,
+      maxProcessStep: null,
+      lowestAccuracyStep: null,
+      totalWaitHours: 0,
+      totalProcessHours: 0,
+      totalLeadTimeHours: 0,
+      flowEfficiency: 0,
+      overallYield: 100
+    }, 'all');
   }, [projectName, department, steps, metrics]);
 
-  // Use the active AI diagnostic if available, otherwise fallback
-  const diagnosticReport = internalAiReport || aiReport || fallbackReport;
+  // Use active AI diagnostic if available, merged safely on top of fallbackReport
+  const diagnosticReport = useMemo(() => {
+    const raw = internalAiReport || aiReport || fallbackReport;
 
-  // Auto-fetch AI diagnostic as soon as modal is opened if not already generated!
-  React.useEffect(() => {
-    if (!isOpen) return;
-
-    if (!internalAiReport && !aiReport) {
-      handleAutoFetchAi();
+    // Normalize key insights
+    let insights: string[] = fallbackReport.keyInsights;
+    if (Array.isArray(raw?.keyInsights) && raw.keyInsights.length > 0) {
+      insights = raw.keyInsights.map(String);
+    } else if (typeof raw?.keyInsights === 'string' && (raw.keyInsights as string).trim().length > 0) {
+      insights = (raw.keyInsights as string)
+        .split('\n')
+        .map(s => s.replace(/^[-*•\d.]+\s*/, '').trim())
+        .filter(Boolean);
     }
-  }, [isOpen]);
+
+    // Normalize wait bottleneck
+    const waitB = raw?.bottleneckAnalysis?.waitBottleneck || fallbackReport.bottleneckAnalysis.waitBottleneck;
+    const normWaitB = waitB ? {
+      ...waitB,
+      stepTitle: waitB.stepTitle || 'Etapa Crítica',
+      role: waitB.role || 'Responsável',
+      waitTimeHours: Number(waitB.waitTimeHours || 0),
+      percentageOfLeadTime: Number(waitB.percentageOfLeadTime || 0),
+      impact: waitB.impact || 'Impacto relevante no tempo total',
+      rootCauses: Array.isArray(waitB.rootCauses) && waitB.rootCauses.length > 0
+        ? waitB.rootCauses
+        : (fallbackReport.bottleneckAnalysis.waitBottleneck?.rootCauses || ['Falta de SLA formal definido'])
+    } : null;
+
+    // Normalize quality bottleneck
+    const qualB = raw?.bottleneckAnalysis?.qualityBottleneck || fallbackReport.bottleneckAnalysis.qualityBottleneck;
+    const normQualB = qualB ? {
+      ...qualB,
+      stepTitle: qualB.stepTitle || 'Etapa com Retrabalho',
+      role: qualB.role || 'Responsável',
+      accuracy: Number(qualB.accuracy || 100),
+      reworkRisk: qualB.reworkRisk || 'Moderado',
+      impact: qualB.impact || 'Retrabalho recorrente',
+      rootCauses: Array.isArray(qualB.rootCauses) && qualB.rootCauses.length > 0
+        ? qualB.rootCauses
+        : (fallbackReport.bottleneckAnalysis.qualityBottleneck?.rootCauses || ['Formulário com campos opcionais ou dados livres'])
+    } : null;
+
+    // Helper for normalizing roadmap action items
+    const formatItem = (item: any, fallbackTitle: string) => {
+      if (typeof item === 'string') {
+        return {
+          action: item,
+          impact: 'Redução de tempo e retrabalho',
+          effort: 'Baixo' as const,
+          targetStep: 'Processo Geral'
+        };
+      }
+      return {
+        action: item?.action || fallbackTitle,
+        impact: item?.impact || 'Otimização de fluxo',
+        effort: (item?.effort || 'Baixo') as 'Baixo' | 'Médio' | 'Alto',
+        targetStep: item?.targetStep || 'Etapa Crítica'
+      };
+    };
+
+    const rawRoadmap = raw?.actionRoadmap || fallbackReport.actionRoadmap;
+    const quickWins = Array.isArray(rawRoadmap?.quickWins) && rawRoadmap.quickWins.length > 0
+      ? rawRoadmap.quickWins.map((q: any) => formatItem(q, 'Ação rápida Kaizen'))
+      : fallbackReport.actionRoadmap.quickWins;
+    const structuralImprovements = Array.isArray(rawRoadmap?.structuralImprovements) && rawRoadmap.structuralImprovements.length > 0
+      ? rawRoadmap.structuralImprovements.map((s: any) => formatItem(s, 'Melhoria estrutural'))
+      : fallbackReport.actionRoadmap.structuralImprovements;
+    const automationProjects = Array.isArray(rawRoadmap?.automationProjects) && rawRoadmap.automationProjects.length > 0
+      ? rawRoadmap.automationProjects.map((a: any) => formatItem(a, 'Projeto de automação'))
+      : fallbackReport.actionRoadmap.automationProjects;
+
+    const normSimulation = {
+      ...fallbackReport.futureStateSimulation,
+      ...(raw?.futureStateSimulation || {}),
+      currentLeadTimeHours: Number(raw?.futureStateSimulation?.currentLeadTimeHours ?? fallbackReport.futureStateSimulation.currentLeadTimeHours),
+      projectedLeadTimeHours: Number(raw?.futureStateSimulation?.projectedLeadTimeHours ?? fallbackReport.futureStateSimulation.projectedLeadTimeHours),
+      leadTimeReductionPercent: Number(raw?.futureStateSimulation?.leadTimeReductionPercent ?? fallbackReport.futureStateSimulation.leadTimeReductionPercent),
+      currentFlowEfficiency: Number(raw?.futureStateSimulation?.currentFlowEfficiency ?? fallbackReport.futureStateSimulation.currentFlowEfficiency),
+      projectedFlowEfficiency: Number(raw?.futureStateSimulation?.projectedFlowEfficiency ?? fallbackReport.futureStateSimulation.projectedFlowEfficiency),
+      currentYield: Number(raw?.futureStateSimulation?.currentYield ?? fallbackReport.futureStateSimulation.currentYield),
+      projectedYield: Number(raw?.futureStateSimulation?.projectedYield ?? fallbackReport.futureStateSimulation.projectedYield),
+      summary: raw?.futureStateSimulation?.summary || fallbackReport.futureStateSimulation.summary
+    };
+
+    return {
+      ...fallbackReport,
+      ...raw,
+      provider: raw?.provider || fallbackReport.provider || 'Motor Especialista Lean Six Sigma',
+      isLiveAi: Boolean(raw?.isLiveAi),
+      maturityScore: Number(raw?.maturityScore || fallbackReport.maturityScore),
+      maturityLabel: raw?.maturityLabel || fallbackReport.maturityLabel,
+      executiveSummary: raw?.executiveSummary || fallbackReport.executiveSummary,
+      keyInsights: insights,
+      bottleneckAnalysis: {
+        waitBottleneck: normWaitB,
+        qualityBottleneck: normQualB,
+        effortBottleneck: raw?.bottleneckAnalysis?.effortBottleneck || fallbackReport.bottleneckAnalysis.effortBottleneck
+      },
+      futureStateSimulation: normSimulation,
+      actionRoadmap: {
+        quickWins,
+        structuralImprovements,
+        automationProjects
+      }
+    };
+  }, [internalAiReport, aiReport, fallbackReport]);
 
   const handleAutoFetchAi = async () => {
     setIsGeneratingAi(true);
@@ -141,52 +265,19 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
-
-  const {
-    totalLeadTimeHours,
-    totalProcessHours,
-    totalWaitHours,
-    flowEfficiency,
-    overallYield,
-    maxWaitStep,
-    lowestAccuracyStep
-  } = metrics;
-
-  const efficiencyMeta = getFlowEfficiencyClassification(flowEfficiency);
-  const wasteCounts = countWastes(steps);
-  const todayFormatted = new Date().toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric'
-  });
-
-  const handlePrint = () => {
-    // 1. Force paper mode immediately so all JSX conditionals render in pristine paper mode
-    setViewMode('paper');
-
-    // 2. Temporarily remove .dark class from html to prevent any dark: class from overriding light styles
-    const htmlEl = document.documentElement;
-    const hadDark = htmlEl.classList.contains('dark');
-    if (hadDark) {
-      htmlEl.classList.remove('dark');
-    }
-    document.body.classList.add('vsm-print-active');
-
-    // 3. Trigger print on next tick
-    setTimeout(() => {
-      window.print();
-      // Restoration will happen in afterprint or fallback timeout
-      setTimeout(() => {
-        if (hadDark) {
-          htmlEl.classList.add('dark');
-        }
-        document.body.classList.remove('vsm-print-active');
-      }, 1000);
-    }, 150);
-  };
-
+  // Auto-fetch AI diagnostic as soon as modal is opened if not already generated!
   useEffect(() => {
+    if (!isOpen) return;
+
+    if (!internalAiReport && !aiReport) {
+      handleAutoFetchAi();
+    }
+  }, [isOpen]);
+
+  // Native Print listeners - ALWAYS declared before any conditional return!
+  useEffect(() => {
+    if (!isOpen) return;
+
     const handleBeforePrint = () => {
       setViewMode('paper');
       document.documentElement.classList.remove('dark');
@@ -206,7 +297,40 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
       document.documentElement.classList.add('dark');
       document.body.classList.remove('vsm-print-active');
     };
-  }, []);
+  }, [isOpen]);
+
+  const handlePrint = () => {
+    try {
+      // 1. Force paper mode immediately so all JSX conditionals render in pristine paper mode
+      setViewMode('paper');
+
+      // 2. Temporarily remove .dark class from html to prevent any dark: class from overriding light styles
+      const htmlEl = document.documentElement;
+      const hadDark = htmlEl.classList.contains('dark');
+      if (hadDark) {
+        htmlEl.classList.remove('dark');
+      }
+      document.body.classList.add('vsm-print-active');
+
+      // 3. Trigger print on next tick
+      setTimeout(() => {
+        try {
+          window.print();
+        } catch (printErr) {
+          console.warn('Falha ao acionar window.print:', printErr);
+        } finally {
+          setTimeout(() => {
+            if (hadDark) {
+              htmlEl.classList.add('dark');
+            }
+            document.body.classList.remove('vsm-print-active');
+          }, 1000);
+        }
+      }, 150);
+    } catch (e) {
+      console.error('Erro no fluxo de preparação da impressão:', e);
+    }
+  };
 
   const handleCopyMarkdown = () => {
     let md = `# 📊 DOSSIÊ EXECUTIVO DE MAPEAMENTO DE FLUXO DE VALOR (VSM)\n\n`;
@@ -318,10 +442,24 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
       md += `- **Consultor / Facilitador Lean**: ${consultantName} __________________ Data: ____/____/________\n`;
     }
 
-    navigator.clipboard.writeText(md);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    try {
+      if (navigator?.clipboard?.writeText) {
+        navigator.clipboard.writeText(md)
+          .then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2500);
+          })
+          .catch(err => {
+            console.warn('Falha ao gravar no clipboard:', err);
+          });
+      }
+    } catch (e) {
+      console.error('Erro ao copiar Markdown:', e);
+    }
   };
+
+  // Safe early return ONLY after ALL hooks have been executed!
+  if (!isOpen) return null;
 
   const isPaper = viewMode === 'paper';
 

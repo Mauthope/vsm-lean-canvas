@@ -153,6 +153,24 @@ Responda rigorosamente em JSON com:
           const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
           if (text) {
             const parsed = JSON.parse(text);
+            const rawInsights = parsed.keyInsights && Array.isArray(parsed.keyInsights)
+              ? parsed.keyInsights
+              : (typeof parsed.keyInsights === 'string' ? [parsed.keyInsights] : heuristicReport.keyInsights);
+
+            const rawQuickWins = (parsed.quickWins && Array.isArray(parsed.quickWins) && parsed.quickWins.length > 0)
+              ? parsed.quickWins.map((q: any) => {
+                  if (typeof q === 'string') {
+                    return { action: q, impact: 'Alto impacto no fluxo', effort: 'Baixo', targetStep: 'Processo Geral' };
+                  }
+                  return {
+                    action: q?.action || 'Ação imediata',
+                    impact: q?.impact || 'Impacto esperado',
+                    effort: q?.effort || 'Baixo',
+                    targetStep: q?.targetStep || 'Etapa Crítica'
+                  };
+                })
+              : heuristicReport.actionRoadmap.quickWins;
+
             return NextResponse.json({
               ...heuristicReport,
               provider: 'Google Gemini (1.5 Flash)',
@@ -160,7 +178,7 @@ Responda rigorosamente em JSON com:
               executiveSummary: parsed.executiveSummary || heuristicReport.executiveSummary,
               maturityScore: parsed.maturityScore || heuristicReport.maturityScore,
               maturityLabel: parsed.maturityLabel || heuristicReport.maturityLabel,
-              keyInsights: parsed.keyInsights || heuristicReport.keyInsights,
+              keyInsights: rawInsights,
               bottleneckAnalysis: {
                 ...heuristicReport.bottleneckAnalysis,
                 waitBottleneck: heuristicReport.bottleneckAnalysis.waitBottleneck ? {
@@ -174,9 +192,7 @@ Responda rigorosamente em JSON com:
               },
               actionRoadmap: {
                 ...heuristicReport.actionRoadmap,
-                quickWins: (parsed.quickWins && Array.isArray(parsed.quickWins) && parsed.quickWins.length > 0)
-                  ? parsed.quickWins
-                  : heuristicReport.actionRoadmap.quickWins
+                quickWins: rawQuickWins
               }
             });
           }
