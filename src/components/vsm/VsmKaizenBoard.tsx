@@ -6,19 +6,18 @@ import {
   Sparkles,
   Copy,
   Check,
-  Zap,
-  ArrowRight,
   Pencil,
-  FileSpreadsheet
+  Trash2,
+  Plus
 } from 'lucide-react';
 import { VSMStep } from '@/types/vsm';
-import { getRoleStyle } from '@/lib/vsmCalculations';
+import { getRoleStyle, getStepKaizens } from '@/lib/vsmCalculations';
 
 interface VsmKaizenBoardProps {
   isOpen: boolean;
   onClose: () => void;
   steps: VSMStep[];
-  onUpdateKaizen: (stepId: string, notes: string) => void;
+  onUpdateKaizen: (stepId: string, notes: string, list?: string[]) => void;
 }
 
 export const VsmKaizenBoard: React.FC<VsmKaizenBoardProps> = ({
@@ -28,22 +27,29 @@ export const VsmKaizenBoard: React.FC<VsmKaizenBoardProps> = ({
   onUpdateKaizen
 }) => {
   const [copied, setCopied] = useState(false);
-  const [editingStepId, setEditingStepId] = useState<string | null>(null);
-  const [editNotes, setEditNotes] = useState('');
+  const [editingTarget, setEditingTarget] = useState<{ stepId: string; kaizenIndex: number } | null>(null);
+  const [editText, setEditText] = useState('');
+  const [newKaizenStepId, setNewKaizenStepId] = useState<string | null>(null);
+  const [newKaizenInput, setNewKaizenInput] = useState('');
 
   if (!isOpen) return null;
 
-  const kaizenSteps = steps.filter(s => s.kaizenNotes && s.kaizenNotes.trim().length > 0);
+  const stepsWithKaizen = steps.filter(s => getStepKaizens(s).length > 0);
+  const totalKaizens = steps.reduce((acc, s) => acc + getStepKaizens(s).length, 0);
 
   const handleCopySummary = () => {
-    if (kaizenSteps.length === 0) return;
+    if (stepsWithKaizen.length === 0) return;
 
     let text = `⚡ PLANO DE AÇÃO KAIZEN - MAPEAMENTO DE FLUXO DE VALOR\n`;
-    text += `Total de Oportunidades Identificadas: ${kaizenSteps.length}\n\n`;
+    text += `Total de Oportunidades Identificadas: ${totalKaizens} em ${stepsWithKaizen.length} etapas\n\n`;
 
-    kaizenSteps.forEach((s, idx) => {
+    stepsWithKaizen.forEach((s, idx) => {
+      const kList = getStepKaizens(s);
       text += `${idx + 1}. [Etapa #${s.order}] ${s.title} (${s.role})\n`;
-      text += `   💡 Kaizen: ${s.kaizenNotes}\n\n`;
+      kList.forEach((k, kIdx) => {
+        text += `   💡 Kaizen #${kIdx + 1}: ${k}\n`;
+      });
+      text += '\n';
     });
 
     navigator.clipboard.writeText(text);
@@ -51,14 +57,38 @@ export const VsmKaizenBoard: React.FC<VsmKaizenBoardProps> = ({
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const startEdit = (step: VSMStep) => {
-    setEditingStepId(step.id);
-    setEditNotes(step.kaizenNotes || '');
+  const startEdit = (stepId: string, kaizenIndex: number, currentText: string) => {
+    setEditingTarget({ stepId, kaizenIndex });
+    setEditText(currentText);
   };
 
-  const saveEdit = (stepId: string) => {
-    onUpdateKaizen(stepId, editNotes);
-    setEditingStepId(null);
+  const saveEdit = (step: VSMStep) => {
+    if (!editingTarget) return;
+    const current = getStepKaizens(step);
+    const updated = current
+      .map((k, i) => (i === editingTarget.kaizenIndex ? editText.trim() : k))
+      .filter(Boolean);
+    onUpdateKaizen(step.id, updated.join('\n'), updated);
+    setEditingTarget(null);
+  };
+
+  const handleRemoveKaizen = (step: VSMStep, kaizenIndex: number) => {
+    const current = getStepKaizens(step);
+    const updated = current.filter((_, i) => i !== kaizenIndex);
+    onUpdateKaizen(step.id, updated.join('\n'), updated);
+    if (editingTarget?.stepId === step.id && editingTarget.kaizenIndex === kaizenIndex) {
+      setEditingTarget(null);
+    }
+  };
+
+  const handleAddNewKaizenToStep = (step: VSMStep) => {
+    const trimmed = newKaizenInput.trim();
+    if (!trimmed) return;
+    const current = getStepKaizens(step);
+    const updated = [...current, trimmed];
+    onUpdateKaizen(step.id, updated.join('\n'), updated);
+    setNewKaizenInput('');
+    setNewKaizenStepId(null);
   };
 
   return (
@@ -76,7 +106,7 @@ export const VsmKaizenBoard: React.FC<VsmKaizenBoardProps> = ({
                 Raios de Kaizen (Oportunidades)
               </h2>
               <span className="text-xs text-slate-400 font-mono">
-                {kaizenSteps.length} ações levantadas na sessão
+                {totalKaizens} {totalKaizens === 1 ? 'oportunidade' : 'oportunidades'} em {stepsWithKaizen.length} etapas
               </span>
             </div>
           </div>
@@ -84,7 +114,7 @@ export const VsmKaizenBoard: React.FC<VsmKaizenBoardProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -97,7 +127,7 @@ export const VsmKaizenBoard: React.FC<VsmKaizenBoardProps> = ({
           </span>
           <button
             type="button"
-            disabled={kaizenSteps.length === 0}
+            disabled={totalKaizens === 0}
             onClick={handleCopySummary}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-all disabled:opacity-40 cursor-pointer"
           >
@@ -108,7 +138,7 @@ export const VsmKaizenBoard: React.FC<VsmKaizenBoardProps> = ({
 
         {/* Content List */}
         <div className="p-4 sm:p-5 overflow-y-auto custom-scrollbar flex-1 space-y-3">
-          {kaizenSteps.length === 0 ? (
+          {stepsWithKaizen.length === 0 ? (
             <div className="text-center py-16 px-4">
               <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 text-slate-500 flex items-center justify-center mx-auto mb-3">
                 <Sparkles className="w-6 h-6" />
@@ -121,16 +151,17 @@ export const VsmKaizenBoard: React.FC<VsmKaizenBoardProps> = ({
               </p>
             </div>
           ) : (
-            kaizenSteps.map((step, idx) => {
+            stepsWithKaizen.map((step, idx) => {
               const roleStyle = getRoleStyle(step.role);
-              const isEditing = editingStepId === step.id;
+              const kaizens = getStepKaizens(step);
+              const isAddingHere = newKaizenStepId === step.id;
 
               return (
                 <div
                   key={step.id}
-                  className="p-4 rounded-2xl bg-slate-900/80 border border-amber-500/30 shadow-md flex flex-col justify-between group hover:border-amber-500/60 transition-all"
+                  className="p-4 rounded-2xl bg-slate-900/80 border border-amber-500/30 shadow-md flex flex-col justify-between group hover:border-amber-500/60 transition-all space-y-3"
                 >
-                  <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className="text-xs font-mono font-bold text-amber-400">
@@ -147,45 +178,128 @@ export const VsmKaizenBoard: React.FC<VsmKaizenBoardProps> = ({
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => (isEditing ? saveEdit(step.id) : startEdit(step))}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-slate-800 transition-colors"
-                      title={isEditing ? 'Salvar' : 'Editar Nota'}
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold">
+                      {kaizens.length} {kaizens.length === 1 ? 'Kaizen' : 'Kaizens'}
+                    </span>
                   </div>
 
-                  {isEditing ? (
-                    <div className="mt-2 space-y-2">
-                      <textarea
-                        rows={3}
-                        value={editNotes}
-                        onChange={e => setEditNotes(e.target.value)}
-                        className="w-full bg-slate-950 border border-cyan-500 rounded-xl p-2.5 text-xs text-white focus:outline-none"
+                  {/* List of Kaizens for this Step */}
+                  <div className="space-y-2">
+                    {kaizens.map((kaizenText, kIdx) => {
+                      const isEditingThis =
+                        editingTarget?.stepId === step.id &&
+                        editingTarget.kaizenIndex === kIdx;
+
+                      return (
+                        <div
+                          key={kIdx}
+                          className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200/90 font-mono leading-relaxed space-y-2"
+                        >
+                          {isEditingThis ? (
+                            <div className="space-y-2">
+                              <textarea
+                                rows={2}
+                                value={editText}
+                                onChange={e => setEditText(e.target.value)}
+                                className="w-full bg-slate-950 border border-cyan-500 rounded-xl p-2.5 text-xs text-white focus:outline-none"
+                              />
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingTarget(null)}
+                                  className="px-2.5 py-1 rounded text-xs text-slate-400 hover:text-white"
+                                >
+                                  Cancelar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => saveEdit(step)}
+                                  className="px-3 py-1 rounded-lg text-xs font-bold bg-cyan-500 text-slate-950 hover:bg-cyan-400"
+                                >
+                                  Salvar
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-start gap-1.5 flex-1">
+                                <span className="text-amber-400 font-bold shrink-0">💡 #{kIdx + 1}:</span>
+                                <span className="break-words">"{kaizenText}"</span>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100">
+                                <button
+                                  type="button"
+                                  onClick={() => startEdit(step.id, kIdx, kaizenText)}
+                                  className="p-1 rounded text-slate-400 hover:text-cyan-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                                  title="Editar este Kaizen"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveKaizen(step, kIdx)}
+                                  className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
+                                  title="Excluir este Kaizen"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Add Another Kaizen to this Step */}
+                  {isAddingHere ? (
+                    <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                      <input
+                        type="text"
+                        placeholder="Descreva outro Kaizen para esta etapa..."
+                        value={newKaizenInput}
+                        onChange={e => setNewKaizenInput(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddNewKaizenToStep(step);
+                          }
+                        }}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-400"
                       />
                       <div className="flex justify-end gap-2">
                         <button
                           type="button"
-                          onClick={() => setEditingStepId(null)}
-                          className="px-2.5 py-1 rounded text-xs text-slate-400"
+                          onClick={() => {
+                            setNewKaizenStepId(null);
+                            setNewKaizenInput('');
+                          }}
+                          className="px-2 py-1 text-xs text-slate-400 hover:text-white"
                         >
                           Cancelar
                         </button>
                         <button
                           type="button"
-                          onClick={() => saveEdit(step.id)}
-                          className="px-3 py-1 rounded-lg text-xs font-bold bg-cyan-500 text-slate-950 hover:bg-cyan-400"
+                          onClick={() => handleAddNewKaizenToStep(step)}
+                          disabled={!newKaizenInput.trim()}
+                          className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 disabled:opacity-40"
                         >
-                          Salvar
+                          Adicionar
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200/90 font-mono leading-relaxed">
-                      "{step.kaizenNotes}"
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewKaizenStepId(step.id);
+                        setNewKaizenInput('');
+                      }}
+                      className="text-left text-[11px] font-bold text-amber-400/90 hover:text-amber-300 flex items-center gap-1 cursor-pointer pt-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>+ Adicionar outro Kaizen nesta etapa</span>
+                    </button>
                   )}
                 </div>
               );
@@ -201,7 +315,7 @@ export const VsmKaizenBoard: React.FC<VsmKaizenBoardProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-200 hover:text-white"
+            className="px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-200 hover:text-white cursor-pointer"
           >
             Fechar
           </button>

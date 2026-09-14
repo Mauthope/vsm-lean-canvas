@@ -19,7 +19,8 @@ export interface VSMStep {
   waitTimeUnit: TimeUnit;
   percentCompleteAndAccurate: number; // %C&A (0 a 100%)
   wasteTypes: WasteType[];
-  kaizenNotes?: string; // Oportunidades de melhoria levantadas na sessão
+  kaizenNotes?: string; // Oportunidades de melhoria levantadas na sessão (mantido para retrocompatibilidade)
+  kaizenList?: string[]; // Múltiplas oportunidades/raios de Kaizen na mesma etapa
   isParallel?: boolean;
 }
 

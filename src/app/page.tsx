@@ -26,7 +26,8 @@ import {
   convertTimeToHours,
   formatHours,
   WASTE_METAS,
-  getRoleStyle
+  getRoleStyle,
+  getStepKaizens
 } from '@/lib/vsmCalculations';
 import { VsmHeader } from '@/components/vsm/VsmHeader';
 import { VsmMetricsBar } from '@/components/vsm/VsmMetricsBar';
@@ -209,9 +210,9 @@ export default function VsmHomePage() {
     });
   }, [steps, roleFilter, wasteFilter]);
 
-  // Count Kaizen notes
+  // Count Kaizen notes (total de oportunidades registradas)
   const kaizenCount = useMemo(() => {
-    return steps.filter(s => s.kaizenNotes && s.kaizenNotes.trim().length > 0).length;
+    return steps.reduce((acc, s) => acc + getStepKaizens(s).length, 0);
   }, [steps]);
 
   // Handler: Create New Workshop (from scratch) and save to models
@@ -406,11 +407,19 @@ export default function VsmHomePage() {
   };
 
   // Handler: Update Kaizen notes from board
-  const handleUpdateKaizen = (stepId: string, notes: string) => {
+  const handleUpdateKaizen = (stepId: string, notes: string, list?: string[]) => {
     setSteps(prev =>
-      prev.map(s => (s.id === stepId ? { ...s, kaizenNotes: notes } : s))
+      prev.map(s => {
+        if (s.id !== stepId) return s;
+        const kaizenList = list || (notes ? notes.split('\n').map(x => x.trim()).filter(Boolean) : []);
+        return {
+          ...s,
+          kaizenNotes: notes,
+          kaizenList
+        };
+      })
     );
-    showToast('Oportunidade Kaizen atualizada!', 'success');
+    showToast('Oportunidades Kaizen atualizadas!', 'success');
   };
 
   // Handler: Export JSON
@@ -742,8 +751,21 @@ export default function VsmHomePage() {
                       <td className="p-3 font-sans text-[11px] text-slate-400">
                         {step.wasteTypes?.map(w => WASTE_METAS[w]?.shortLabel).join(', ') || '-'}
                       </td>
-                      <td className="p-3 font-sans text-[11px] text-amber-300 max-w-xs truncate">
-                        {step.kaizenNotes ? `💡 ${step.kaizenNotes}` : '-'}
+                      <td className="p-3 font-sans text-[11px] text-amber-300 max-w-xs">
+                        {(() => {
+                          const kaizens = getStepKaizens(step);
+                          if (kaizens.length === 0) return '-';
+                          return (
+                            <div className="space-y-1">
+                              {kaizens.map((k, kIdx) => (
+                                <div key={kIdx} className="flex items-start gap-1 leading-snug">
+                                  <span className="shrink-0 text-amber-400">💡</span>
+                                  <span className="break-words">{k}</span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="p-3 text-right">
                         <div className="flex items-center justify-end gap-1">

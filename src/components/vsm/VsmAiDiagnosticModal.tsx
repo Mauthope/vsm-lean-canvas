@@ -777,32 +777,55 @@ ${r.actionRoadmap.automationProjects.map(a => `- **${a.action}** [Impacto: ${a.i
             {activeTab === 'roadmap' && (
               <div className="space-y-4 animate-in fade-in duration-150">
                 {/* 1. Quick Wins */}
+                {/* 1. Quick Wins */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold border border-emerald-500/40">
-                      Até 15 Dias
+                      0 a 30 Dias
                     </span>
                     <h4 className="text-xs font-bold text-white font-mono uppercase tracking-wider">
                       Quick Wins (Ações Imediatas de Baixo Esforço & Alto Impacto)
                     </h4>
                   </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {activeReport.actionRoadmap.quickWins.map((q, idx) => (
-                      <div key={idx} className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="space-y-1">
-                          <span className="text-xs font-bold text-white block">{q.action}</span>
-                          <span className="text-[11px] text-slate-400 block">{q.impact}</span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-[10px] font-mono text-emerald-400 px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-800/40">
-                            Esforço {q.effort}
-                          </span>
-                          <span className="text-[10px] font-mono text-slate-400 px-2 py-0.5 rounded bg-slate-950 border border-slate-800">
-                            {q.targetStep}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60">
+                    <table className="w-full text-left border-collapse text-xs table-fixed">
+                      <colgroup>
+                        <col className="w-[42%]" />
+                        <col className="w-[18%]" />
+                        <col className="w-[28%]" />
+                        <col className="w-[12%]" />
+                      </colgroup>
+                      <thead>
+                        <tr className="border-b border-slate-800 bg-slate-950/80 text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                          <th className="p-2.5">Ação Proposta</th>
+                          <th className="p-2.5">Etapa Alvo</th>
+                          <th className="p-2.5">Impacto Estimado</th>
+                          <th className="p-2.5 text-center">Esforço</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {activeReport.actionRoadmap.quickWins.map((q, idx) => (
+                          <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
+                            <td className="p-2.5 align-top font-sans font-medium text-white break-words leading-relaxed">
+                              <span className="font-bold block">{q.action}</span>
+                            </td>
+                            <td className="p-2.5 align-top font-sans break-words text-slate-300">
+                              <span className="inline-block px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-[11px] font-mono">
+                                {q.targetStep}
+                              </span>
+                            </td>
+                            <td className="p-2.5 align-top font-sans break-words text-emerald-400 font-medium leading-relaxed">
+                              {q.impact}
+                            </td>
+                            <td className="p-2.5 align-top text-center">
+                              <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-emerald-950/60 text-emerald-300 border border-emerald-800/40">
+                                {q.effort}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 
@@ -816,23 +839,45 @@ ${r.actionRoadmap.automationProjects.map(a => `- **${a.action}** [Impacto: ${a.i
                       Melhorias Estruturais de Processo & Alçadas
                     </h4>
                   </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {activeReport.actionRoadmap.structuralImprovements.map((s, idx) => (
-                      <div key={idx} className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="space-y-1">
-                          <span className="text-xs font-bold text-white block">{s.action}</span>
-                          <span className="text-[11px] text-slate-400 block">{s.impact}</span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-[10px] font-mono text-cyan-400 px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-800/40">
-                            Esforço {s.effort}
-                          </span>
-                          <span className="text-[10px] font-mono text-slate-400 px-2 py-0.5 rounded bg-slate-950 border border-slate-800">
-                            {s.targetStep}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60">
+                    <table className="w-full text-left border-collapse text-xs table-fixed">
+                      <colgroup>
+                        <col className="w-[42%]" />
+                        <col className="w-[18%]" />
+                        <col className="w-[28%]" />
+                        <col className="w-[12%]" />
+                      </colgroup>
+                      <thead>
+                        <tr className="border-b border-slate-800 bg-slate-950/80 text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                          <th className="p-2.5">Ação Proposta</th>
+                          <th className="p-2.5">Etapa Alvo</th>
+                          <th className="p-2.5">Impacto Estimado</th>
+                          <th className="p-2.5 text-center">Esforço</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {activeReport.actionRoadmap.structuralImprovements.map((s, idx) => (
+                          <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
+                            <td className="p-2.5 align-top font-sans font-medium text-white break-words leading-relaxed">
+                              <span className="font-bold block">{s.action}</span>
+                            </td>
+                            <td className="p-2.5 align-top font-sans break-words text-slate-300">
+                              <span className="inline-block px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-[11px] font-mono">
+                                {s.targetStep}
+                              </span>
+                            </td>
+                            <td className="p-2.5 align-top font-sans break-words text-cyan-400 font-medium leading-relaxed">
+                              {s.impact}
+                            </td>
+                            <td className="p-2.5 align-top text-center">
+                              <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-cyan-950/60 text-cyan-300 border border-cyan-800/40">
+                                {s.effort}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 
@@ -846,23 +891,45 @@ ${r.actionRoadmap.automationProjects.map(a => `- **${a.action}** [Impacto: ${a.i
                       Automação, OCR & Integração via Sistemas
                     </h4>
                   </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {activeReport.actionRoadmap.automationProjects.map((a, idx) => (
-                      <div key={idx} className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="space-y-1">
-                          <span className="text-xs font-bold text-white block">{a.action}</span>
-                          <span className="text-[11px] text-slate-400 block">{a.impact}</span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-[10px] font-mono text-purple-400 px-2 py-0.5 rounded bg-purple-950/60 border border-purple-800/40">
-                            Esforço {a.effort}
-                          </span>
-                          <span className="text-[10px] font-mono text-slate-400 px-2 py-0.5 rounded bg-slate-950 border border-slate-800">
-                            {a.targetStep}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60">
+                    <table className="w-full text-left border-collapse text-xs table-fixed">
+                      <colgroup>
+                        <col className="w-[42%]" />
+                        <col className="w-[18%]" />
+                        <col className="w-[28%]" />
+                        <col className="w-[12%]" />
+                      </colgroup>
+                      <thead>
+                        <tr className="border-b border-slate-800 bg-slate-950/80 text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                          <th className="p-2.5">Ação Proposta</th>
+                          <th className="p-2.5">Etapa Alvo</th>
+                          <th className="p-2.5">Impacto Estimado</th>
+                          <th className="p-2.5 text-center">Esforço</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {activeReport.actionRoadmap.automationProjects.map((a, idx) => (
+                          <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
+                            <td className="p-2.5 align-top font-sans font-medium text-white break-words leading-relaxed">
+                              <span className="font-bold block">{a.action}</span>
+                            </td>
+                            <td className="p-2.5 align-top font-sans break-words text-slate-300">
+                              <span className="inline-block px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-[11px] font-mono">
+                                {a.targetStep}
+                              </span>
+                            </td>
+                            <td className="p-2.5 align-top font-sans break-words text-purple-400 font-medium leading-relaxed">
+                              {a.impact}
+                            </td>
+                            <td className="p-2.5 align-top text-center">
+                              <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-purple-950/60 text-purple-300 border border-purple-800/40">
+                                {a.effort}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>

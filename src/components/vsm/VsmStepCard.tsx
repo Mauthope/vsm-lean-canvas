@@ -21,7 +21,8 @@ import {
   convertTimeToHours,
   formatHours,
   WASTE_METAS,
-  getRoleStyle
+  getRoleStyle,
+  getStepKaizens
 } from '@/lib/vsmCalculations';
 
 interface VsmStepCardProps {
@@ -62,7 +63,8 @@ export const VsmStepCard: React.FC<VsmStepCardProps> = ({
       ? 'text-amber-400 border-amber-500/30 bg-amber-500/10'
       : 'text-rose-400 border-rose-500/30 bg-rose-500/10';
 
-  const hasKaizen = Boolean(step.kaizenNotes && step.kaizenNotes.trim().length > 0);
+  const kaizens = getStepKaizens(step);
+  const hasKaizen = kaizens.length > 0;
 
   return (
     <div
@@ -265,12 +267,16 @@ export const VsmStepCard: React.FC<VsmStepCardProps> = ({
           <div className="flex items-center gap-1.5 truncate">
             <Sparkles className={`w-3.5 h-3.5 shrink-0 ${hasKaizen ? 'text-amber-400 animate-pulse' : 'text-slate-400'}`} />
             <span className="truncate">
-              {hasKaizen ? 'Kaizen Burst Registrado' : '+ Adicionar Kaizen'}
+              {hasKaizen
+                ? kaizens.length === 1
+                  ? '1 Kaizen Registrado'
+                  : `${kaizens.length} Kaizens Registrados`
+                : '+ Adicionar Kaizen'}
             </span>
           </div>
           {hasKaizen ? (
-            <span className="w-4 h-4 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black flex items-center justify-center shrink-0">
-              ✓
+            <span className="min-w-4 h-4 px-1 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black flex items-center justify-center shrink-0">
+              {kaizens.length}
             </span>
           ) : (
             <MessageSquare className="w-3 h-3 text-slate-500 shrink-0" />
@@ -279,9 +285,21 @@ export const VsmStepCard: React.FC<VsmStepCardProps> = ({
 
         {/* Kaizen Snippet Preview (if exists) */}
         {hasKaizen && (
-          <p className="text-[10px] text-amber-200/80 font-mono italic mt-1 line-clamp-1 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-            "{step.kaizenNotes}"
-          </p>
+          <div className="mt-1 space-y-1">
+            {kaizens.slice(0, 2).map((k, kIdx) => (
+              <p
+                key={kIdx}
+                className="text-[10px] text-amber-200/90 font-mono italic line-clamp-1 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20"
+              >
+                💡 "{k}"
+              </p>
+            ))}
+            {kaizens.length > 2 && (
+              <span className="text-[9px] text-amber-400/80 font-mono block pl-1">
+                +{kaizens.length - 2} outro(s) kaizen(s)...
+              </span>
+            )}
+          </div>
         )}
       </div>
 

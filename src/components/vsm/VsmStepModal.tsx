@@ -10,10 +10,11 @@ import {
   Sparkles,
   GitBranch,
   User,
-  Plus
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { VSMStep, TimeUnit, WasteType } from '@/types/vsm';
-import { WASTE_METAS, getRoleStyle } from '@/lib/vsmCalculations';
+import { WASTE_METAS, getRoleStyle, getStepKaizens } from '@/lib/vsmCalculations';
 
 interface VsmStepModalProps {
   isOpen: boolean;
@@ -59,7 +60,8 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
   const [waitTimeUnit, setWaitTimeUnit] = useState<TimeUnit>('horas');
   const [percentCompleteAndAccurate, setPercentCompleteAndAccurate] = useState<number>(90);
   const [wasteTypes, setWasteTypes] = useState<WasteType[]>(['espera']);
-  const [kaizenNotes, setKaizenNotes] = useState('');
+  const [kaizenList, setKaizenList] = useState<string[]>([]);
+  const [newKaizenText, setNewKaizenText] = useState('');
   const [isParallel, setIsParallel] = useState(false);
 
   useEffect(() => {
@@ -97,7 +99,8 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
           : 90
       );
       setWasteTypes(initialStep.wasteTypes || []);
-      setKaizenNotes(initialStep.kaizenNotes || '');
+      setKaizenList(getStepKaizens(initialStep));
+      setNewKaizenText('');
       setIsParallel(Boolean(initialStep.isParallel));
 
       const stepRole = initialStep.role?.trim() || 'Recrutador';
@@ -117,12 +120,28 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
       setWaitTimeUnit('horas');
       setPercentCompleteAndAccurate(90);
       setWasteTypes([]);
-      setKaizenNotes('');
+      setKaizenList([]);
+      setNewKaizenText('');
       setIsParallel(false);
       setSelectedRole('Recrutador');
       setTypedRole('');
     }
   }, [initialStep, isOpen, existingRoles]);
+
+  const handleAddKaizen = () => {
+    const trimmed = newKaizenText.trim();
+    if (!trimmed) return;
+    setKaizenList(prev => [...prev, trimmed]);
+    setNewKaizenText('');
+  };
+
+  const handleRemoveKaizen = (indexToRemove: number) => {
+    setKaizenList(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleUpdateKaizenItem = (indexToUpdate: number, value: string) => {
+    setKaizenList(prev => prev.map((item, idx) => (idx === indexToUpdate ? value : item)));
+  };
 
   if (!isOpen) return null;
 
@@ -190,6 +209,13 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
       }
     }
 
+    // Unificar itens da lista com qualquer texto que o usuário tenha digitado e não clicou em Adicionar
+    const finalKaizens = [...kaizenList];
+    if (newKaizenText.trim()) {
+      finalKaizens.push(newKaizenText.trim());
+    }
+    const cleanedKaizens = finalKaizens.map(k => k.trim()).filter(Boolean);
+
     onSave({
       id: initialStep?.id,
       order: initialStep?.order,
@@ -202,7 +228,8 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
       waitTimeUnit,
       percentCompleteAndAccurate: Math.min(100, Math.max(0, Number(percentCompleteAndAccurate) || 0)),
       wasteTypes,
-      kaizenNotes: kaizenNotes.trim(),
+      kaizenNotes: cleanedKaizens.join('\n'),
+      kaizenList: cleanedKaizens,
       isParallel
     });
 
@@ -555,19 +582,74 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
             </div>
           </div>
 
-          {/* Kaizen Burst Notes */}
-          <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/25 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-amber-300 font-mono uppercase tracking-wider">
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Oportunidade de Kaizen (Raio de Melhoria)</span>
+          {/* Kaizen Burst Notes - Múltiplas Oportunidades por Etapa */}
+          <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/25 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-amber-300 font-mono uppercase tracking-wider">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span>Oportunidades de Kaizen ({kaizenList.length})</span>
+              </div>
+              <span className="text-[10px] text-amber-400/80 font-mono">
+                {kaizenList.length === 0 ? 'Nenhum kaizen registrado' : `${kaizenList.length} raio(s) de melhoria`}
+              </span>
             </div>
-            <textarea
-              rows={2}
-              placeholder="Anote ideias levantadas pelo time para eliminar o desperdício desta etapa..."
-              value={kaizenNotes}
-              onChange={e => setKaizenNotes(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 transition-all placeholder:text-slate-500"
-            />
+
+            {/* Existing Kaizens List */}
+            {kaizenList.length > 0 && (
+              <div className="space-y-2">
+                {kaizenList.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="p-2.5 rounded-xl bg-slate-900/90 border border-amber-500/20 flex items-start gap-2 group hover:border-amber-500/40 transition-colors"
+                  >
+                    <span className="w-5 h-5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-mono font-bold flex items-center justify-center shrink-0 mt-0.5">
+                      #{idx + 1}
+                    </span>
+                    <input
+                      type="text"
+                      value={item}
+                      onChange={e => handleUpdateKaizenItem(idx, e.target.value)}
+                      className="flex-1 bg-transparent text-xs text-white focus:outline-none focus:border-b focus:border-amber-400 placeholder:text-slate-500 font-sans"
+                      placeholder="Descreva a oportunidade de melhoria..."
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveKaizen(idx)}
+                      className="p-1 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors"
+                      title="Remover este Kaizen"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Input to add new Kaizen */}
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Adicionar nova ideia ou raio de Kaizen para esta etapa..."
+                value={newKaizenText}
+                onChange={e => setNewKaizenText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddKaizen();
+                  }
+                }}
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 transition-all placeholder:text-slate-500"
+              />
+              <button
+                type="button"
+                onClick={handleAddKaizen}
+                disabled={!newKaizenText.trim()}
+                className="px-3 py-2 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Adicionar</span>
+              </button>
+            </div>
           </div>
 
           {/* Parallel Step Switch */}

@@ -41,7 +41,8 @@ import {
   convertTimeToHours,
   formatHours,
   getRoleStyle,
-  groupStepsIntoStages
+  groupStepsIntoStages,
+  getStepKaizens
 } from '@/lib/vsmCalculations';
 
 interface VsmAbstractCanvasProps {
@@ -976,7 +977,8 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
             const stepTotal = ptHours + wtHours;
             const isWaitBottleneck = metrics.maxWaitStep?.id === step.id;
             const isAccuracyBottleneck = metrics.lowestAccuracyStep?.id === step.id;
-            const hasKaizen = Boolean(step.kaizenNotes && step.kaizenNotes.trim().length > 0);
+            const kaizens = getStepKaizens(step);
+            const hasKaizen = kaizens.length > 0;
             const roleStyle = getRoleStyle(step.role);
 
             // Heatmap color logic
@@ -1057,10 +1059,11 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
 
                     {hasKaizen && (
                       <div
-                        className="w-4 h-4 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center shadow-md shadow-amber-400/30 animate-pulse"
-                        title={`Kaizen Burst: ${step.kaizenNotes}`}
+                        className="h-4 px-1.5 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center gap-0.5 shadow-md shadow-amber-400/30 font-mono font-black text-[9px] animate-pulse"
+                        title={`Oportunidades de Kaizen (${kaizens.length}):\n${kaizens.map((k, i) => `${i + 1}. ${k}`).join('\n')}`}
                       >
-                        <Sparkles className="w-2.5 h-2.5" />
+                        <Sparkles className="w-2.5 h-2.5 shrink-0" />
+                        {kaizens.length > 1 && <span>{kaizens.length}</span>}
                       </div>
                     )}
 

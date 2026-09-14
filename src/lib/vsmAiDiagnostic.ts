@@ -3,7 +3,8 @@ import {
   convertTimeToHours,
   formatHours,
   WASTE_METAS,
-  HOURS_PER_WORK_DAY
+  HOURS_PER_WORK_DAY,
+  getStepKaizens
 } from '@/lib/vsmCalculations';
 
 export interface AiDiagnosticReport {
@@ -89,8 +90,10 @@ export function generateVsmAiDiagnostic(
   // Overall Yield (%C&A rolled) contributes up to 40 pts (>85% is optimal)
   const yieldScore = Math.min(40, (overallYield / 85) * 40);
   // Kaizen engagement & waste mapping contributes up to 20 pts
-  const kaizenSteps = steps.filter(s => s.kaizenNotes && s.kaizenNotes.trim().length > 0).length;
-  const kaizenScore = Math.min(20, (kaizenSteps / Math.max(1, steps.length * 0.4)) * 20);
+  const allKaizens = steps.flatMap(s =>
+    getStepKaizens(s).map(k => ({ step: s, kaizen: k }))
+  );
+  const kaizenScore = Math.min(20, (allKaizens.length / Math.max(1, steps.length * 0.4)) * 20);
 
   const rawScore = Math.round(efficiencyScore + yieldScore + kaizenScore);
   const maturityScore = Math.max(15, Math.min(98, rawScore));
@@ -270,7 +273,6 @@ export function generateVsmAiDiagnostic(
 
   // 7. Action Roadmap Dinâmico (Kaizen 30-60-90)
   // Gerado com base nas etapas reais, gargalos identificados e notas Kaizen da equipe
-  const stepsWithKaizen = steps.filter(s => s.kaizenNotes && s.kaizenNotes.trim().length > 0);
   const activeRoles = Array.from(new Set(steps.map(s => s.role).filter(Boolean)));
   const hasParallelSteps = steps.some(s => s.isParallel);
 
@@ -313,13 +315,13 @@ export function generateVsmAiDiagnostic(
   }
 
   // Ação 3: Atender Kaizen Burst apontado pela equipe ou Gestão Visual
-  if (stepsWithKaizen.length > 0) {
-    const kStep = stepsWithKaizen[0];
+  if (allKaizens.length > 0) {
+    const kItem = allKaizens[0];
     quickWins.push({
-      action: `Executar Kaizen Burst prioritário: "${kStep.kaizenNotes}" na etapa #${kStep.order} ("${kStep.title}").`,
-      impact: `Soluciona diretamente o ponto de dor apontado pelos participantes na dinâmica de mapeamento.`,
+      action: `Executar Kaizen Burst prioritário: "${kItem.kaizen}" na etapa #${kItem.step.order} ("${kItem.step.title}").`,
+      impact: `Soluciona diretamente a oportunidade apontada para [${kItem.step.role}] na dinâmica de mapeamento.`,
       effort: 'Baixo' as const,
-      targetStep: `#${kStep.order} - ${kStep.title}`
+      targetStep: `#${kItem.step.order} - ${kItem.step.title}`
     });
   } else {
     quickWins.push({
@@ -359,13 +361,13 @@ export function generateVsmAiDiagnostic(
   }
 
   // Melhoria 2: Matriz de Alçadas / Segundo Kaizen ou Desburocratização
-  if (stepsWithKaizen.length > 1) {
-    const kStep2 = stepsWithKaizen[1];
+  if (allKaizens.length > 1) {
+    const kItem2 = allKaizens[1];
     structuralImprovements.push({
-      action: `Implantar plano de ação Kaizen: "${kStep2.kaizenNotes}" na etapa #${kStep2.order} ("${kStep2.title}").`,
-      impact: `Elimina atrito identificado na etapa #${kStep2.order} sob tutela de [${kStep2.role}].`,
+      action: `Implantar plano de ação Kaizen: "${kItem2.kaizen}" na etapa #${kItem2.step.order} ("${kItem2.step.title}").`,
+      impact: `Elimina atrito identificado na etapa #${kItem2.step.order} sob tutela de [${kItem2.step.role}].`,
       effort: 'Médio' as const,
-      targetStep: `#${kStep2.order} - ${kStep2.title}`
+      targetStep: `#${kItem2.step.order} - ${kItem2.step.title}`
     });
   } else {
     const rolesSample = activeRoles.slice(0, 3).join(', ') || 'equipes envolvidas';

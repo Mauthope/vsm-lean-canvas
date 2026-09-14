@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { VSMStep, BottleneckAnalysis } from '@/types/vsm';
 import { generateVsmAiDiagnostic } from '@/lib/vsmAiDiagnostic';
-import { HOURS_PER_WORK_DAY } from '@/lib/vsmCalculations';
+import { HOURS_PER_WORK_DAY, getStepKaizens } from '@/lib/vsmCalculations';
 
 interface RoadmapItem {
   action: string;
@@ -71,7 +71,7 @@ Responda RIGOROSAMENTE em formato JSON puro, sem blocos de markdown adicionais.`
 - Pior Qualidade (%C&A): Etapa #${metrics.lowestAccuracyStep?.order} - "${metrics.lowestAccuracyStep?.title}" (${metrics.lowestAccuracyStep?.percentCompleteAndAccurate}%, responsável: ${metrics.lowestAccuracyStep?.role})
 
 Etapas Mapeadas:
-${(steps || []).map(s => `#${s.order} [${s.role}] "${s.title}" - PT: ${s.processTime} ${s.processTimeUnit} | WT: ${s.waitTime} ${s.waitTimeUnit} | %C&A: ${s.percentCompleteAndAccurate}% | Desperdícios: ${s.wasteTypes?.join(', ') || 'Nenhum'} | Kaizen: ${s.kaizenNotes || 'Nenhum'} | Paralelo: ${s.isParallel ? 'Sim' : 'Não'}`).join('\n')}
+${(steps || []).map(s => `#${s.order} [${s.role}] "${s.title}" - PT: ${s.processTime} ${s.processTimeUnit} | WT: ${s.waitTime} ${s.waitTimeUnit} | %C&A: ${s.percentCompleteAndAccurate}% | Desperdícios: ${s.wasteTypes?.join(', ') || 'Nenhum'} | Kaizen: ${getStepKaizens(s).join('; ') || 'Nenhum'} | Paralelo: ${s.isParallel ? 'Sim' : 'Não'}`).join('\n')}
 
 Forneça um diagnóstico executivo e um ROADMAP KAIZEN 30-60-90 DIAS 100% CUSTOMIZADO para "${projectName}" em formato JSON rigoroso:
 {

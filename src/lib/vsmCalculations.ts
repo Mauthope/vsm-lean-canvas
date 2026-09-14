@@ -127,6 +127,28 @@ export function getRoleStyle(role: string) {
 }
 
 /**
+ * Extrai a lista de oportunidades Kaizen de uma etapa de forma resiliente.
+ * Suporta tanto o novo array `kaizenList` quanto a string legada `kaizenNotes`.
+ */
+export function getStepKaizens(step: { kaizenList?: string[]; kaizenNotes?: string } | null | undefined): string[] {
+  if (!step) return [];
+  if (Array.isArray(step.kaizenList) && step.kaizenList.length > 0) {
+    const list = step.kaizenList
+      .map(k => (typeof k === 'string' ? k.trim() : ''))
+      .filter(k => k.length > 0);
+    if (list.length > 0) return list;
+  }
+  if (step.kaizenNotes && typeof step.kaizenNotes === 'string' && step.kaizenNotes.trim().length > 0) {
+    const lines = step.kaizenNotes
+      .split('\n')
+      .map(l => l.replace(/^[•\-\*\d+\.\s]+/, '').trim())
+      .filter(l => l.length > 0);
+    return lines.length > 0 ? lines : [step.kaizenNotes.trim()];
+  }
+  return [];
+}
+
+/**
  * Agrupa etapas em estágios sequenciais do fluxo de valor.
  * Etapas concorrentes marcadas com `isParallel: true` pertencem ao mesmo estágio.
  * Se apenas uma etapa intermediária estiver marcada como paralela, ela é agrupada com a etapa
