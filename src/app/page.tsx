@@ -19,7 +19,7 @@ import {
   FileSpreadsheet,
   CheckCircle2
 } from 'lucide-react';
-import { VSMStep, VSMProject, WasteType } from '@/types/vsm';
+import { VSMStep, VSMProject, WasteType, CustomWorkshop } from '@/types/vsm';
 import { VSM_TEMPLATES } from '@/data/vsmTemplates';
 import {
   calculateVsmMetrics,
@@ -38,11 +38,13 @@ import { VsmKaizenBoard } from '@/components/vsm/VsmKaizenBoard';
 import { VsmSummaryReportModal } from '@/components/vsm/VsmSummaryReportModal';
 import { VsmGlossaryModal } from '@/components/vsm/VsmGlossaryModal';
 import { VsmAiDiagnosticModal } from '@/components/vsm/VsmAiDiagnosticModal';
+import { VsmNewWorkshopModal } from '@/components/vsm/VsmNewWorkshopModal';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AiDiagnosticReport } from '@/lib/vsmAiDiagnostic';
 import { Toast, ToastItem } from '@/components/Toast';
 
 const STORAGE_KEY = 'vsm_session_standalone_v1';
+const CUSTOM_WORKSHOPS_KEY = 'vsm_custom_workshops_v2';
 
 export default function VsmHomePage() {
   // Toast notifications state
@@ -79,13 +81,43 @@ export default function VsmHomePage() {
   const [aiReport, setAiReport] = useState<(AiDiagnosticReport & { provider?: string; isLiveAi?: boolean }) | null>(null);
   const [glossaryTopic, setGlossaryTopic] = useState<string>('ca');
 
+  // Custom Workshops / Templates State
+  const [customTemplates, setCustomTemplates] = useState<CustomWorkshop[]>([]);
+  const [currentWorkshopId, setCurrentWorkshopId] = useState<string | null>(null);
+  const [isWorkshopModalOpen, setIsWorkshopModalOpen] = useState(false);
+  const [workshopModalMode, setWorkshopModalMode] = useState<'create' | 'save_as'>('create');
+
   const handleOpenGlossary = (topic: string = 'ca') => {
     setGlossaryTopic(topic);
     setIsGlossaryModalOpen(true);
   };
 
+  // Helper: Persist custom templates list
+  const persistCustomTemplates = (updatedList: CustomWorkshop[]) => {
+    setCustomTemplates(updatedList);
+    try {
+      localStorage.setItem(CUSTOM_WORKSHOPS_KEY, JSON.stringify(updatedList));
+    } catch (e) {
+      console.error('Erro ao salvar workshops customizados no LocalStorage:', e);
+    }
+  };
+
   // Initialize from LocalStorage or default to R&S Template
   useEffect(() => {
+    // 1. Load custom workshops list
+    try {
+      const savedCustom = localStorage.getItem(CUSTOM_WORKSHOPS_KEY);
+      if (savedCustom) {
+        const parsedCustom = JSON.parse(savedCustom);
+        if (Array.isArray(parsedCustom)) {
+          setCustomTemplates(parsedCustom);
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar workshops customizados:', e);
+    }
+
+    // 2. Load active session
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -94,6 +126,9 @@ export default function VsmHomePage() {
           setProjectName(parsed.name || 'Mapeamento de Fluxo de Valor');
           setDepartment(parsed.department || 'Corporativo');
           setSteps(parsed.steps);
+          if (parsed.currentWorkshopId) {
+            setCurrentWorkshopId(parsed.currentWorkshopId);
+          }
           setIsLoaded(true);
           return;
         }
@@ -114,7 +149,7 @@ export default function VsmHomePage() {
     setIsLoaded(true);
   }, []);
 
-  // Auto-save to LocalStorage
+  // Auto-save session and synchronize active custom workshop
   useEffect(() => {
     if (!isLoaded) return;
     try {
@@ -122,13 +157,36 @@ export default function VsmHomePage() {
         name: projectName,
         department,
         steps,
+        currentWorkshopId,
         updatedAt: new Date().toISOString()
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch (e) {
       console.error('Erro ao persistir sessão VSM:', e);
     }
-  }, [projectName, department, steps, isLoaded]);
+
+    // If currently linked to a custom workshop, sync changes to it
+    if (currentWorkshopId) {
+      setCustomTemplates(prev => {
+        const idx = prev.findIndex(w => w.id === currentWorkshopId);
+        if (idx === -1) return prev;
+        const updated = [...prev];
+        updated[idx] = {
+          ...updated[idx],
+          name: projectName,
+          department,
+          steps,
+          updatedAt: new Date().toISOString()
+        };
+        try {
+          localStorage.setItem(CUSTOM_WORKSHOPS_KEY, JSON.stringify(updated));
+        } catch (e) {
+          console.error('Erro ao sincronizar workshop ativo no LocalStorage:', e);
+        }
+        return updated;
+      });
+    }
+  }, [projectName, department, steps, currentWorkshopId, isLoaded]);
 
   // Recalculate Lean metrics dynamically
   const metrics = useMemo(() => calculateVsmMetrics(steps), [steps]);
@@ -156,11 +214,83 @@ export default function VsmHomePage() {
     return steps.filter(s => s.kaizenNotes && s.kaizenNotes.trim().length > 0).length;
   }, [steps]);
 
-  // Handler: Load Template
+  // Handler: Create New Workshop (from scratch) and save to models
+  const handleCreateWorkshop = (name: string, dept: string) => {
+    const newWorkshop: CustomWorkshop = {
+      id: `custom-workshop-${Date.now()}`,
+      name: name.trim() || 'Novo Workshop VSM',
+      department: dept.trim() || 'Operações',
+      steps: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const updatedList = [newWorkshop, ...customTemplates];
+    persistCustomTemplates(updatedList);
+
+    setProjectName(newWorkshop.name);
+    setDepartment(newWorkshop.department);
+    setSteps([]);
+    setCurrentWorkshopId(newWorkshop.id);
+    setRoleFilter('todos');
+    setWasteFilter('todos');
+    showToast(`Workshop "${newWorkshop.name}" criado e salvo em seus modelos!`, 'success');
+  };
+
+  // Handler: Save current canvas as a new template
+  const handleSaveAsTemplate = (name: string, dept: string) => {
+    const newWorkshop: CustomWorkshop = {
+      id: `custom-workshop-${Date.now()}`,
+      name: name.trim() || projectName,
+      department: dept.trim() || department,
+      steps: [...steps],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const updatedList = [newWorkshop, ...customTemplates];
+    persistCustomTemplates(updatedList);
+
+    setProjectName(newWorkshop.name);
+    setDepartment(newWorkshop.department);
+    setCurrentWorkshopId(newWorkshop.id);
+    showToast(`Modelo "${newWorkshop.name}" (${steps.length} etapas) salvo com sucesso!`, 'success');
+  };
+
+  // Handler: Delete Custom Template
+  const handleDeleteCustomTemplate = (templateId: string) => {
+    const updatedList = customTemplates.filter(w => w.id !== templateId);
+    persistCustomTemplates(updatedList);
+    if (currentWorkshopId === templateId) {
+      setCurrentWorkshopId(null);
+    }
+    showToast('Modelo removido com sucesso.', 'info');
+  };
+
+  // Handler: Load Template (supports custom workshops & built-in templates)
   const handleLoadTemplate = (templateId: string) => {
+    // 1. Check custom templates first
+    const customTpl = customTemplates.find(c => c.id === templateId);
+    if (customTpl) {
+      setProjectName(customTpl.name);
+      setDepartment(customTpl.department);
+      const loadedSteps: VSMStep[] = (customTpl.steps || []).map((s, idx) => ({
+        ...s,
+        id: s.id || `step-${Date.now()}-${idx}`
+      }));
+      setSteps(loadedSteps);
+      setCurrentWorkshopId(customTpl.id);
+      setRoleFilter('todos');
+      setWasteFilter('todos');
+      showToast(`Workshop "${customTpl.name}" carregado com sucesso!`, 'success');
+      return;
+    }
+
+    // 2. Check built-in reference templates
     const tpl = VSM_TEMPLATES.find(t => t.id === templateId);
     if (!tpl) return;
 
+    setCurrentWorkshopId(null);
     const newSteps: VSMStep[] = tpl.steps.map((s, idx) => ({
       ...s,
       id: `step-${Date.now()}-${idx}`
@@ -169,29 +299,25 @@ export default function VsmHomePage() {
     setProjectName(tpl.name);
     setDepartment(tpl.department);
     setSteps(newSteps);
-    showToast(`Modelo "${tpl.name}" carregado com sucesso!`, 'success');
-  };
-
-  // Handler: Start Blank Workshop from scratch
-  const handleStartBlankWorkshop = () => {
-    if (steps.length > 0) {
-      const confirmReset = window.confirm(
-        'Deseja iniciar um novo workshop em branco? Todas as anotações e etapas não salvas serão limpas para começar do zero.'
-      );
-      if (!confirmReset) return;
-    }
-
-    setProjectName('Novo Workshop VSM');
-    setDepartment('Operações / Geral');
-    setSteps([]);
     setRoleFilter('todos');
     setWasteFilter('todos');
-    showToast('Workshop em branco iniciado! O canvas está pronto para adicionar as etapas da dinâmica.', 'success');
+    showToast(`Modelo de referência "${tpl.name}" carregado!`, 'success');
   };
 
-  // Handler: Reset Session
+  // Handler: Reset Session to default R&S
   const handleResetSession = () => {
-    handleStartBlankWorkshop();
+    if (confirm('Deseja reiniciar a sessão atual para o modelo de referência padrão (R&S)?')) {
+      const defaultTpl = VSM_TEMPLATES[0];
+      const initialSteps: VSMStep[] = defaultTpl.steps.map((s, idx) => ({
+        ...s,
+        id: `step-${Date.now()}-${idx}`
+      }));
+      setProjectName(defaultTpl.name);
+      setDepartment(defaultTpl.department);
+      setSteps(initialSteps);
+      setCurrentWorkshopId(null);
+      showToast('Sessão restaurada para o modelo padrão.', 'info');
+    }
   };
 
   // Handler: Insert or Edit Step
@@ -355,27 +481,36 @@ export default function VsmHomePage() {
       <div className="space-y-6 no-print">
         {/* 1. Header Toolbar */}
         <VsmHeader
-        projectName={projectName}
-        department={department}
-        onUpdateProjectInfo={(name, dept) => {
-          setProjectName(name);
-          setDepartment(dept);
-        }}
-        onLoadTemplate={handleLoadTemplate}
-        onStartBlankWorkshop={handleStartBlankWorkshop}
-        onNewStep={() => handleOpenNewStepModal()}
-        onOpenKaizenBoard={() => setIsKaizenBoardOpen(true)}
-        onOpenReportModal={() => setIsReportModalOpen(true)}
-        onOpenGlossary={handleOpenGlossary}
-        onOpenAiDiagnostic={() => setIsAiDiagnosticOpen(true)}
-        onExportJson={handleExportJson}
-        onImportJson={handleImportJson}
-        onResetSession={handleResetSession}
-        kaizenCount={kaizenCount}
-        isFullscreen={isFullscreen}
-        onToggleFullscreen={handleToggleFullscreen}
-        hasAiDiagnostic={!!aiReport}
-      />
+          projectName={projectName}
+          department={department}
+          onUpdateProjectInfo={(name, dept) => {
+            setProjectName(name);
+            setDepartment(dept);
+          }}
+          onLoadTemplate={handleLoadTemplate}
+          onStartBlankWorkshop={() => {
+            setWorkshopModalMode('create');
+            setIsWorkshopModalOpen(true);
+          }}
+          onOpenSaveAsTemplate={() => {
+            setWorkshopModalMode('save_as');
+            setIsWorkshopModalOpen(true);
+          }}
+          customTemplates={customTemplates}
+          onDeleteCustomTemplate={handleDeleteCustomTemplate}
+          onNewStep={() => handleOpenNewStepModal()}
+          onOpenKaizenBoard={() => setIsKaizenBoardOpen(true)}
+          onOpenReportModal={() => setIsReportModalOpen(true)}
+          onOpenGlossary={handleOpenGlossary}
+          onOpenAiDiagnostic={() => setIsAiDiagnosticOpen(true)}
+          onExportJson={handleExportJson}
+          onImportJson={handleImportJson}
+          onResetSession={handleResetSession}
+          kaizenCount={kaizenCount}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={handleToggleFullscreen}
+          hasAiDiagnostic={!!aiReport}
+        />
 
       {/* 2. Top BagTime KPI Metrics Bar */}
       <VsmMetricsBar
@@ -703,6 +838,22 @@ export default function VsmHomePage() {
           setIsReportModalOpen(true);
         }}
         onSaveAiReport={(report) => setAiReport(report)}
+      />
+
+      <VsmNewWorkshopModal
+        isOpen={isWorkshopModalOpen}
+        onClose={() => setIsWorkshopModalOpen(false)}
+        mode={workshopModalMode}
+        initialName={projectName}
+        initialDepartment={department}
+        onSubmit={(name, dept) => {
+          setIsWorkshopModalOpen(false);
+          if (workshopModalMode === 'create') {
+            handleCreateWorkshop(name, dept);
+          } else {
+            handleSaveAsTemplate(name, dept);
+          }
+        }}
       />
 
       {/* Standalone Toast Alerts */}

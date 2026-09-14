@@ -63,5 +63,17 @@ export interface VSMTemplate {
   name: string;
   department: string;
   description: string;
-  steps: Omit<VSMStep, 'id'>[];
+  steps: (Omit<VSMStep, 'id'> | VSMStep)[];
+  createdAt?: string;
+  isCustom?: boolean;
+}
+
+export interface CustomWorkshop {
+  id: string;
+  name: string;
+  department: string;
+  description?: string;
+  steps: VSMStep[];
+  createdAt: string;
+  updatedAt: string;
 }

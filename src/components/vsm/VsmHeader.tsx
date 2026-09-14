@@ -16,9 +16,11 @@ import {
   Building2,
   Pencil,
   BookOpen,
-  Printer
+  Printer,
+  Save,
+  Trash2
 } from 'lucide-react';
-import { VSMTemplate, VSMStep } from '@/types/vsm';
+import { VSMTemplate, VSMStep, CustomWorkshop } from '@/types/vsm';
 import { VSM_TEMPLATES } from '@/data/vsmTemplates';
 
 interface VsmHeaderProps {
@@ -27,6 +29,9 @@ interface VsmHeaderProps {
   onUpdateProjectInfo: (name: string, dept: string) => void;
   onLoadTemplate: (templateId: string) => void;
   onStartBlankWorkshop?: () => void;
+  onOpenSaveAsTemplate?: () => void;
+  customTemplates?: CustomWorkshop[];
+  onDeleteCustomTemplate?: (templateId: string) => void;
   onNewStep: () => void;
   onOpenKaizenBoard: () => void;
   onOpenReportModal: () => void;
@@ -47,6 +52,9 @@ export const VsmHeader: React.FC<VsmHeaderProps> = ({
   onUpdateProjectInfo,
   onLoadTemplate,
   onStartBlankWorkshop,
+  onOpenSaveAsTemplate,
+  customTemplates = [],
+  onDeleteCustomTemplate,
   onNewStep,
   onOpenKaizenBoard,
   onOpenReportModal,
@@ -154,9 +162,9 @@ export const VsmHeader: React.FC<VsmHeaderProps> = ({
           </button>
 
           {isTemplateMenuOpen && (
-            <div className="absolute left-0 lg:right-0 lg:left-auto mt-2 w-80 bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+            <div className="absolute left-0 lg:right-0 lg:left-auto mt-2 w-84 bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150 max-h-[80vh] overflow-y-auto custom-scrollbar">
               
-              {/* Botão Adicionar: Começar Workshop do Zero */}
+              {/* Botão 1: Começar Workshop do Zero */}
               <button
                 type="button"
                 onClick={() => {
@@ -167,7 +175,7 @@ export const VsmHeader: React.FC<VsmHeaderProps> = ({
                     onResetSession();
                   }
                 }}
-                className="w-full text-left p-2.5 rounded-xl bg-gradient-to-r from-cyan-950/70 via-slate-900 to-teal-950/70 border border-cyan-500/40 hover:border-cyan-400 hover:from-cyan-900/60 transition-all text-xs text-white block group shadow-lg cursor-pointer mb-2"
+                className="w-full text-left p-2.5 rounded-xl bg-gradient-to-r from-cyan-950/70 via-slate-900 to-teal-950/70 border border-cyan-500/40 hover:border-cyan-400 hover:from-cyan-900/60 transition-all text-xs text-white block group shadow-lg cursor-pointer mb-1.5"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -183,14 +191,91 @@ export const VsmHeader: React.FC<VsmHeaderProps> = ({
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-300 mt-1 pl-8 leading-tight">
-                  Inicie com o canvas limpo (0 etapas) para mapear a dinâmica ao vivo com a equipe.
+                  Inicie com o canvas limpo (0 etapas) e salve como modelo exclusivo.
                 </div>
               </button>
 
+              {/* Botão 2: Salvar Mapeamento Atual como Modelo */}
+              {onOpenSaveAsTemplate && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsTemplateMenuOpen(false);
+                    onOpenSaveAsTemplate();
+                  }}
+                  className="w-full text-left p-2 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/40 hover:bg-slate-850 transition-all text-xs text-slate-200 block group cursor-pointer mb-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center justify-center shrink-0">
+                      <Save className="w-3 h-3" />
+                    </div>
+                    <span className="font-semibold text-slate-200 group-hover:text-white transition-colors">
+                      Salvar Atual como Modelo
+                    </span>
+                  </div>
+                </button>
+              )}
+
+              {/* Seção: Meus Workshops Salvos (Custom Templates) */}
+              {customTemplates.length > 0 && (
+                <>
+                  <div className="border-t border-slate-800/80 my-2" />
+                  <div className="flex items-center justify-between px-2 py-1">
+                    <span className="text-[10px] uppercase font-bold text-cyan-400 tracking-wider font-mono">
+                      Meus Workshops Salvos:
+                    </span>
+                    <span className="px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-mono font-bold">
+                      {customTemplates.length}
+                    </span>
+                  </div>
+                  <div className="space-y-1 mb-2">
+                    {customTemplates.map(tpl => (
+                      <div
+                        key={tpl.id}
+                        className="group/item flex items-center justify-between p-2 rounded-xl hover:bg-slate-900/90 border border-transparent hover:border-slate-800 transition-all"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onLoadTemplate(tpl.id);
+                            setIsTemplateMenuOpen(false);
+                          }}
+                          className="flex-1 text-left cursor-pointer min-w-0 pr-2"
+                        >
+                          <div className="font-bold text-white group-hover/item:text-cyan-300 transition-colors truncate">
+                            {tpl.name}
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate mt-0.5 font-mono">
+                            {tpl.department} • {tpl.steps?.length || 0} etapas
+                          </div>
+                        </button>
+
+                        {onDeleteCustomTemplate && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`Deseja excluir o modelo salvo "${tpl.name}"?`)) {
+                                onDeleteCustomTemplate(tpl.id);
+                              }
+                            }}
+                            className="p-1 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors opacity-60 group-hover/item:opacity-100 cursor-pointer shrink-0"
+                            title="Excluir este modelo"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
               <div className="border-t border-slate-800/80 my-2" />
 
+              {/* Seção: Modelos Pré-configurados */}
               <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider px-2 py-1 block font-mono">
-                Ou Carregue um Modelo Pré-configurado:
+                Modelos de Referência (Exemplos):
               </span>
               <div className="space-y-1">
                 {VSM_TEMPLATES.filter(tpl => tpl.id !== 'template-blank').map(tpl => (
