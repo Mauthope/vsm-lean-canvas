@@ -36,6 +36,7 @@ interface VsmHeaderProps {
   kaizenCount: number;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
+  hasAiDiagnostic?: boolean;
 }
 
 export const VsmHeader: React.FC<VsmHeaderProps> = ({
@@ -53,7 +54,8 @@ export const VsmHeader: React.FC<VsmHeaderProps> = ({
   onResetSession,
   kaizenCount,
   isFullscreen,
-  onToggleFullscreen
+  onToggleFullscreen,
+  hasAiDiagnostic
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempName, setTempName] = useState(projectName);
@@ -212,11 +214,24 @@ export const VsmHeader: React.FC<VsmHeaderProps> = ({
         <button
           type="button"
           onClick={onOpenReportModal}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-white hover:border-cyan-500/50 transition-all cursor-pointer"
-          title="Gerar Dossiê Executivo e Relatório Pronto para Impressão / PDF"
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+            hasAiDiagnostic
+              ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-300 hover:bg-emerald-900/50 shadow-sm'
+              : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:text-white hover:border-cyan-500/50'
+          }`}
+          title={
+            hasAiDiagnostic
+              ? 'Dossiê com Parecer IA Pronto para Impressão / PDF'
+              : 'Dossiê Executivo e Relatório para Impressão / PDF'
+          }
         >
-          <FileText className="w-3.5 h-3.5 text-cyan-400" />
+          <FileText className={`w-3.5 h-3.5 ${hasAiDiagnostic ? 'text-emerald-400' : 'text-cyan-400'}`} />
           <span className="hidden sm:inline">Dossiê / Imprimir</span>
+          {hasAiDiagnostic && (
+            <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold">
+              IA ✓
+            </span>
+          )}
         </button>
 
         {/* AI Diagnostic Button */}

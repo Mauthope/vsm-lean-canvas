@@ -38,6 +38,7 @@ import { VsmKaizenBoard } from '@/components/vsm/VsmKaizenBoard';
 import { VsmSummaryReportModal } from '@/components/vsm/VsmSummaryReportModal';
 import { VsmGlossaryModal } from '@/components/vsm/VsmGlossaryModal';
 import { VsmAiDiagnosticModal } from '@/components/vsm/VsmAiDiagnosticModal';
+import { AiDiagnosticReport } from '@/lib/vsmAiDiagnostic';
 import { Toast, ToastItem } from '@/components/Toast';
 
 const STORAGE_KEY = 'vsm_session_standalone_v1';
@@ -74,6 +75,7 @@ export default function VsmHomePage() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isGlossaryModalOpen, setIsGlossaryModalOpen] = useState(false);
   const [isAiDiagnosticOpen, setIsAiDiagnosticOpen] = useState(false);
+  const [aiReport, setAiReport] = useState<(AiDiagnosticReport & { provider?: string; isLiveAi?: boolean }) | null>(null);
   const [glossaryTopic, setGlossaryTopic] = useState<string>('ca');
 
   const handleOpenGlossary = (topic: string = 'ca') => {
@@ -353,6 +355,7 @@ export default function VsmHomePage() {
         kaizenCount={kaizenCount}
         isFullscreen={isFullscreen}
         onToggleFullscreen={handleToggleFullscreen}
+        hasAiDiagnostic={!!aiReport}
       />
 
       {/* 2. Top BagTime KPI Metrics Bar */}
@@ -649,6 +652,11 @@ export default function VsmHomePage() {
         department={department}
         steps={steps}
         metrics={metrics}
+        aiReport={aiReport}
+        onRunAiDiagnostic={() => {
+          setIsReportModalOpen(false);
+          setIsAiDiagnosticOpen(true);
+        }}
       />
 
       <VsmGlossaryModal
@@ -664,7 +672,11 @@ export default function VsmHomePage() {
         department={department}
         steps={steps}
         metrics={metrics}
-        onOpenFullPrintReport={() => setIsReportModalOpen(true)}
+        onOpenFullPrintReport={() => {
+          setIsAiDiagnosticOpen(false);
+          setIsReportModalOpen(true);
+        }}
+        onSaveAiReport={(report) => setAiReport(report)}
       />
 
       {/* Standalone Toast Alerts */}

@@ -89,7 +89,24 @@ Retorne APENAS o JSON válido sem blocos de código adicionais.`;
             executiveSummary: parsed.executiveSummary || heuristicReport.executiveSummary,
             maturityScore: parsed.maturityScore || heuristicReport.maturityScore,
             maturityLabel: parsed.maturityLabel || heuristicReport.maturityLabel,
-            keyInsights: parsed.keyInsights && Array.isArray(parsed.keyInsights) ? parsed.keyInsights : heuristicReport.keyInsights
+            keyInsights: parsed.keyInsights && Array.isArray(parsed.keyInsights) ? parsed.keyInsights : heuristicReport.keyInsights,
+            bottleneckAnalysis: {
+              ...heuristicReport.bottleneckAnalysis,
+              waitBottleneck: heuristicReport.bottleneckAnalysis.waitBottleneck ? {
+                ...heuristicReport.bottleneckAnalysis.waitBottleneck,
+                impact: parsed.waitBottleneckDiagnosis || heuristicReport.bottleneckAnalysis.waitBottleneck.impact
+              } : null,
+              qualityBottleneck: heuristicReport.bottleneckAnalysis.qualityBottleneck ? {
+                ...heuristicReport.bottleneckAnalysis.qualityBottleneck,
+                impact: parsed.qualityBottleneckDiagnosis || heuristicReport.bottleneckAnalysis.qualityBottleneck.impact
+              } : null
+            },
+            actionRoadmap: {
+              ...heuristicReport.actionRoadmap,
+              quickWins: (parsed.quickWins && Array.isArray(parsed.quickWins) && parsed.quickWins.length > 0)
+                ? parsed.quickWins
+                : heuristicReport.actionRoadmap.quickWins
+            }
           });
         }
       } catch (err) {
@@ -104,16 +121,22 @@ Retorne APENAS o JSON válido sem blocos de código adicionais.`;
         const prompt = `Você é um Consultor Sênior Master Black Belt em Lean Six Sigma.
 Analise o VSM:
 Projeto: ${projectName} (${department})
-Lead Time: ${(metrics.totalLeadTimeHours / 8).toFixed(1)}d | Eficiência: ${metrics.flowEfficiency.toFixed(1)}% | RFPY (%C&A): ${metrics.overallYield.toFixed(1)}%
+Lead Time: ${(metrics.totalLeadTimeHours / 8).toFixed(1)}d (${metrics.totalLeadTimeHours.toFixed(1)}h) | Trabalho: ${(metrics.totalProcessHours / 8).toFixed(1)}d | Fila: ${(metrics.totalWaitHours / 8).toFixed(1)}d | Eficiência: ${metrics.flowEfficiency.toFixed(1)}% | RFPY (%C&A): ${metrics.overallYield.toFixed(1)}%
 Gargalo Espera: #${metrics.maxWaitStep?.order} ${metrics.maxWaitStep?.title} (${metrics.maxWaitStep?.waitTime} ${metrics.maxWaitStep?.waitTimeUnit})
 Pior %C&A: #${metrics.lowestAccuracyStep?.order} ${metrics.lowestAccuracyStep?.title} (${metrics.lowestAccuracyStep?.percentCompleteAndAccurate}%)
 
-Responda em JSON válido com:
+Etapas:
+${steps.map(s => `#${s.order} [${s.role}] "${s.title}" - PT:${s.processTime}${s.processTimeUnit} WT:${s.waitTime}${s.waitTimeUnit} %C&A:${s.percentCompleteAndAccurate}% Kaizen:${s.kaizenNotes || 'Nenhum'}`).join('\n')}
+
+Responda rigorosamente em JSON com:
 {
-  "executiveSummary": "Veredito executivo de 1 parágrafo.",
-  "maturityScore": 50,
-  "maturityLabel": "Típico Corporativo",
-  "keyInsights": ["Insight 1", "Insight 2", "Insight 3"]
+  "executiveSummary": "Texto executivo contundente de 1 parágrafo com veredito Lean.",
+  "maturityScore": número de 20 a 95,
+  "maturityLabel": "Rótulo de maturidade Lean",
+  "keyInsights": ["Insight 1", "Insight 2", "Insight 3"],
+  "waitBottleneckDiagnosis": "Análise da etapa de maior espera e por que atrasa o fluxo.",
+  "qualityBottleneckDiagnosis": "Análise do impacto de retrabalho da etapa de pior %C&A.",
+  "quickWins": [{"action": "Ação imediata", "impact": "Impacto esperado", "effort": "Baixo", "targetStep": "Etapa alvo"}]
 }`;
 
         const res = await fetch(geminiUrl, {
@@ -137,7 +160,24 @@ Responda em JSON válido com:
               executiveSummary: parsed.executiveSummary || heuristicReport.executiveSummary,
               maturityScore: parsed.maturityScore || heuristicReport.maturityScore,
               maturityLabel: parsed.maturityLabel || heuristicReport.maturityLabel,
-              keyInsights: parsed.keyInsights || heuristicReport.keyInsights
+              keyInsights: parsed.keyInsights || heuristicReport.keyInsights,
+              bottleneckAnalysis: {
+                ...heuristicReport.bottleneckAnalysis,
+                waitBottleneck: heuristicReport.bottleneckAnalysis.waitBottleneck ? {
+                  ...heuristicReport.bottleneckAnalysis.waitBottleneck,
+                  impact: parsed.waitBottleneckDiagnosis || heuristicReport.bottleneckAnalysis.waitBottleneck.impact
+                } : null,
+                qualityBottleneck: heuristicReport.bottleneckAnalysis.qualityBottleneck ? {
+                  ...heuristicReport.bottleneckAnalysis.qualityBottleneck,
+                  impact: parsed.qualityBottleneckDiagnosis || heuristicReport.bottleneckAnalysis.qualityBottleneck.impact
+                } : null
+              },
+              actionRoadmap: {
+                ...heuristicReport.actionRoadmap,
+                quickWins: (parsed.quickWins && Array.isArray(parsed.quickWins) && parsed.quickWins.length > 0)
+                  ? parsed.quickWins
+                  : heuristicReport.actionRoadmap.quickWins
+              }
             });
           }
         }

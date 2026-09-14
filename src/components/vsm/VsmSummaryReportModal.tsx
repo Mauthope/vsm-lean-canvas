@@ -45,6 +45,8 @@ interface VsmSummaryReportModalProps {
   department: string;
   steps: VSMStep[];
   metrics: BottleneckAnalysis;
+  aiReport?: (AiDiagnosticReport & { provider?: string; isLiveAi?: boolean }) | null;
+  onRunAiDiagnostic?: () => void;
 }
 
 export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
@@ -53,7 +55,9 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
   projectName,
   department,
   steps,
-  metrics
+  metrics,
+  aiReport,
+  onRunAiDiagnostic
 }) => {
   // View mode: 'paper' (Clean White A4 sheet) or 'dark' (Executive Dark Screen)
   const [viewMode, setViewMode] = useState<'paper' | 'dark'>('paper');
@@ -73,10 +77,13 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
   const [includeRoadmap, setIncludeRoadmap] = useState(true);
   const [includeSignatures, setIncludeSignatures] = useState(true);
 
-  // Generate complete heuristic / expert analysis
-  const diagnosticReport: AiDiagnosticReport = useMemo(() => {
+  // Generate fallback heuristic analysis
+  const fallbackReport: AiDiagnosticReport = useMemo(() => {
     return generateVsmAiDiagnostic(projectName, department, steps, metrics, 'all');
   }, [projectName, department, steps, metrics]);
+
+  // Use the active AI diagnostic if available, otherwise fallback
+  const diagnosticReport = aiReport || fallbackReport;
 
   if (!isOpen) return null;
 
@@ -447,6 +454,50 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
         )}
 
         {/* ================================================================= */}
+        {/* AI INTEGRATION STATUS BANNER (ALWAYS HIDDEN IN @media print)       */}
+        {/* ================================================================= */}
+        <div className="no-print px-4 py-2.5 bg-slate-900/90 border-b border-slate-800">
+          {aiReport ? (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-xs">
+              <div className="flex items-center gap-2 text-emerald-300">
+                <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>
+                  <strong>Parecer Estratégico IA Integrado ao Dossiê:</strong> Veredito e recomendações gerados por <strong className="text-white font-mono">{aiReport.provider || 'Inteligência Artificial'}</strong> ({aiReport.isLiveAi ? 'Ao Vivo' : 'Motor Especialista'}).
+                </span>
+              </div>
+              {onRunAiDiagnostic && (
+                <button
+                  type="button"
+                  onClick={onRunAiDiagnostic}
+                  className="px-3 py-1 rounded-lg text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors shrink-0 cursor-pointer"
+                >
+                  Recalcular com IA
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs">
+              <div className="flex items-center gap-2 text-amber-300">
+                <Sparkles className="w-4 h-4 text-amber-400 animate-pulse shrink-0" />
+                <span>
+                  <strong>Parecer IA Pendente:</strong> Este dossiê está exibindo a análise preliminar. Execute o <strong>Diagnóstico IA</strong> para enriquecer com o veredito oficial do consultor e causas-raiz detalhadas.
+                </span>
+              </div>
+              {onRunAiDiagnostic && (
+                <button
+                  type="button"
+                  onClick={onRunAiDiagnostic}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 hover:brightness-105 shadow-sm transition-all shrink-0 cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Executar Diagnóstico IA Agora</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ================================================================= */}
         {/* DOSSIER BODY (PRINT READY CONTAINER: #vsm-printable-dossier)       */}
         {/* ================================================================= */}
         <div
@@ -530,7 +581,8 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
               }`}>
                 <span><strong>Facilitador:</strong> {consultantName}</span>
                 <span><strong>Versão:</strong> {reportVersion}</span>
-                <span><strong>Etapas Analisadas:</strong> {steps.length} etapas ativas</span>
+                <span><strong>Parecer Técnico:</strong> {diagnosticReport.provider || 'Motor Especialista Lean'}</span>
+                <span><strong>Etapas:</strong> {steps.length} mapeadas</span>
               </div>
             </div>
 

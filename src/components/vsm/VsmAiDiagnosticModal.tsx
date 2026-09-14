@@ -36,6 +36,7 @@ interface VsmAiDiagnosticModalProps {
   steps: VSMStep[];
   metrics: BottleneckAnalysis;
   onOpenFullPrintReport?: () => void;
+  onSaveAiReport?: (report: AiDiagnosticReport & { provider?: string; isLiveAi?: boolean }) => void;
 }
 
 export const VsmAiDiagnosticModal: React.FC<VsmAiDiagnosticModalProps> = ({
@@ -45,7 +46,8 @@ export const VsmAiDiagnosticModal: React.FC<VsmAiDiagnosticModalProps> = ({
   department,
   steps,
   metrics,
-  onOpenFullPrintReport
+  onOpenFullPrintReport,
+  onSaveAiReport
 }) => {
   const [activeTab, setActiveTab] = useState<'summary' | 'bottlenecks' | 'futureState' | 'roadmap'>('summary');
   const [focusArea, setFocusArea] = useState<'all' | 'speed' | 'quality' | 'automation'>('all');
@@ -100,12 +102,15 @@ export const VsmAiDiagnosticModal: React.FC<VsmAiDiagnosticModalProps> = ({
       if (res.ok) {
         const data = await res.json();
         setLiveReport(data);
+        onSaveAiReport?.(data);
       } else {
         setLiveReport(fallbackReport);
+        onSaveAiReport?.(fallbackReport);
       }
     } catch (err) {
       console.warn('Erro na requisição da API de IA, usando motor local:', err);
       setLiveReport(fallbackReport);
+      onSaveAiReport?.(fallbackReport);
     } finally {
       clearTimeout(step1);
       clearTimeout(step2);
@@ -866,17 +871,34 @@ ${r.actionRoadmap.automationProjects.map(a => `- **${a.action}** [Impacto: ${a.i
         )}
 
         {/* Modal Footer */}
-        <div className="p-4 border-t border-slate-800 flex items-center justify-between bg-slate-950">
-          <span className="text-xs text-slate-400 font-mono hidden sm:inline">
-            Lean Six Sigma Diagnostic Engine v2.0 • BagTime Design System
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 rounded-xl text-xs font-bold bg-slate-800 text-white hover:bg-slate-700 transition-all cursor-pointer ml-auto"
-          >
-            Fechar Diagnóstico
-          </button>
+        <div className="p-4 border-t border-slate-800 flex items-center justify-between bg-slate-950 flex-wrap gap-3">
+          {onOpenFullPrintReport && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenFullPrintReport();
+              }}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 text-slate-950 hover:opacity-95 shadow-lg shadow-cyan-500/20 active:scale-95 transition-all cursor-pointer"
+            >
+              <Printer className="w-4 h-4" />
+              <span>Emitir Dossiê Oficial com este Parecer (A4 / PDF)</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
+
+          <div className="flex items-center gap-3 ml-auto">
+            <span className="text-[11px] text-slate-500 font-mono hidden md:inline">
+              Engine: {activeReport.provider || 'Motor Especialista'}
+            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2 rounded-xl text-xs font-bold bg-slate-800 text-white hover:bg-slate-700 transition-all cursor-pointer"
+            >
+              Fechar Diagnóstico
+            </button>
+          </div>
         </div>
 
       </div>
