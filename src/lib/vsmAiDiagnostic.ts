@@ -141,10 +141,11 @@ export function generateVsmAiDiagnostic(
     );
   }
 
+  const parallelStages = metrics.parallelStagesCount || 0;
   const parallelCount = steps.filter(s => s.isParallel).length;
   if (parallelCount > 0) {
     keyInsights.push(
-      `Paralelismo Detectado: O processo conta com ${parallelCount} atividade(s) em paralelo. Garantir a sincronização (handoff unificado) evita que uma trilha rápida fique represada aguardando a mais lenta.`
+      `Atividades em Paralelo (Lean Office): O fluxo conta com ${parallelCount} etapa(s) simultânea(s) (${parallelStages > 0 ? `${parallelStages} bloco(s)` : 'concorrente(s)'}). O Lead Time e tempo de espera (WT) foram calculados pelo Caminho Crítico (maior tempo entre elas), garantindo que o tempo de calendário não seja inflado indevidamente.`
     );
   } else if (steps.length > 5) {
     keyInsights.push(

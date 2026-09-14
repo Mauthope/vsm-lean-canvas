@@ -54,6 +54,8 @@ export interface BottleneckAnalysis {
   totalLeadTimeHours: number;
   flowEfficiency: number;
   overallYield: number;
+  parallelStagesCount?: number;
+  totalWorkContentHours?: number;
 }
 
 export interface VSMTemplate {

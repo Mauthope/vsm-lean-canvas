@@ -7,7 +7,8 @@ import {
   TrendingDown,
   Layers,
   ArrowRight,
-  Info
+  Info,
+  GitBranch
 } from 'lucide-react';
 import { VSMStep, BottleneckAnalysis } from '@/types/vsm';
 import {
@@ -89,9 +90,17 @@ export const VsmTimelineLadder: React.FC<VsmTimelineLadderProps> = ({
                     <span className="text-[10px] font-mono font-bold text-slate-400 group-hover:text-cyan-300 transition-colors truncate">
                       #{step.order} {step.title}
                     </span>
-                    {isBottleneck && (
-                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" title="Gargalo Crítico de Espera" />
-                    )}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {step.isParallel && (
+                        <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[9px] font-mono flex items-center gap-0.5" title="Etapa Paralela / Concorrente (Caminho Crítico)">
+                          <GitBranch className="w-2.5 h-2.5" />
+                          Paralelo
+                        </span>
+                      )}
+                      {isBottleneck && (
+                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" title="Gargalo Crítico de Espera" />
+                      )}
+                    </div>
                   </div>
 
                   {/* Top Level: Wait Time (Crest / Degrau Superior) */}
@@ -144,9 +153,17 @@ export const VsmTimelineLadder: React.FC<VsmTimelineLadderProps> = ({
 
             {/* Total VSM Ladder Summary Box */}
             <div className="w-48 shrink-0 rounded-xl p-3 bg-slate-950 border border-slate-800 flex flex-col justify-between shadow-inner">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block border-b border-slate-800 pb-1.5 font-mono">
-                Consolidação Lean
-              </span>
+              <div className="border-b border-slate-800 pb-1.5">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block font-mono">
+                  Consolidação Lean
+                </span>
+                {Boolean(metrics.parallelStagesCount && metrics.parallelStagesCount > 0) && (
+                  <span className="text-[9px] text-purple-400 font-mono flex items-center gap-1 mt-0.5" title="Etapas concorrentes regidas pelo Caminho Crítico (maior tempo)">
+                    <GitBranch className="w-2.5 h-2.5 shrink-0" />
+                    Caminho Crítico ({metrics.parallelStagesCount} paralelo)
+                  </span>
+                )}
+              </div>
 
               {/* Total WT */}
               <div className="my-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/25">

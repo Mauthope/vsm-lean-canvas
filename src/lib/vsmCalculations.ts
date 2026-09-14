@@ -126,6 +126,51 @@ export function getRoleStyle(role: string) {
   };
 }
 
+/**
+ * Agrupa etapas em estágios sequenciais do fluxo de valor.
+ * Etapas concorrentes marcadas com `isParallel: true` pertencem ao mesmo estágio.
+ * Se apenas uma etapa intermediária estiver marcada como paralela, ela é agrupada com a etapa
+ * imediatamente anterior para formar o bloco simultâneo.
+ */
+export function groupStepsIntoStages(steps: VSMStep[]): VSMStep[][] {
+  if (!steps || steps.length === 0) return [];
+
+  const stages: VSMStep[][] = [];
+  let currentParallel: VSMStep[] = [];
+
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+    if (step.isParallel) {
+      // Se for a primeira da sequência e a etapa anterior for linear,
+      // podemos agrupá-las se a sequência paralela for iniciada
+      currentParallel.push(step);
+    } else {
+      if (currentParallel.length > 0) {
+        if (currentParallel.length === 1 && stages.length > 0) {
+          // Uma etapa única marcada como paralela se junta à anterior
+          const prev = stages.pop()!;
+          stages.push([...prev, ...currentParallel]);
+        } else {
+          stages.push(currentParallel);
+        }
+        currentParallel = [];
+      }
+      stages.push([step]);
+    }
+  }
+
+  if (currentParallel.length > 0) {
+    if (currentParallel.length === 1 && stages.length > 0) {
+      const prev = stages.pop()!;
+      stages.push([...prev, ...currentParallel]);
+    } else {
+      stages.push(currentParallel);
+    }
+  }
+
+  return stages;
+}
+
 export function calculateVsmMetrics(steps: VSMStep[]): BottleneckAnalysis {
   if (!steps || steps.length === 0) {
     return {
@@ -136,12 +181,16 @@ export function calculateVsmMetrics(steps: VSMStep[]): BottleneckAnalysis {
       totalProcessHours: 0,
       totalLeadTimeHours: 0,
       flowEfficiency: 0,
-      overallYield: 100
+      overallYield: 100,
+      parallelStagesCount: 0,
+      totalWorkContentHours: 0
     };
   }
 
   let totalWaitHours = 0;
   let totalProcessHours = 0;
+  let totalLeadTimeHours = 0;
+  let totalWorkContentHours = 0;
 
   let maxWaitStep: VSMStep | null = null;
   let maxWaitHours = -1;
@@ -154,12 +203,12 @@ export function calculateVsmMetrics(steps: VSMStep[]): BottleneckAnalysis {
 
   let cumulativeYield = 1.0;
 
+  // Análise individual de etapas para gargalos e rendimento da qualidade (%C&A)
   steps.forEach(step => {
     const ptHours = convertTimeToHours(step.processTime, step.processTimeUnit, true);
     const wtHours = convertTimeToHours(step.waitTime, step.waitTimeUnit, true);
 
-    totalProcessHours += ptHours;
-    totalWaitHours += wtHours;
+    totalWorkContentHours += ptHours;
 
     if (wtHours > maxWaitHours) {
       maxWaitHours = wtHours;
@@ -181,7 +230,52 @@ export function calculateVsmMetrics(steps: VSMStep[]): BottleneckAnalysis {
     cumulativeYield *= factor;
   });
 
-  const totalLeadTimeHours = totalWaitHours + totalProcessHours;
+  // Agrupamento em Estágios (Metodologia Lean Office / Caminho Crítico)
+  const stages = groupStepsIntoStages(steps);
+  let parallelStagesCount = 0;
+
+  stages.forEach(stage => {
+    if (stage.length === 1) {
+      // Estágio Linear Simples: soma direta
+      const step = stage[0];
+      const ptHours = convertTimeToHours(step.processTime, step.processTimeUnit, true);
+      const wtHours = convertTimeToHours(step.waitTime, step.waitTimeUnit, true);
+
+      totalWaitHours += wtHours;
+      totalProcessHours += ptHours;
+      totalLeadTimeHours += (wtHours + ptHours);
+    } else {
+      // Estágio Paralelo (Concorrente): regido pelo Caminho Crítico (maior tempo)
+      parallelStagesCount++;
+
+      let criticalStep = stage[0];
+      let maxStageLt = convertTimeToHours(criticalStep.waitTime, criticalStep.waitTimeUnit, true) +
+                       convertTimeToHours(criticalStep.processTime, criticalStep.processTimeUnit, true);
+      let maxStageWt = convertTimeToHours(criticalStep.waitTime, criticalStep.waitTimeUnit, true);
+
+      for (let i = 1; i < stage.length; i++) {
+        const s = stage[i];
+        const wt = convertTimeToHours(s.waitTime, s.waitTimeUnit, true);
+        const pt = convertTimeToHours(s.processTime, s.processTimeUnit, true);
+        const lt = wt + pt;
+
+        // Se o Lead Time deste ramo for maior, ou em empate de Lead Time tiver maior espera
+        if (lt > maxStageLt || (lt === maxStageLt && wt > maxStageWt)) {
+          maxStageLt = lt;
+          maxStageWt = wt;
+          criticalStep = s;
+        }
+      }
+
+      const stageWt = convertTimeToHours(criticalStep.waitTime, criticalStep.waitTimeUnit, true);
+      const stagePt = convertTimeToHours(criticalStep.processTime, criticalStep.processTimeUnit, true);
+
+      totalWaitHours += stageWt;
+      totalProcessHours += stagePt;
+      totalLeadTimeHours += (stageWt + stagePt);
+    }
+  });
+
   const flowEfficiency = totalLeadTimeHours > 0 ? (totalProcessHours / totalLeadTimeHours) * 100 : 0;
   const overallYield = cumulativeYield * 100;
 
@@ -193,7 +287,9 @@ export function calculateVsmMetrics(steps: VSMStep[]): BottleneckAnalysis {
     totalProcessHours,
     totalLeadTimeHours,
     flowEfficiency,
-    overallYield
+    overallYield,
+    parallelStagesCount,
+    totalWorkContentHours
   };
 }
 

@@ -11,7 +11,8 @@ import {
   ArrowRight,
   TrendingDown,
   HelpCircle,
-  Sparkles
+  Sparkles,
+  GitBranch
 } from 'lucide-react';
 import { BottleneckAnalysis, VSMStep } from '@/types/vsm';
 import {
@@ -106,6 +107,13 @@ export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
           <span className="text-slate-400" title="1 dia útil = 8h48min (8.8 horas)">Dias Úteis (8h48m):</span>
           <span className="font-mono font-bold text-amber-300">~{leadTimeDays} dias</span>
         </div>
+
+        {Boolean(metrics.parallelStagesCount && metrics.parallelStagesCount > 0) && (
+          <div className="mt-1 text-[10px] text-purple-400 font-mono flex items-center justify-end gap-1" title="Etapas concorrentes calculadas pelo maior tempo (Caminho Crítico Lean Office)">
+            <GitBranch className="w-2.5 h-2.5" />
+            <span>Caminho Crítico ({metrics.parallelStagesCount} paralelo)</span>
+          </div>
+        )}
       </div>
 
       {/* 2. TEMPO DE PROCESSO (PT) */}

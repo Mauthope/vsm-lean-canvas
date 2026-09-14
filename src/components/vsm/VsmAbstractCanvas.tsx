@@ -39,7 +39,8 @@ import { VSMStep, BottleneckAnalysis } from '@/types/vsm';
 import {
   convertTimeToHours,
   formatHours,
-  getRoleStyle
+  getRoleStyle,
+  groupStepsIntoStages
 } from '@/lib/vsmCalculations';
 
 interface VsmAbstractCanvasProps {
@@ -128,23 +129,7 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
     if (steps.length === 0) return posMap;
 
     // Group steps into stages: consecutive parallel steps share a stage
-    const stages: VSMStep[][] = [];
-    let currentParallel: VSMStep[] = [];
-
-    steps.forEach(step => {
-      if (step.isParallel) {
-        currentParallel.push(step);
-      } else {
-        if (currentParallel.length > 0) {
-          stages.push(currentParallel);
-          currentParallel = [];
-        }
-        stages.push([step]);
-      }
-    });
-    if (currentParallel.length > 0) {
-      stages.push(currentParallel);
-    }
+    const stages = groupStepsIntoStages(steps);
 
     stages.forEach((stageSteps, sIdx) => {
       const stageX = 60 + sIdx * (NODE_WIDTH + GAP_X);
@@ -372,25 +357,7 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
   // Compute connections/edges between stages
   const edges: EdgeConnection[] = useMemo(() => {
     const list: EdgeConnection[] = [];
-    if (steps.length < 2) return list;
-
-    const stages: VSMStep[][] = [];
-    let currentParallel: VSMStep[] = [];
-
-    steps.forEach(step => {
-      if (step.isParallel) {
-        currentParallel.push(step);
-      } else {
-        if (currentParallel.length > 0) {
-          stages.push(currentParallel);
-          currentParallel = [];
-        }
-        stages.push([step]);
-      }
-    });
-    if (currentParallel.length > 0) {
-      stages.push(currentParallel);
-    }
+    const stages = groupStepsIntoStages(steps);
 
     // Connect Stage s to Stage s + 1
     for (let s = 0; s < stages.length - 1; s++) {

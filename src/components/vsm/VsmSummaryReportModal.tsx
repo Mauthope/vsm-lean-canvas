@@ -356,11 +356,14 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
     md += `## 2. Painel de Indicadores Mestres de Fluxo (Lean KPIs)\n\n`;
     md += `| Indicador | Valor Obtido | Benchmark Lean & Interpretação (Base: 8h48m / dia útil) |\n`;
     md += `| :--- | :--- | :--- |\n`;
-    md += `| **Lead Time Total (LT)** | **${formatHours(totalLeadTimeHours)}** (~${(totalLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis) | Tempo total do pedido até a entrega final |\n`;
+    md += `| **Lead Time Total (LT)** | **${formatHours(totalLeadTimeHours)}** (~${(totalLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis) | Tempo total do pedido até a entrega final${metrics.parallelStagesCount ? ' (Caminho Crítico)' : ''} |\n`;
     md += `| **Tempo de Esforço Ativo (PT)** | **${formatHours(totalProcessHours)}** (~${(totalProcessHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis) | Tempo efetivo com valor agregado real |\n`;
     md += `| **Tempo de Fila / Espera (WT)** | **${formatHours(totalWaitHours)}** (${totalLeadTimeHours > 0 ? ((totalWaitHours / totalLeadTimeHours) * 100).toFixed(1) : 0}% do LT) | Tempo morto onde a tarefa fica ociosa em caixas de entrada |\n`;
     md += `| **Eficiência de Fluxo (FE)** | **${flowEfficiency.toFixed(1)}%** | ${efficiencyMeta.label} (Meta Classe Mundial: > 25%) |\n`;
     md += `| **Rolled First Pass Yield (%C&A)** | **${overallYield.toFixed(1)}%** | Rendimento sem retrabalho (Taxa de devoluções: ${(100 - overallYield).toFixed(1)}%) |\n\n`;
+    if (metrics.parallelStagesCount && metrics.parallelStagesCount > 0) {
+      md += `> **Regra Lean Office Aplicada:** O fluxo contém ${metrics.parallelStagesCount} bloco(s) de atividades em paralelo. Conforme as diretrizes Lean, o tempo de fila (WT) e o Lead Time de tarefas simultâneas são calculados pelo Caminho Crítico (maior tempo entre elas) e não pela soma linear.\n\n`;
+    }
     md += `---\n\n`;
 
     if (includeEducation) {
@@ -371,6 +374,8 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
       md += `O tempo real de trabalho (PT) geralmente representa menos de 5% do Lead Time. Acelerar quem está trabalhando economiza minutos; eliminar o tempo que o chamado fica parado na fila (WT) economiza dias.\n\n`;
       md += `### O Efeito Cascata do Retrabalho (%C&A):\n`;
       md += `O %C&A (% Completo e Acurado) mede quantas vezes a informação chega correta na primeira vez. Em uma cadeia de etapas, pequenas falhas multiplicam o retrabalho e destroem a capacidade produtiva.\n\n`;
+      md += `### Atividades em Paralelo & Caminho Crítico:\n`;
+      md += `Quando tarefas acontecem simultaneamente por atores diferentes (ex: TI preparando notebook e DP agendando exames), o tempo decorrido do processo é ditado pelo caminho mais longo (gargalo crítico), e não pela soma das esperas.\n\n`;
       md += `---\n\n`;
     }
 
@@ -960,6 +965,12 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                 <span className="text-cyan-600 dark:text-cyan-400 font-bold">
                   {flowEfficiency < 5 ? 'Alavanca Lean: Eliminação de Filas Imediata' : 'Fluxo com Boa Tração'}
                 </span>
+                {Boolean(metrics.parallelStagesCount && metrics.parallelStagesCount > 0) && (
+                  <div className="w-full pt-1.5 mt-1 border-t border-slate-300 dark:border-slate-800 text-[11px] text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+                    <strong>Regra Lean Office:</strong>
+                    <span>{metrics.parallelStagesCount} bloco(s) em paralelo calculados pelo Caminho Crítico (maior tempo entre etapas concorrentes).</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1015,6 +1026,18 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                     <p className="leading-relaxed text-slate-700 dark:text-slate-300">
                       O indicador <strong>%C&A (% Completo e Acurado)</strong> mede se a etapa recebeu todas as informações certas e completas na primeira tentativa, sem precisar devolver, tirar dúvidas ou cobrar anexos. 
                       O <strong>Rolled First Pass Yield</strong> multiplica a acurácia de todas as etapas: se 5 etapas tiverem 85% de C&A cada, o rendimento final do processo sem retrabalho é de apenas <strong>(0.85)⁵ = 44%</strong>. Ou seja, mais da metade dos processos sofre devoluções invisíveis que sobrecarregam a equipe.
+                    </p>
+                  </div>
+
+                  {/* Topic 4: Parallel Activities & Critical Path */}
+                  <div className="space-y-1.5">
+                    <h3 className="text-xs font-bold uppercase font-mono text-cyan-800 dark:text-cyan-300 flex items-center gap-2">
+                      <span>•</span>
+                      <span>Atividades em Paralelo e o Caminho Crítico (Lean Office)</span>
+                    </h3>
+                    <p className="leading-relaxed text-slate-700 dark:text-slate-300">
+                      Quando duas ou mais atividades ocorrem simultaneamente (ex: TI preparando equipamentos enquanto o DP providencia exames), o Lean Office não soma os tempos de espera, pois elas acontecem no mesmo período de calendário. 
+                      O tempo de retenção do processo é ditado pelo <strong>Caminho Crítico</strong> (o ramo mais demorado), evitando distorções no Lead Time real.
                     </p>
                   </div>
 

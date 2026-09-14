@@ -408,27 +408,36 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
           </div>
 
           {/* Parallel Step Switch */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-            <div className="flex items-center gap-2">
-              <GitBranch className="w-4 h-4 text-purple-400" />
-              <div>
-                <span className="text-xs font-bold text-white block">
-                  Etapa Paralela (Concorrente)
-                </span>
-                <span className="text-[10px] text-slate-400">
-                  Ocorre simultaneamente com a etapa anterior (ex: TI e DP agindo juntos).
-                </span>
+          <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <GitBranch className="w-4 h-4 text-purple-400 shrink-0" />
+                <div>
+                  <span className="text-xs font-bold text-white block">
+                    Etapa Paralela (Concorrente)
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    Ocorre simultaneamente no mesmo intervalo de tempo (ex: TI e DP agindo juntos).
+                  </span>
+                </div>
               </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isParallel}
+                  onChange={e => setIsParallel(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
+              </label>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isParallel}
-                onChange={e => setIsParallel(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
-            </label>
+
+            {isParallel && (
+              <div className="pt-2 border-t border-purple-500/20 text-[11px] text-purple-300/90 flex items-start gap-1.5 animate-in fade-in duration-150">
+                <span className="font-bold text-purple-400">Regra Lean Office:</span>
+                <span>O tempo em fila (WT) desta etapa não será somado ao Lead Time. O sistema utilizará o maior tempo do bloco simultâneo (Caminho Crítico).</span>
+              </div>
+            )}
           </div>
 
           {/* Modal Footer */}
