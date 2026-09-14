@@ -268,57 +268,141 @@ export function generateVsmAiDiagnostic(
     summary: `Com a eliminação das filas nas etapas críticas e padronização das entradas, o tempo de entrega pode cair de ${(totalLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} para ${(projectedLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis (${leadTimeReductionPercent}% de redução), elevando a Eficiência de Fluxo de ${flowEfficiency.toFixed(1)}% para ${projectedFlowEfficiency.toFixed(1)}%.`
   };
 
-  // 7. Action Roadmap (Kaizen 30-60-90)
-  const quickWins = [
-    {
-      action: 'Adotar ferramenta de autoagendamento ou conciliação automática de agenda.',
-      impact: 'Corta 2 a 3 dias úteis de espera por troca de e-mails para marcar entrevistas/alinhamentos.',
-      effort: 'Baixo' as const,
-      targetStep: maxWaitStep ? maxWaitStep.title : 'Etapas com agendamento'
-    },
-    {
-      action: 'Criar checklist visual e campos mandatórios com validação no formulário inicial.',
-      impact: 'Eleva o %C&A para > 90%, evitando devoluções e pedidos de reenvio.',
-      effort: 'Baixo' as const,
-      targetStep: lowestAccuracyStep ? lowestAccuracyStep.title : 'Etapa de entrada de dados'
-    },
-    {
-      action: 'Definir SLA de resposta formal de 24h a 48h com lembrete automático aos responsáveis.',
-      impact: 'Evita que requisições fiquem esquecidas na caixa de entrada do gestor.',
-      effort: 'Baixo' as const,
-      targetStep: 'Gargalo de Espera'
-    }
-  ];
+  // 7. Action Roadmap Dinâmico (Kaizen 30-60-90)
+  // Gerado com base nas etapas reais, gargalos identificados e notas Kaizen da equipe
+  const stepsWithKaizen = steps.filter(s => s.kaizenNotes && s.kaizenNotes.trim().length > 0);
+  const activeRoles = Array.from(new Set(steps.map(s => s.role).filter(Boolean)));
+  const hasParallelSteps = steps.some(s => s.isParallel);
 
-  const structuralImprovements = [
-    {
-      action: 'Paralelizar atividades burocráticas (ex: exames clínicos e coleta documental acontecendo juntos).',
-      impact: 'Reduz o Lead Time em até 30% sem aumentar o esforço da equipe.',
-      effort: 'Médio' as const,
-      targetStep: 'Fase de Admissão/Contratação'
-    },
-    {
-      action: 'Revisar matriz de alçadas e aprovações para pedidos/vagas padronizadas.',
-      impact: 'Elimina até 2 etapas redundantes de superprocessamento.',
-      effort: 'Médio' as const,
-      targetStep: 'Etapas de Validação/Aprovação'
-    }
-  ];
+  // Fase 1: Quick Wins (0 a 30 dias) - Baixo esforço e impacto imediato
+  const quickWins = [];
 
-  const automationProjects = [
-    {
-      action: 'Integração via API / Webhook entre formulário de entrada e sistema corporativo (ERP/ATS).',
-      impact: 'Elimina 100% da digitação manual repetitiva e zera o erro de transcrição de dados.',
+  // Ação 1: Atacar a etapa de maior espera (Gargalo Principal)
+  if (maxWaitStep) {
+    const wtHours = convertTimeToHours(maxWaitStep.waitTime, maxWaitStep.waitTimeUnit, true);
+    quickWins.push({
+      action: `Estipular Acordo de Nível de Serviço (SLA) de até 24h e escalonamento automático para a etapa #${maxWaitStep.order} ("${maxWaitStep.title}").`,
+      impact: `Reduz em até 60% a fila de ${formatHours(wtHours)} sob responsabilidade de [${maxWaitStep.role}], sem custo adicional.`,
+      effort: 'Baixo' as const,
+      targetStep: `#${maxWaitStep.order} - ${maxWaitStep.title}`
+    });
+  } else {
+    quickWins.push({
+      action: `Mapear e limitar o tempo de permanência de tarefas na fila inicial de ${department}.`,
+      impact: 'Reduz o tempo de resposta inicial para clientes internos.',
+      effort: 'Baixo' as const,
+      targetStep: 'Entrada de Demandas'
+    });
+  }
+
+  // Ação 2: Atacar a pior etapa de qualidade (%C&A) com Poka-Yoke
+  if (lowestAccuracyStep && lowestAccuracyStep.percentCompleteAndAccurate < 95) {
+    quickWins.push({
+      action: `Implementar checklist com travas de validação na origem (Poka-Yoke) para a etapa #${lowestAccuracyStep.order} ("${lowestAccuracyStep.title}").`,
+      impact: `Eleva a qualidade da etapa de ${lowestAccuracyStep.percentCompleteAndAccurate}% para >92%, estancando devoluções e retrabalhos recorrentes.`,
+      effort: 'Baixo' as const,
+      targetStep: `#${lowestAccuracyStep.order} - ${lowestAccuracyStep.title}`
+    });
+  } else {
+    quickWins.push({
+      action: `Padronizar formulário de solicitação com campos mandatórios para os processos de "${projectName}".`,
+      impact: 'Elimina trocas de mensagens para coletar informações pendentes.',
+      effort: 'Baixo' as const,
+      targetStep: 'Início do Fluxo'
+    });
+  }
+
+  // Ação 3: Atender Kaizen Burst apontado pela equipe ou Gestão Visual
+  if (stepsWithKaizen.length > 0) {
+    const kStep = stepsWithKaizen[0];
+    quickWins.push({
+      action: `Executar Kaizen Burst prioritário: "${kStep.kaizenNotes}" na etapa #${kStep.order} ("${kStep.title}").`,
+      impact: `Soluciona diretamente o ponto de dor apontado pelos participantes na dinâmica de mapeamento.`,
+      effort: 'Baixo' as const,
+      targetStep: `#${kStep.order} - ${kStep.title}`
+    });
+  } else {
+    quickWins.push({
+      action: `Adotar quadro Kanban visual com limite de itens em progresso (WIP) para a equipe de ${department}.`,
+      impact: 'Proporciona transparência imediata sobre tarefas represadas e destrava gargalos.',
+      effort: 'Baixo' as const,
+      targetStep: 'Gestão Visual do Fluxo'
+    });
+  }
+
+  // Fase 2: Melhorias Estruturais (30 a 60 dias) - Médio esforço, paralelismo e governança
+  const structuralImprovements = [];
+
+  // Melhoria 1: Paralelismo / Caminho Crítico
+  if (hasParallelSteps) {
+    structuralImprovements.push({
+      action: `Equalizar a cadência de trabalho entre as atividades executadas em paralelo para otimizar o Caminho Crítico.`,
+      impact: 'Elimina tempos de sincronização ociosos entre os diferentes responsáveis do fluxo.',
       effort: 'Médio' as const,
-      targetStep: 'Cadastro e Liberação no Sistema'
-    },
-    {
-      action: 'OCR com validação imediata de fotos de documentos anexados pelo usuário.',
-      impact: 'Garante documentos nítidos e legíveis na primeira tentativa (%C&A 98%).',
+      targetStep: 'Blocos Concorrentes'
+    });
+  } else if (steps.length >= 3) {
+    const targetIdx = Math.min(2, steps.length - 1);
+    structuralImprovements.push({
+      action: `Reestruturar o fluxo para executar tarefas secundárias em paralelo com a etapa #${steps[targetIdx].order} ("${steps[targetIdx].title}").`,
+      impact: 'Reduz o Lead Time total em até 30% através da execução concomitante segundo o Lean Office.',
+      effort: 'Médio' as const,
+      targetStep: `#${steps[targetIdx].order} - ${steps[targetIdx].title}`
+    });
+  } else {
+    structuralImprovements.push({
+      action: `Revisar a sequência operacional do fluxo de "${projectName}" para balancear a carga de trabalho.`,
+      impact: 'Distribui as demandas de forma equilibrada, evitando acúmulo em um único responsável.',
+      effort: 'Médio' as const,
+      targetStep: 'Sequenciamento do Processo'
+    });
+  }
+
+  // Melhoria 2: Matriz de Alçadas / Segundo Kaizen ou Desburocratização
+  if (stepsWithKaizen.length > 1) {
+    const kStep2 = stepsWithKaizen[1];
+    structuralImprovements.push({
+      action: `Implantar plano de ação Kaizen: "${kStep2.kaizenNotes}" na etapa #${kStep2.order} ("${kStep2.title}").`,
+      impact: `Elimina atrito identificado na etapa #${kStep2.order} sob tutela de [${kStep2.role}].`,
+      effort: 'Médio' as const,
+      targetStep: `#${kStep2.order} - ${kStep2.title}`
+    });
+  } else {
+    const rolesSample = activeRoles.slice(0, 3).join(', ') || 'equipes envolvidas';
+    structuralImprovements.push({
+      action: `Redesenhar a matriz de responsabilidades (RACI) e flexibilizar alçadas decisórias entre [${rolesSample}].`,
+      impact: 'Elimina handoffs burocráticos e validações repetitivas de baixo valor agregado.',
+      effort: 'Médio' as const,
+      targetStep: 'Matriz de Alçadas e Aprovações'
+    });
+  }
+
+  // Fase 3: Automação & Tecnologia (60 a 90 dias) - Alto impacto, integrações e Poka-Yoke
+  const automationProjects = [];
+
+  const midStep = steps.length > 0 ? steps[Math.floor(steps.length / 2)] : null;
+  automationProjects.push({
+    action: `Integrar sistemas corporativos via API / Webhook para alimentar automaticamente a etapa #${midStep?.order || 1} ("${midStep?.title || 'Processamento Principal'}").`,
+    impact: 'Zera a digitação manual de dados, reduzindo o tempo de esforço (PT) a zero para tarefas operacionais.',
+    effort: 'Médio' as const,
+    targetStep: `#${midStep?.order || 1} - ${midStep?.title || 'Sistemas'}`
+  });
+
+  if (lowestAccuracyStep && lowestAccuracyStep.percentCompleteAndAccurate < 90) {
+    automationProjects.push({
+      action: `Desenvolver formulário inteligente com validação de dados em tempo real e captura automatizada para "${lowestAccuracyStep.title}".`,
+      impact: 'Garante acurácia próxima a 98% (%C&A), eliminando devoluções de ponta a ponta.',
       effort: 'Alto' as const,
-      targetStep: lowestAccuracyStep ? lowestAccuracyStep.title : 'Upload Documental'
-    }
-  ];
+      targetStep: `#${lowestAccuracyStep.order} - ${lowestAccuracyStep.title}`
+    });
+  } else {
+    automationProjects.push({
+      action: `Disponibilizar portal de autoatendimento e notificações automáticas de status para os envolvidos em "${projectName}".`,
+      impact: 'Gera rastreabilidade em tempo real e reduz consultas de acompanhamento em até 80%.',
+      effort: 'Alto' as const,
+      targetStep: 'Portal do Usuário / Autoatendimento'
+    });
+  }
 
   return {
     timestamp: new Date().toLocaleString('pt-BR'),

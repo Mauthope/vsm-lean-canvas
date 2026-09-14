@@ -235,29 +235,77 @@ h1, h2, h3, h4, h5, h6, .font-heading {
     border-color: #cbd5e1 !important;
   }
 
-  /* Page break rules */
-  .print-page-break {
-    page-break-before: always !important;
-    break-before: page !important;
-    margin-top: 16pt !important;
-    padding-top: 14pt !important;
+  /* Page setup for A4 printing */
+  @page {
+    margin: 10mm 12mm 12mm 12mm;
+    size: A4 portrait;
   }
 
+  /* Page break rules: natural continuous flow without empty half pages */
+  .print-page-break {
+    break-before: auto !important;
+    page-break-before: auto !important;
+    margin-top: 10pt !important;
+    padding-top: 4pt !important;
+  }
+
+  .print-force-break {
+    break-before: page !important;
+    page-break-before: always !important;
+    margin-top: 12pt !important;
+    padding-top: 8pt !important;
+  }
+
+  /* Keep individual cards intact so they don't break across page edges */
   .print-avoid-break {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+  }
+
+  /* Compact spacing in print mode to optimize paper usage */
+  #vsm-printable-dossier {
+    gap: 0.75rem !important;
+  }
+
+  #vsm-printable-dossier .p-8,
+  #vsm-printable-dossier .sm\:p-12 {
+    padding: 0.75rem !important;
+  }
+
+  #vsm-printable-dossier .p-6 {
+    padding: 0.6rem !important;
+  }
+
+  #vsm-printable-dossier .p-4 {
+    padding: 0.5rem !important;
+  }
+
+  #vsm-printable-dossier .space-y-8 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.75rem !important;
+  }
+
+  #vsm-printable-dossier .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.6rem !important;
+  }
+
+  #vsm-printable-dossier .space-y-5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.5rem !important;
+  }
+
+  #vsm-printable-dossier .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.4rem !important;
   }
 
   /* Tables in print */
   table {
     border-collapse: collapse !important;
     width: 100% !important;
-    font-size: 8.5pt !important;
+    font-size: 8pt !important;
   }
 
   th, td {
     border: 1px solid #cbd5e1 !important;
-    padding: 4px 6px !important;
+    padding: 3px 5px !important;
     color: #0f172a !important;
   }
 

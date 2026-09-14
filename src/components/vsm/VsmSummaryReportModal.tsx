@@ -71,7 +71,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
   // Editable dossier metadata
   const [consultantName, setConsultantName] = useState('Mauricio Grigol Prestes');
   const [reportVersion, setReportVersion] = useState('Versão 1.0 - Diagnóstico Inicial');
-  const [companyName, setCompanyName] = useState('QualiDecision / Corporativo');
+  const [companyName, setCompanyName] = useState('Organização / Corporativo');
   const [showConfig, setShowConfig] = useState(false);
 
   // Modular sections inclusion toggles
@@ -978,7 +978,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
             {/* 4. EDUCATIONAL / PEDAGOGICAL SECTION (TRAINING GUIDE)         */}
             {/* ------------------------------------------------------------- */}
             {includeEducation && (
-              <div className="space-y-4 print-page-break">
+              <div className="space-y-4 print-avoid-break">
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                   <h2 className="text-sm uppercase font-bold tracking-wider font-mono text-slate-700 dark:text-slate-300">
@@ -1206,7 +1206,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
             {/* 6. AUDITABLE STEP MATRIX (TABLE)                              */}
             {/* ------------------------------------------------------------- */}
             {includeTable && (
-              <div className="space-y-3 print-page-break">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
@@ -1370,7 +1370,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
             {/* 8. KAIZEN ROADMAP 30-60-90 DAYS                               */}
             {/* ------------------------------------------------------------- */}
             {includeRoadmap && (
-              <div className="space-y-4 print-page-break">
+              <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <TrendingDown className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                   <h2 className="text-sm uppercase font-bold tracking-wider font-mono text-slate-700 dark:text-slate-300">
@@ -1381,7 +1381,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                 <div className="space-y-3">
                   
                   {/* Quick Wins (0 to 30 days) */}
-                  <div className={`p-4 rounded-2xl border space-y-2.5 ${
+                  <div className={`p-4 rounded-2xl border space-y-2.5 print-avoid-break ${
                     isPaper ? 'bg-emerald-50/50 border-emerald-200' : 'bg-emerald-950/20 border-emerald-500/30'
                   }`}>
                     <div className="flex items-center justify-between">
@@ -1414,7 +1414,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                   </div>
 
                   {/* Structural Improvements (30 to 60 days) */}
-                  <div className={`p-4 rounded-2xl border space-y-2.5 ${
+                  <div className={`p-4 rounded-2xl border space-y-2.5 print-avoid-break ${
                     isPaper ? 'bg-cyan-50/50 border-cyan-200' : 'bg-cyan-950/20 border-cyan-500/30'
                   }`}>
                     <div className="flex items-center justify-between">
@@ -1447,7 +1447,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                   </div>
 
                   {/* Automation & Digital Transformation (60 to 90 days) */}
-                  <div className={`p-4 rounded-2xl border space-y-2.5 ${
+                  <div className={`p-4 rounded-2xl border space-y-2.5 print-avoid-break ${
                     isPaper ? 'bg-purple-50/50 border-purple-200' : 'bg-purple-950/20 border-purple-500/30'
                   }`}>
                     <div className="flex items-center justify-between">
@@ -1529,7 +1529,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
 
                 {/* Footer Micro-print */}
                 <div className="pt-6 text-center text-[10px] font-mono text-slate-400 dark:text-slate-600">
-                  Gerado pelo Sistema QualiDecision VSM Lean Canvas • Metodologia Lean Six Sigma para Processos Administrativos e Corporativos
+                  Gerado pelo Sistema VSM Lean Canvas • Metodologia Lean Six Sigma para Processos Administrativos e Corporativos
                 </div>
               </div>
             )}
