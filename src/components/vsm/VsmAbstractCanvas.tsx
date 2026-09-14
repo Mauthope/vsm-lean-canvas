@@ -22,13 +22,18 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize,
+  Maximize2,
+  Minimize2,
   RotateCcw,
   Move,
   GripHorizontal,
   Hand,
   MousePointer,
   Lock,
-  Unlock
+  Unlock,
+  Plus,
+  Copy,
+  Trash2
 } from 'lucide-react';
 import { VSMStep, BottleneckAnalysis } from '@/types/vsm';
 import {
@@ -41,6 +46,9 @@ interface VsmAbstractCanvasProps {
   steps: VSMStep[];
   metrics: BottleneckAnalysis;
   onEditStep: (step: VSMStep) => void;
+  onNewStep?: (insertAtIndex?: number) => void;
+  onDeleteStep?: (stepId: string) => void;
+  onDuplicateStep?: (step: VSMStep) => void;
   onOpenKaizenNotes: (step: VSMStep) => void;
   onOpenGlossary?: (topic?: string) => void;
   onOpenAiDiagnostic?: () => void;
@@ -76,12 +84,17 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
   steps,
   metrics,
   onEditStep,
+  onNewStep,
+  onDeleteStep,
+  onDuplicateStep,
   onOpenKaizenNotes,
   onOpenGlossary,
   onOpenAiDiagnostic
 }) => {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [heatmapMode, setHeatmapMode] = useState<HeatmapMode>('bottlenecks');
   const [canvasMode, setCanvasMode] = useState<CanvasMode>('pan');
   const [isLocked, setIsLocked] = useState(false);
@@ -214,6 +227,49 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
       handleFitToView();
     }, 50);
   };
+
+  // Fullscreen toggler
+  const handleToggleFullscreen = () => {
+    if (!isFullscreen) {
+      setIsFullscreen(true);
+      if (wrapperRef.current && wrapperRef.current.requestFullscreen) {
+        wrapperRef.current.requestFullscreen().catch(() => {});
+      }
+    } else {
+      setIsFullscreen(false);
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  };
+
+  // Fullscreen lifecycle & Esc key handler
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const active = !!document.fullscreenElement;
+      setIsFullscreen(active);
+      setTimeout(() => {
+        handleFitToView();
+      }, 150);
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+        setIsFullscreen(false);
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFullscreen, handleFitToView]);
 
   // Zoom preset handlers
   const handleSetZoom = (targetZoom: number) => {
@@ -408,17 +464,34 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
 
   if (steps.length === 0) {
     return (
-      <div className="p-12 text-center rounded-3xl bg-slate-950 border border-slate-800 text-slate-400 font-mono">
-        Nenhuma etapa no fluxo para visualização macro.
+      <div className="p-12 text-center rounded-3xl bg-slate-950 border border-slate-800 text-slate-400 font-mono space-y-4">
+        <p>Nenhuma etapa no fluxo para visualização macro.</p>
+        {onNewStep && (
+          <button
+            type="button"
+            onClick={() => onNewStep()}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 font-bold text-xs hover:from-cyan-400 hover:to-teal-400 transition-all cursor-pointer inline-flex items-center gap-2 shadow-lg shadow-cyan-500/25 active:scale-95"
+          >
+            <Plus className="w-4 h-4 stroke-[3]" />
+            <span>Criar Primeira Tarefa</span>
+          </button>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="rounded-3xl bg-[#050811] border border-slate-800/90 shadow-2xl overflow-hidden relative select-none">
+    <div
+      ref={wrapperRef}
+      className={`select-none transition-all duration-200 ${
+        isFullscreen
+          ? 'fixed inset-0 z-50 w-screen h-screen bg-[#050811] flex flex-col p-2 sm:p-4 overflow-hidden'
+          : 'rounded-3xl bg-[#050811] border border-slate-800/90 shadow-2xl overflow-hidden relative'
+      }`}
+    >
       
       {/* 1. Header Toolbar */}
-      <div className="p-4 sm:p-5 border-b border-slate-800/80 bg-slate-950/90 flex flex-col md:flex-row md:items-center justify-between gap-4 z-20 relative">
+      <div className="p-4 sm:p-5 border-b border-slate-800/80 bg-slate-950/90 flex flex-col md:flex-row md:items-center justify-between gap-4 z-20 relative shrink-0">
         <div>
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-sm shadow-cyan-400" />
@@ -437,6 +510,34 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
         {/* Heatmap Mode Selector & Action Buttons */}
         <div className="flex items-center gap-2.5 flex-wrap">
           
+          {/* New Step Action Button */}
+          {onNewStep && (
+            <button
+              type="button"
+              onClick={() => onNewStep()}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 text-xs font-black shadow-lg shadow-cyan-500/25 active:scale-95 transition-all cursor-pointer"
+              title="Adicionar uma nova etapa/tarefa ao fluxo VSM"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[3]" />
+              <span>Nova Tarefa</span>
+            </button>
+          )}
+
+          {/* Fullscreen Button */}
+          <button
+            type="button"
+            onClick={handleToggleFullscreen}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm ${
+              isFullscreen
+                ? 'bg-amber-500 text-slate-950 font-black ring-2 ring-amber-400/50'
+                : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
+            }`}
+            title={isFullscreen ? 'Sair da Tela Cheia (ESC)' : 'Visualizar Mapa Abstrato em Tela Cheia'}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            <span>{isFullscreen ? 'Sair Tela Cheia' : 'Tela Cheia'}</span>
+          </button>
+
           {/* AI Diagnostic Trigger Button */}
           {onOpenAiDiagnostic && (
             <button
@@ -454,7 +555,7 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
           <button
             type="button"
             onClick={() => setShowCaExplainer(!showCaExplainer)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-950/50 border border-purple-500/40 text-purple-300 hover:bg-purple-900/60 text-xs font-bold transition-all cursor-pointer shadow-sm"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-950/50 border border-purple-500/40 text-purple-300 hover:bg-purple-900/60 text-xs font-bold transition-all cursor-pointer shadow-sm"
             title="Aprender o que significa %C&A"
           >
             <Lightbulb className="w-3.5 h-3.5 text-purple-400" />
@@ -563,7 +664,9 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
         onPointerDown={handleCanvasPointerDown}
         onPointerMove={handleCanvasPointerMove}
         onPointerUp={handleCanvasPointerUp}
-        className={`relative w-full h-[640px] overflow-hidden bg-[#060a13] bg-[radial-gradient(#1e293b_1.2px,transparent_1.2px)] [background-size:24px_24px] ${
+        className={`relative w-full ${
+          isFullscreen ? 'flex-1 h-full min-h-[420px]' : 'h-[640px]'
+        } overflow-hidden bg-[#060a13] bg-[radial-gradient(#1e293b_1.2px,transparent_1.2px)] [background-size:24px_24px] ${
           isPanning ? 'cursor-grabbing' : canvasMode === 'pan' ? 'cursor-grab' : 'cursor-default'
         }`}
       >
@@ -688,6 +791,36 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
             title={isLocked ? 'Posições bloqueadas (clique para destravar e arrastar nós)' : 'Posições destravadas (clique para travar nós)'}
           >
             {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+          </button>
+
+          <div className="w-px h-4 bg-slate-800 mx-0.5" />
+
+          {/* Quick Add Step Floating Button */}
+          {onNewStep && (
+            <button
+              type="button"
+              onClick={() => onNewStep()}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 transition-all cursor-pointer shadow-sm active:scale-95"
+              title="Adicionar nova etapa / tarefa ao fluxo"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[3]" />
+              <span>+ Tarefa</span>
+            </button>
+          )}
+
+          {/* Fullscreen Floating Button */}
+          <button
+            type="button"
+            onClick={handleToggleFullscreen}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm ${
+              isFullscreen
+                ? 'bg-amber-500 text-slate-950 font-black ring-2 ring-amber-400/50'
+                : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
+            }`}
+            title={isFullscreen ? 'Sair da Tela Cheia (ESC)' : 'Visualizar Mapa Abstrato em Tela Cheia'}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            <span>{isFullscreen ? 'Sair' : 'Tela Cheia'}</span>
           </button>
         </div>
 
@@ -896,7 +1029,7 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
                   width: `${NODE_WIDTH}px`,
                   height: `${NODE_HEIGHT}px`
                 }}
-                className={`absolute pointer-events-auto rounded-2xl p-3.5 border flex flex-col justify-between transition-shadow backdrop-blur-md cursor-pointer ${nodeBorder} ${nodeBg} ${nodeGlow} ${
+                className={`group/card absolute pointer-events-auto rounded-2xl p-3.5 border flex flex-col justify-between transition-shadow backdrop-blur-md cursor-pointer ${nodeBorder} ${nodeBg} ${nodeGlow} ${
                   isSelected ? 'ring-2 ring-cyan-400 scale-[1.02] z-30 shadow-2xl' : 'hover:border-slate-700'
                 } ${isDraggingThis ? 'cursor-grabbing z-40 opacity-95 scale-[1.03] shadow-2xl' : ''}`}
                 onClick={() => setSelectedStepId(step.id === selectedStepId ? null : step.id)}
@@ -1026,6 +1159,21 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
                   )}
                 </div>
 
+                {/* Quick Add Step After This Node */}
+                {onNewStep && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNewStep(step.order);
+                    }}
+                    className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 flex items-center justify-center shadow-lg shadow-cyan-500/40 z-30 opacity-0 group-hover/card:opacity-100 hover:scale-125 active:scale-95 transition-all cursor-pointer"
+                    title={`+ Inserir nova tarefa após #${step.order} (${step.title})`}
+                  >
+                    <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                  </button>
+                )}
+
               </div>
             );
           })}
@@ -1117,6 +1265,18 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
               <strong className="text-purple-300">{selectedStep.percentCompleteAndAccurate}%</strong>
             </div>
 
+            {onNewStep && (
+              <button
+                type="button"
+                onClick={() => onNewStep(selectedStep.order)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-teal-500/20 border border-teal-500/40 text-teal-300 hover:bg-teal-500/30 transition-all cursor-pointer shadow-sm active:scale-95"
+                title={`Inserir uma nova etapa logo após #${selectedStep.order} (${selectedStep.title})`}
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>+ Inserir a Seguir</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => onEditStep(selectedStep)}
@@ -1125,6 +1285,33 @@ export const VsmAbstractCanvas: React.FC<VsmAbstractCanvasProps> = ({
               <Pencil className="w-3.5 h-3.5" />
               <span>Editar Etapa</span>
             </button>
+
+            {onDuplicateStep && (
+              <button
+                type="button"
+                onClick={() => onDuplicateStep(selectedStep)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-all cursor-pointer"
+                title="Duplicar esta etapa"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Duplicar</span>
+              </button>
+            )}
+
+            {onDeleteStep && (
+              <button
+                type="button"
+                onClick={() => {
+                  onDeleteStep(selectedStep.id);
+                  setSelectedStepId(null);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-500/15 border border-rose-500/30 text-rose-300 hover:bg-rose-500/25 transition-all cursor-pointer"
+                title="Remover esta etapa do fluxo"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Excluir</span>
+              </button>
+            )}
 
             <button
               type="button"

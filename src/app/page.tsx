@@ -502,6 +502,9 @@ export default function VsmHomePage() {
             steps={filteredSteps}
             metrics={metrics}
             onEditStep={handleOpenEditStepModal}
+            onNewStep={handleOpenNewStepModal}
+            onDeleteStep={handleDeleteStep}
+            onDuplicateStep={handleDuplicateStep}
             onOpenKaizenNotes={step => {
               setEditingStep(step);
               setIsStepModalOpen(true);
