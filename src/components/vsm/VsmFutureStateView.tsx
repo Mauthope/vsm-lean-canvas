@@ -19,9 +19,27 @@ import {
   Flame,
   GitBranch,
   SlidersHorizontal,
-  ChevronRight
+  ChevronRight,
+  Plus,
+  Trash2,
+  ClipboardList,
+  CheckSquare,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  User,
+  MapPin,
+  Calendar,
+  Target
 } from 'lucide-react';
-import { VSMStep, TimeUnit, BottleneckAnalysis, FutureStateMetrics } from '@/types/vsm';
+import {
+  VSMStep,
+  TimeUnit,
+  BottleneckAnalysis,
+  FutureStateMetrics,
+  KaizenAction5W2H,
+  KaizenHorizon
+} from '@/types/vsm';
 import {
   formatHours,
   formatHoursCompact,
@@ -39,6 +57,8 @@ interface VsmFutureStateViewProps {
   onOpenReportModal: () => void;
   onOpenGlossary?: (topic?: string) => void;
   onSelectStep?: (stepId: string) => void;
+  kaizenRoadmap?: KaizenAction5W2H[];
+  onUpdateKaizenRoadmap?: (roadmap: KaizenAction5W2H[]) => void;
 }
 
 export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
@@ -47,7 +67,9 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
   onUpdateStep,
   onOpenReportModal,
   onOpenGlossary,
-  onSelectStep
+  onSelectStep,
+  kaizenRoadmap = [],
+  onUpdateKaizenRoadmap
 }) => {
   // Cálculo rigoroso das métricas futuras em tempo real
   const futureMetrics: FutureStateMetrics = useMemo(() => {
@@ -110,6 +132,150 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
       futureWaitTime: newWt,
       futureWaitTimeUnit: step.futureWaitTimeUnit || step.waitTimeUnit
     });
+  };
+
+  // =========================================================================
+  // GESTÃO DO PLANO DE AÇÃO KAIZEN (5W2H)
+  // =========================================================================
+  const [horizonFilter, setHorizonFilter] = React.useState<'todos' | KaizenHorizon>('todos');
+  const [expandedActions, setExpandedActions] = React.useState<Record<string, boolean>>({});
+
+  const toggleExpand = (id: string) => {
+    setExpandedActions(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // Contadores por horizonte
+  const count30 = useMemo(() => (kaizenRoadmap || []).filter(a => a.when === '30_dias').length, [kaizenRoadmap]);
+  const count60 = useMemo(() => (kaizenRoadmap || []).filter(a => a.when === '60_dias').length, [kaizenRoadmap]);
+  const count90 = useMemo(() => (kaizenRoadmap || []).filter(a => a.when === '90_dias').length, [kaizenRoadmap]);
+
+  const filteredActions = useMemo(() => {
+    if (horizonFilter === 'todos') return kaizenRoadmap || [];
+    return (kaizenRoadmap || []).filter(a => a.when === horizonFilter);
+  }, [kaizenRoadmap, horizonFilter]);
+
+  // Ação Rápida 5W2H: Gerar rascunho de ações a partir de todos os Kaizens
+  const handleGenerate5W2HDraft = () => {
+    const draftActions: KaizenAction5W2H[] = [];
+
+    steps.forEach(step => {
+      const kaizens = getStepKaizens(step);
+      const hasCustom = typeof step.futureWaitTime === 'number';
+      const currentWtH = convertTimeToHours(step.waitTime, step.waitTimeUnit, true);
+      const futureWtH = hasCustom
+        ? convertTimeToHours(step.futureWaitTime!, step.futureWaitTimeUnit || step.waitTimeUnit, true)
+        : currentWtH;
+      const diffH = currentWtH - futureWtH;
+      const diffPct = currentWtH > 0 ? Math.round((diffH / currentWtH) * 100) : 0;
+
+      if (kaizens.length > 0) {
+        kaizens.forEach((kText, idx) => {
+          let horizon: KaizenHorizon = '30_dias';
+          if (diffPct >= 75 || /automa|sistema|integra|portal|api/i.test(kText)) {
+            horizon = '60_dias';
+          }
+          if (/desenvolv|erp|software|contrat|reestrutur/i.test(kText)) {
+            horizon = '90_dias';
+          }
+
+          const whyText = diffH > 0
+            ? `Reduzir tempo de espera de ${step.waitTime} ${step.waitTimeUnit} para ${step.futureWaitTime} ${step.futureWaitTimeUnit || step.waitTimeUnit} (-${diffPct}%) e acelerar o fluxo.`
+            : `Eliminar desperdícios operacionais e elevar qualidade na etapa #${step.order}.`;
+
+          draftActions.push({
+            id: `action-${Date.now()}-${step.id}-${idx}`,
+            stepId: step.id,
+            stepOrder: step.order,
+            what: kText,
+            why: whyText,
+            where: `Etapa #${step.order} • ${step.title} (${step.role})`,
+            who: step.role || 'Líder Designado',
+            when: horizon,
+            how: 'Padronização de procedimento operacional e alinhamento do time',
+            howMuch: 'Esforço interno (sem investimento direto)',
+            status: 'planejado',
+            createdAt: new Date().toISOString()
+          });
+        });
+      } else if (hasCustom && diffH > 0) {
+        draftActions.push({
+          id: `action-${Date.now()}-${step.id}-gen`,
+          stepId: step.id,
+          stepOrder: step.order,
+          what: `Otimização do fluxo e eliminação de tempo morto na etapa "${step.title}"`,
+          why: `Garantir a meta pactuada de redução do WT em ${formatHoursCompact(diffH)} (-${diffPct}%).`,
+          where: `Etapa #${step.order} • ${step.title} (${step.role})`,
+          who: step.role || 'Líder Designado',
+          when: diffPct > 50 ? '60_dias' : '30_dias',
+          how: 'Revisão das regras de passagem e eliminação de lotes de espera',
+          howMuch: 'Esforço interno',
+          status: 'planejado',
+          createdAt: new Date().toISOString()
+        });
+      }
+    });
+
+    if (draftActions.length === 0) {
+      draftActions.push({
+        id: `action-${Date.now()}-init`,
+        what: 'Workshop de alinhamento para implantação das metas do Estado Futuro',
+        why: 'Mobilizar a equipe e formalizar os novos prazos de atendimento (SLAs)',
+        where: 'Fluxo de Valor Geral',
+        who: 'Facilitador / Sponsor do Projeto',
+        when: '30_dias',
+        how: 'Reunião de kickoff e definição do comitê de acompanhamento Kaizen',
+        howMuch: 'Esforço interno',
+        status: 'planejado',
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    if ((kaizenRoadmap || []).length > 0) {
+      if (confirm(`Já existem ${kaizenRoadmap.length} ações cadastradas. Deseja substituir pelo novo rascunho dos Kaizens mapeados?`)) {
+        onUpdateKaizenRoadmap?.(draftActions);
+      }
+    } else {
+      onUpdateKaizenRoadmap?.(draftActions);
+    }
+  };
+
+  // Adicionar Nova Ação
+  const handleAddNewAction = (step?: VSMStep) => {
+    const newAction: KaizenAction5W2H = {
+      id: `action-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      stepId: step?.id,
+      stepOrder: step?.order,
+      what: '',
+      why: step
+        ? `Viabilizar a redução de espera na etapa #${step.order} (${step.title})`
+        : 'Melhoria contínua do fluxo de valor',
+      where: step ? `Etapa #${step.order} • ${step.title} (${step.role})` : 'Fluxo Geral',
+      who: step?.role || '',
+      when: '30_dias',
+      how: 'Revisão de procedimento operacional',
+      howMuch: 'R$ 0 (esforço interno)',
+      status: 'planejado',
+      createdAt: new Date().toISOString()
+    };
+    onUpdateKaizenRoadmap?.([...(kaizenRoadmap || []), newAction]);
+  };
+
+  const handleUpdateAction = (actionId: string, updates: Partial<KaizenAction5W2H>) => {
+    if (!onUpdateKaizenRoadmap) return;
+    const updated = (kaizenRoadmap || []).map(a => (a.id === actionId ? { ...a, ...updates } : a));
+    onUpdateKaizenRoadmap(updated);
+  };
+
+  const handleDeleteAction = (actionId: string) => {
+    if (!onUpdateKaizenRoadmap) return;
+    const updated = (kaizenRoadmap || []).filter(a => a.id !== actionId);
+    onUpdateKaizenRoadmap(updated);
+  };
+
+  const handleClearRoadmap = () => {
+    if (confirm('Deseja remover todas as ações 5W2H pactuadas?')) {
+      onUpdateKaizenRoadmap?.([]);
+    }
   };
 
   return (
@@ -548,6 +714,19 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                         >
                           Zerar
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleAddNewAction(step);
+                            const el = document.getElementById('vsm-5w2h-section');
+                            if (el) el.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="px-2 py-1 rounded bg-amber-950/60 hover:bg-amber-500 hover:text-slate-950 text-amber-300 border border-amber-500/30 text-[10px] font-mono font-bold transition-colors cursor-pointer flex items-center gap-1"
+                          title="Criar ação Kaizen 5W2H vinculada a esta etapa"
+                        >
+                          <Plus className="w-2.5 h-2.5" />
+                          <span>5W2H</span>
+                        </button>
                       </div>
                     </td>
 
@@ -581,6 +760,365 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
             </tfoot>
           </table>
         </div>
+      </div>
+
+      {/* ================================================================= */}
+      {/* 3. PLANO DE AÇÃO KAIZEN (5W2H) DO ESTADO FUTURO                   */}
+      {/* ================================================================= */}
+      <div id="vsm-5w2h-section" className="space-y-4 pt-6 border-t border-slate-800 animate-in fade-in duration-300">
+        
+        {/* Header da Seção 5W2H */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-amber-400" />
+              <h2 className="text-base sm:text-lg uppercase font-black tracking-wider font-mono text-white flex items-center gap-2">
+                Plano de Ação Kaizen (5W2H) • Viabilização do Estado Futuro
+              </h2>
+            </div>
+            <p className="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">
+              Pactue com a equipe em sala as ações, líderes designados e prazos (30, 60 e 90 dias) que tornarão a redução de WT e a eliminação dos desperdícios possíveis.
+            </p>
+          </div>
+
+          {/* Botões do Cabeçalho 5W2H */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {onOpenGlossary && (
+              <button
+                type="button"
+                onClick={() => onOpenGlossary('kaizen_5w2h')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700 text-slate-300 hover:text-white hover:border-amber-500/50 text-xs font-semibold transition-all cursor-pointer"
+                title="Aprender sobre a metodologia Lean do Plano 5W2H e Horizontes 30-60-90 dias"
+              >
+                <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
+                <span>Por que 5W2H?</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleGenerate5W2HDraft}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+              title="Converter automaticamente os Kaizens identificados no mapeamento em ações 5W2H pré-preenchidas"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              <span>Sugerir 5W2H dos Kaizens</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleAddNewAction()}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Nova Ação 5W2H</span>
+            </button>
+
+            {(kaizenRoadmap || []).length > 0 && (
+              <button
+                type="button"
+                onClick={handleClearRoadmap}
+                className="p-1.5 rounded-xl bg-slate-900 hover:bg-rose-950/60 text-slate-500 hover:text-rose-300 border border-slate-800 hover:border-rose-500/30 transition-colors text-xs cursor-pointer"
+                title="Limpar todas as ações 5W2H"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Barra de Filtros por Horizonte */}
+        <div className="flex items-center justify-between gap-3 flex-wrap bg-slate-900/70 p-2.5 rounded-2xl border border-slate-800">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setHorizonFilter('todos')}
+              className={`px-3 py-1 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
+                horizonFilter === 'todos'
+                  ? 'bg-white text-slate-950 shadow-xs'
+                  : 'bg-slate-800/80 text-slate-400 hover:text-white'
+              }`}
+            >
+              Todas ({(kaizenRoadmap || []).length})
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setHorizonFilter('30_dias')}
+              className={`px-3 py-1 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                horizonFilter === '30_dias'
+                  ? 'bg-emerald-500 text-slate-950 shadow-xs'
+                  : 'bg-emerald-950/30 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-900/40'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>0 a 30 dias • Quick Wins ({count30})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setHorizonFilter('60_dias')}
+              className={`px-3 py-1 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                horizonFilter === '60_dias'
+                  ? 'bg-cyan-500 text-slate-950 shadow-xs'
+                  : 'bg-cyan-950/30 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-900/40'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+              <span>30 a 60 dias • Estrutural ({count60})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setHorizonFilter('90_dias')}
+              className={`px-3 py-1 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                horizonFilter === '90_dias'
+                  ? 'bg-purple-500 text-slate-950 shadow-xs'
+                  : 'bg-purple-950/30 text-purple-300 border border-purple-500/30 hover:bg-purple-900/40'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+              <span>60 a 90 dias • Projetos ({count90})</span>
+            </button>
+          </div>
+
+          <div className="text-[11px] font-mono text-slate-400 flex items-center gap-2">
+            <span className="text-emerald-400 font-bold">{count30} vitórias rápidas</span>
+            <span>•</span>
+            <span className="text-cyan-400 font-bold">{count60} melhorias de fluxo</span>
+            <span>•</span>
+            <span className="text-purple-400 font-bold">{count90} projetos</span>
+          </div>
+        </div>
+
+        {/* Lista de Ações 5W2H */}
+        {filteredActions.length === 0 ? (
+          <div className="p-8 rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 text-center space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center mx-auto">
+              <ClipboardList className="w-6 h-6" />
+            </div>
+            <div className="max-w-md mx-auto">
+              <h3 className="text-sm font-bold text-slate-200">
+                {horizonFilter === 'todos'
+                  ? 'Nenhuma ação 5W2H cadastrada ainda'
+                  : `Nenhuma ação encontrada para o filtro selecionado`}
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Clique no botão abaixo para converter instantaneamente as ideias de Kaizen mapeadas nas etapas em um plano de ação 5W2H pactuado com a equipe.
+              </p>
+            </div>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleGenerate5W2HDraft}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>✨ Sugerir Plano 5W2H dos Kaizens</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3.5">
+            {filteredActions.map((action, idx) => {
+              const isExpanded = !!expandedActions[action.id];
+              const is30 = action.when === '30_dias';
+              const is60 = action.when === '60_dias';
+              const is90 = action.when === '90_dias';
+
+              return (
+                <div
+                  key={action.id}
+                  className={`p-4 rounded-2xl border transition-all ${
+                    is30
+                      ? 'bg-emerald-950/15 border-emerald-500/30 hover:border-emerald-500/50'
+                      : is60
+                      ? 'bg-cyan-950/15 border-cyan-500/30 hover:border-cyan-500/50'
+                      : 'bg-purple-950/15 border-purple-500/30 hover:border-purple-500/50'
+                  }`}
+                >
+                  {/* Topo do Card: Número, Horizonte, Seletor e Excluir */}
+                  <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-800/80 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-lg bg-slate-800 text-slate-300 font-mono font-bold text-xs flex items-center justify-center">
+                        #{idx + 1}
+                      </span>
+                      {action.stepOrder && (
+                        <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-cyan-300 text-[10px] font-mono font-bold border border-slate-700">
+                          Etapa #{action.stepOrder}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Seletor de Horizonte de Entrega */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center bg-slate-900 rounded-xl p-0.5 border border-slate-800 text-[11px] font-mono font-bold">
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateAction(action.id, { when: '30_dias' })}
+                          className={`px-2 py-1 rounded-lg transition-colors cursor-pointer ${
+                            is30 ? 'bg-emerald-500 text-slate-950 font-black' : 'text-slate-400 hover:text-emerald-300'
+                          }`}
+                          title="0 a 30 dias (Vitória Rápida / Quick Win)"
+                        >
+                          30 dias
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateAction(action.id, { when: '60_dias' })}
+                          className={`px-2 py-1 rounded-lg transition-colors cursor-pointer ${
+                            is60 ? 'bg-cyan-500 text-slate-950 font-black' : 'text-slate-400 hover:text-cyan-300'
+                          }`}
+                          title="30 a 60 dias (Melhoria de Processo / SLA)"
+                        >
+                          60 dias
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateAction(action.id, { when: '90_dias' })}
+                          className={`px-2 py-1 rounded-lg transition-colors cursor-pointer ${
+                            is90 ? 'bg-purple-500 text-slate-950 font-black' : 'text-slate-400 hover:text-purple-300'
+                          }`}
+                          title="60 a 90 dias (Projeto Estruturante / Automação)"
+                        >
+                          90 dias
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteAction(action.id)}
+                        className="p-1 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
+                        title="Excluir ação"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Campos Centrais 5W2H */}
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-3">
+                    
+                    {/* 1. O Que (What) - 5 colunas */}
+                    <div className="md:col-span-5 space-y-1">
+                      <label className="text-[10px] font-mono uppercase font-bold text-amber-400 flex items-center gap-1">
+                        <CheckSquare className="w-3 h-3" />
+                        <span>O Que Fazer (What)</span>
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={action.what}
+                        onChange={e => handleUpdateAction(action.id, { what: e.target.value })}
+                        placeholder="Descreva a ação de melhoria Kaizen pactuada..."
+                        className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500 transition-colors resize-none leading-relaxed font-sans"
+                      />
+                    </div>
+
+                    {/* 2. Por Que (Why) - 4 colunas */}
+                    <div className="md:col-span-4 space-y-1">
+                      <label className="text-[10px] font-mono uppercase font-bold text-emerald-400 flex items-center gap-1">
+                        <Target className="w-3 h-3" />
+                        <span>Por Que / Meta (Why)</span>
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={action.why}
+                        onChange={e => handleUpdateAction(action.id, { why: e.target.value })}
+                        placeholder="Meta de redução de WT ou eliminação de retrabalho..."
+                        className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors resize-none leading-relaxed font-sans"
+                      />
+                    </div>
+
+                    {/* 3. Onde & Quem (Where & Who) - 3 colunas */}
+                    <div className="md:col-span-3 space-y-2">
+                      <div>
+                        <label className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-cyan-400" />
+                          <span>Onde (Where)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={action.where}
+                          onChange={e => handleUpdateAction(action.id, { where: e.target.value })}
+                          placeholder="Etapa ou setor alvo..."
+                          className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition-colors font-sans mt-0.5"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-mono uppercase font-bold text-amber-300 flex items-center gap-1">
+                          <User className="w-3 h-3 text-amber-400" />
+                          <span>Quem / Dono (Who)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={action.who}
+                          onChange={e => handleUpdateAction(action.id, { who: e.target.value })}
+                          placeholder="Nome do líder da ação..."
+                          className="w-full bg-amber-950/30 border border-amber-500/40 rounded-lg px-2 py-1 text-xs text-amber-200 font-bold placeholder-amber-500/50 focus:outline-none focus:border-amber-400 transition-colors font-sans mt-0.5 shadow-xs"
+                        />
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Expansor Opcional: Como (How) e Quanto Custa (How Much) */}
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(action.id)}
+                      className="text-[11px] text-slate-400 hover:text-slate-200 font-mono flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      {isExpanded ? (
+                        <>
+                          <ChevronUp className="w-3 h-3 text-slate-400" />
+                          <span>Ocultar detalhes de execução (How / How Much)</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-3 h-3 text-slate-400" />
+                          <span>Editar detalhes de execução (How / How Much)</span>
+                        </>
+                      )}
+                    </button>
+
+                    {isExpanded && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2.5 mt-2 border-t border-slate-800/60 animate-in slide-in-from-top-1 duration-200">
+                        <div>
+                          <label className="text-[10px] font-mono uppercase font-bold text-slate-400 block mb-1">
+                            Como Fazer (How):
+                          </label>
+                          <input
+                            type="text"
+                            value={action.how || ''}
+                            onChange={e => handleUpdateAction(action.id, { how: e.target.value })}
+                            placeholder="Método, procedimento ou tecnologia..."
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-mono uppercase font-bold text-slate-400 block mb-1">
+                            Quanto Custa (How Much):
+                          </label>
+                          <input
+                            type="text"
+                            value={action.howMuch || ''}
+                            onChange={e => handleUpdateAction(action.id, { howMuch: e.target.value })}
+                            placeholder="Ex: R$ 0 (esforço interno) ou valor estimado..."
+                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
+        )}
+
       </div>
 
     </div>

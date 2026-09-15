@@ -28,7 +28,7 @@ import {
   Lightbulb,
   FileCheck
 } from 'lucide-react';
-import { VSMStep, BottleneckAnalysis, WasteType, FutureStateMetrics } from '@/types/vsm';
+import { VSMStep, BottleneckAnalysis, WasteType, FutureStateMetrics, KaizenAction5W2H } from '@/types/vsm';
 import {
   formatHours,
   getFlowEfficiencyClassification,
@@ -48,6 +48,7 @@ interface VsmSummaryReportModalProps {
   department: string;
   steps: VSMStep[];
   metrics: BottleneckAnalysis;
+  kaizenRoadmap?: KaizenAction5W2H[];
   aiReport?: (AiDiagnosticReport & { provider?: string; isLiveAi?: boolean }) | null;
   onRunAiDiagnostic?: () => void;
   onSaveAiReport?: (report: AiDiagnosticReport & { provider?: string; isLiveAi?: boolean }) => void;
@@ -60,6 +61,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
   department,
   steps,
   metrics,
+  kaizenRoadmap = [],
   aiReport,
   onRunAiDiagnostic,
   onSaveAiReport
@@ -433,25 +435,61 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
 
     if (includeRoadmap) {
       md += `## 7. Roadmap Kaizen de Implementação (30 - 60 - 90 Dias)\n\n`;
-      md += `### Fase 1: Vitórias Rápidas (0 a 30 dias - Quick Wins)\n`;
-      md += `| Ação Proposta | Etapa Alvo | Impacto Estimado | Esforço |\n`;
-      md += `| :--- | :--- | :--- | :---: |\n`;
-      diagnosticReport.actionRoadmap.quickWins.forEach(a => {
-        md += `| ${a.action} | ${a.targetStep} | ${a.impact} | ${a.effort} |\n`;
-      });
-      md += `\n### Fase 2: Melhorias Estruturais & Padronização (30 a 60 dias)\n`;
-      md += `| Ação Proposta | Etapa Alvo | Impacto Estimado | Esforço |\n`;
-      md += `| :--- | :--- | :--- | :---: |\n`;
-      diagnosticReport.actionRoadmap.structuralImprovements.forEach(a => {
-        md += `| ${a.action} | ${a.targetStep} | ${a.impact} | ${a.effort} |\n`;
-      });
-      md += `\n### Fase 3: Automação & Transformação Digital (60 a 90 dias)\n`;
-      md += `| Ação Proposta | Etapa Alvo | Impacto Estimado | Esforço |\n`;
-      md += `| :--- | :--- | :--- | :---: |\n`;
-      diagnosticReport.actionRoadmap.automationProjects.forEach(a => {
-        md += `| ${a.action} | ${a.targetStep} | ${a.impact} | ${a.effort} |\n`;
-      });
-      md += `\n---\n\n`;
+      if (kaizenRoadmap && kaizenRoadmap.length > 0) {
+        const qWins = kaizenRoadmap.filter(a => a.when === '30_dias');
+        const sImpr = kaizenRoadmap.filter(a => a.when === '60_dias');
+        const aProj = kaizenRoadmap.filter(a => a.when === '90_dias');
+
+        if (qWins.length > 0) {
+          md += `### Fase 1: Vitórias Rápidas (0 a 30 dias - Quick Wins)\n`;
+          md += `| Ação (O Que) | Objetivo / Meta (Por Que) | Onde | Responsável (Quem) | Método / Custo |\n`;
+          md += `| :--- | :--- | :--- | :--- | :--- |\n`;
+          qWins.forEach(a => {
+            md += `| **${a.what}** | ${a.why} | ${a.where} | **${a.who}** | ${a.how || 'Esforço interno'} (${a.howMuch || 'R$ 0'}) |\n`;
+          });
+          md += `\n`;
+        }
+
+        if (sImpr.length > 0) {
+          md += `### Fase 2: Melhorias Estruturais & Padronização (30 a 60 dias)\n`;
+          md += `| Ação (O Que) | Objetivo / Meta (Por Que) | Onde | Responsável (Quem) | Método / Custo |\n`;
+          md += `| :--- | :--- | :--- | :--- | :--- |\n`;
+          sImpr.forEach(a => {
+            md += `| **${a.what}** | ${a.why} | ${a.where} | **${a.who}** | ${a.how || 'Esforço interno'} (${a.howMuch || 'R$ 0'}) |\n`;
+          });
+          md += `\n`;
+        }
+
+        if (aProj.length > 0) {
+          md += `### Fase 3: Automação & Transformação Digital (60 a 90 dias)\n`;
+          md += `| Ação (O Que) | Objetivo / Meta (Por Que) | Onde | Responsável (Quem) | Método / Custo |\n`;
+          md += `| :--- | :--- | :--- | :--- | :--- |\n`;
+          aProj.forEach(a => {
+            md += `| **${a.what}** | ${a.why} | ${a.where} | **${a.who}** | ${a.how || 'Esforço interno'} (${a.howMuch || 'R$ 0'}) |\n`;
+          });
+          md += `\n`;
+        }
+      } else {
+        md += `### Fase 1: Vitórias Rápidas (0 a 30 dias - Quick Wins)\n`;
+        md += `| Ação Proposta | Etapa Alvo | Impacto Estimado | Esforço |\n`;
+        md += `| :--- | :--- | :--- | :---: |\n`;
+        diagnosticReport.actionRoadmap.quickWins.forEach(a => {
+          md += `| ${a.action} | ${a.targetStep} | ${a.impact} | ${a.effort} |\n`;
+        });
+        md += `\n### Fase 2: Melhorias Estruturais & Padronização (30 a 60 dias)\n`;
+        md += `| Ação Proposta | Etapa Alvo | Impacto Estimado | Esforço |\n`;
+        md += `| :--- | :--- | :--- | :---: |\n`;
+        diagnosticReport.actionRoadmap.structuralImprovements.forEach(a => {
+          md += `| ${a.action} | ${a.targetStep} | ${a.impact} | ${a.effort} |\n`;
+        });
+        md += `\n### Fase 3: Automação & Transformação Digital (60 a 90 dias)\n`;
+        md += `| Ação Proposta | Etapa Alvo | Impacto Estimado | Esforço |\n`;
+        md += `| :--- | :--- | :--- | :---: |\n`;
+        diagnosticReport.actionRoadmap.automationProjects.forEach(a => {
+          md += `| ${a.action} | ${a.targetStep} | ${a.impact} | ${a.effort} |\n`;
+        });
+      }
+      md += `---\n\n`;
     }
 
     if (includeSignatures) {
@@ -1522,225 +1560,501 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
             {/* ------------------------------------------------------------- */}
             {/* 8. KAIZEN ROADMAP 30-60-90 DAYS                               */}
             {/* ------------------------------------------------------------- */}
+            {/* ------------------------------------------------------------- */}
+            {/* 7. KAIZEN ROADMAP 30-60-90 DAYS                               */}
+            {/* ------------------------------------------------------------- */}
             {includeRoadmap && (
               <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <TrendingDown className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                  <h2 className="text-sm uppercase font-bold tracking-wider font-mono text-slate-700 dark:text-slate-300">
-                    7. Roadmap de Implementação Kaizen (30 - 60 - 90 Dias)
-                  </h2>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <TrendingDown className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                    <h2 className="text-sm uppercase font-bold tracking-wider font-mono text-slate-700 dark:text-slate-300">
+                      7. Roadmap de Implementação Kaizen (30 - 60 - 90 Dias)
+                    </h2>
+                  </div>
+                  {kaizenRoadmap && kaizenRoadmap.length > 0 ? (
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-bold flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                      <span>✨ Plano 5W2H Pactuado no Workshop ({kaizenRoadmap.length} ações)</span>
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-800 dark:text-cyan-300 border border-cyan-500/30 text-[10px] font-mono font-bold">
+                      Projeção Heurística Lean
+                    </span>
+                  )}
                 </div>
 
-                <div className="space-y-4">
-                  
-                  {/* Fase 1: Quick Wins (0 to 30 days) */}
-                  <div className={`rounded-2xl border overflow-hidden print-avoid-break ${
-                    isPaper ? 'bg-white border-emerald-300' : 'bg-slate-900/90 border-emerald-500/30'
-                  }`}>
-                    <div className={`p-3 border-b flex items-center justify-between ${
-                      isPaper ? 'bg-emerald-50 border-emerald-200' : 'bg-emerald-950/40 border-emerald-500/25'
+                {kaizenRoadmap && kaizenRoadmap.length > 0 ? (
+                  <div className="space-y-4">
+                    {/* Fase 1: 0 a 30 dias (Quick Wins 5W2H) */}
+                    {(() => {
+                      const phaseActions = kaizenRoadmap.filter(a => a.when === '30_dias');
+                      return (
+                        <div className={`rounded-2xl border overflow-hidden print-avoid-break ${
+                          isPaper ? 'bg-white border-emerald-300' : 'bg-slate-900/90 border-emerald-500/30'
+                        }`}>
+                          <div className={`p-2.5 sm:p-3 border-b flex items-center justify-between ${
+                            isPaper ? 'bg-emerald-50 border-emerald-200' : 'bg-emerald-950/40 border-emerald-500/25'
+                          }`}>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-mono font-bold">
+                                0 a 30 dias
+                              </span>
+                              <h3 className="text-xs font-bold uppercase font-mono text-emerald-800 dark:text-emerald-300">
+                                Fase 1: Vitórias Rápidas (Quick Wins) • Sem Investimento / Baixo Esforço
+                              </h3>
+                            </div>
+                            <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 font-semibold hidden sm:inline">
+                              {phaseActions.length} Ações Pactuadas
+                            </span>
+                          </div>
+
+                          <div className="overflow-x-auto print:overflow-visible">
+                            {phaseActions.length === 0 ? (
+                              <div className="p-3 text-center text-xs text-slate-400 italic">
+                                Nenhuma ação pactuada para esta fase.
+                              </div>
+                            ) : (
+                              <table className="w-full text-left border-collapse text-xs table-fixed">
+                                <colgroup>
+                                  <col className="w-[30%]" />
+                                  <col className="w-[28%]" />
+                                  <col className="w-[18%]" />
+                                  <col className="w-[14%]" />
+                                  <col className="w-[10%]" />
+                                </colgroup>
+                                <thead>
+                                  <tr className={`border-b text-[10px] font-mono uppercase tracking-wider font-bold ${
+                                    isPaper ? 'bg-emerald-50/50 border-emerald-100 text-slate-700' : 'bg-slate-950/60 border-slate-800 text-slate-400'
+                                  }`}>
+                                    <th className="p-2">Ação Kaizen (O que)</th>
+                                    <th className="p-2">Objetivo / Meta (Por que)</th>
+                                    <th className="p-2">Onde</th>
+                                    <th className="p-2">Quem (Dono)</th>
+                                    <th className="p-2 text-center">Método / Custo</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                  {phaseActions.map((action, idx) => (
+                                    <tr
+                                      key={idx}
+                                      className={`transition-colors print-avoid-break ${
+                                        isPaper ? 'hover:bg-emerald-50/30' : 'hover:bg-slate-800/40'
+                                      }`}
+                                    >
+                                      <td className="p-2 align-top font-sans font-medium break-words leading-relaxed text-slate-900 dark:text-slate-100">
+                                        <span className="font-bold block">{action.what}</span>
+                                      </td>
+                                      <td className="p-2 align-top font-sans break-words text-emerald-700 dark:text-emerald-400 font-medium leading-relaxed">
+                                        {action.why}
+                                      </td>
+                                      <td className="p-2 align-top font-sans break-words text-slate-600 dark:text-slate-300">
+                                        <span className="inline-block px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[10px] font-mono font-medium">
+                                          {action.where}
+                                        </span>
+                                      </td>
+                                      <td className="p-2 align-top font-sans break-words text-amber-700 dark:text-amber-300 font-bold">
+                                        {action.who}
+                                      </td>
+                                      <td className="p-2 align-top text-center font-sans text-[10px] text-slate-500 dark:text-slate-400 break-words">
+                                        <div>{action.how || 'Esforço interno'}</div>
+                                        {action.howMuch && (
+                                          <div className="text-[9px] font-mono text-slate-400 mt-0.5">{action.howMuch}</div>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Fase 2: 30 a 60 dias (Melhorias Estruturais 5W2H) */}
+                    {(() => {
+                      const phaseActions = kaizenRoadmap.filter(a => a.when === '60_dias');
+                      return (
+                        <div className={`rounded-2xl border overflow-hidden print-avoid-break ${
+                          isPaper ? 'bg-white border-cyan-300' : 'bg-slate-900/90 border-cyan-500/30'
+                        }`}>
+                          <div className={`p-2.5 sm:p-3 border-b flex items-center justify-between ${
+                            isPaper ? 'bg-cyan-50 border-cyan-200' : 'bg-cyan-950/40 border-cyan-500/25'
+                          }`}>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded bg-cyan-600 text-white text-[10px] font-mono font-bold">
+                                30 a 60 dias
+                              </span>
+                              <h3 className="text-xs font-bold uppercase font-mono text-cyan-800 dark:text-cyan-300">
+                                Fase 2: Melhorias Estruturais • Padronização, Paralelismo & Acordos de SLA
+                              </h3>
+                            </div>
+                            <span className="text-[10px] font-mono text-cyan-700 dark:text-cyan-400 font-semibold hidden sm:inline">
+                              {phaseActions.length} Ações Pactuadas
+                            </span>
+                          </div>
+
+                          <div className="overflow-x-auto print:overflow-visible">
+                            {phaseActions.length === 0 ? (
+                              <div className="p-3 text-center text-xs text-slate-400 italic">
+                                Nenhuma ação pactuada para esta fase.
+                              </div>
+                            ) : (
+                              <table className="w-full text-left border-collapse text-xs table-fixed">
+                                <colgroup>
+                                  <col className="w-[30%]" />
+                                  <col className="w-[28%]" />
+                                  <col className="w-[18%]" />
+                                  <col className="w-[14%]" />
+                                  <col className="w-[10%]" />
+                                </colgroup>
+                                <thead>
+                                  <tr className={`border-b text-[10px] font-mono uppercase tracking-wider font-bold ${
+                                    isPaper ? 'bg-cyan-50/50 border-cyan-100 text-slate-700' : 'bg-slate-950/60 border-slate-800 text-slate-400'
+                                  }`}>
+                                    <th className="p-2">Ação Kaizen (O que)</th>
+                                    <th className="p-2">Objetivo / Meta (Por que)</th>
+                                    <th className="p-2">Onde</th>
+                                    <th className="p-2">Quem (Dono)</th>
+                                    <th className="p-2 text-center">Método / Custo</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                  {phaseActions.map((action, idx) => (
+                                    <tr
+                                      key={idx}
+                                      className={`transition-colors print-avoid-break ${
+                                        isPaper ? 'hover:bg-cyan-50/30' : 'hover:bg-slate-800/40'
+                                      }`}
+                                    >
+                                      <td className="p-2 align-top font-sans font-medium break-words leading-relaxed text-slate-900 dark:text-slate-100">
+                                        <span className="font-bold block">{action.what}</span>
+                                      </td>
+                                      <td className="p-2 align-top font-sans break-words text-cyan-700 dark:text-cyan-400 font-medium leading-relaxed">
+                                        {action.why}
+                                      </td>
+                                      <td className="p-2 align-top font-sans break-words text-slate-600 dark:text-slate-300">
+                                        <span className="inline-block px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[10px] font-mono font-medium">
+                                          {action.where}
+                                        </span>
+                                      </td>
+                                      <td className="p-2 align-top font-sans break-words text-amber-700 dark:text-amber-300 font-bold">
+                                        {action.who}
+                                      </td>
+                                      <td className="p-2 align-top text-center font-sans text-[10px] text-slate-500 dark:text-slate-400 break-words">
+                                        <div>{action.how || 'Esforço interno'}</div>
+                                        {action.howMuch && (
+                                          <div className="text-[9px] font-mono text-slate-400 mt-0.5">{action.howMuch}</div>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Fase 3: 60 a 90 dias (Projetos & Automação 5W2H) */}
+                    {(() => {
+                      const phaseActions = kaizenRoadmap.filter(a => a.when === '90_dias');
+                      return (
+                        <div className={`rounded-2xl border overflow-hidden print-avoid-break ${
+                          isPaper ? 'bg-white border-purple-300' : 'bg-slate-900/90 border-purple-500/30'
+                        }`}>
+                          <div className={`p-2.5 sm:p-3 border-b flex items-center justify-between ${
+                            isPaper ? 'bg-purple-50 border-purple-200' : 'bg-purple-950/40 border-purple-500/25'
+                          }`}>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded bg-purple-600 text-white text-[10px] font-mono font-bold">
+                                60 a 90 dias
+                              </span>
+                              <h3 className="text-xs font-bold uppercase font-mono text-purple-800 dark:text-purple-300">
+                                Fase 3: Automações de Processo & Transformação Digital
+                              </h3>
+                            </div>
+                            <span className="text-[10px] font-mono text-purple-700 dark:text-purple-400 font-semibold hidden sm:inline">
+                              {phaseActions.length} Ações Pactuadas
+                            </span>
+                          </div>
+
+                          <div className="overflow-x-auto print:overflow-visible">
+                            {phaseActions.length === 0 ? (
+                              <div className="p-3 text-center text-xs text-slate-400 italic">
+                                Nenhuma ação pactuada para esta fase.
+                              </div>
+                            ) : (
+                              <table className="w-full text-left border-collapse text-xs table-fixed">
+                                <colgroup>
+                                  <col className="w-[30%]" />
+                                  <col className="w-[28%]" />
+                                  <col className="w-[18%]" />
+                                  <col className="w-[14%]" />
+                                  <col className="w-[10%]" />
+                                </colgroup>
+                                <thead>
+                                  <tr className={`border-b text-[10px] font-mono uppercase tracking-wider font-bold ${
+                                    isPaper ? 'bg-purple-50/50 border-purple-100 text-slate-700' : 'bg-slate-950/60 border-slate-800 text-slate-400'
+                                  }`}>
+                                    <th className="p-2">Ação Kaizen (O que)</th>
+                                    <th className="p-2">Objetivo / Meta (Por que)</th>
+                                    <th className="p-2">Onde</th>
+                                    <th className="p-2">Quem (Dono)</th>
+                                    <th className="p-2 text-center">Método / Custo</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                  {phaseActions.map((action, idx) => (
+                                    <tr
+                                      key={idx}
+                                      className={`transition-colors print-avoid-break ${
+                                        isPaper ? 'hover:bg-purple-50/30' : 'hover:bg-slate-800/40'
+                                      }`}
+                                    >
+                                      <td className="p-2 align-top font-sans font-medium break-words leading-relaxed text-slate-900 dark:text-slate-100">
+                                        <span className="font-bold block">{action.what}</span>
+                                      </td>
+                                      <td className="p-2 align-top font-sans break-words text-purple-700 dark:text-purple-400 font-medium leading-relaxed">
+                                        {action.why}
+                                      </td>
+                                      <td className="p-2 align-top font-sans break-words text-slate-600 dark:text-slate-300">
+                                        <span className="inline-block px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[10px] font-mono font-medium">
+                                          {action.where}
+                                        </span>
+                                      </td>
+                                      <td className="p-2 align-top font-sans break-words text-amber-700 dark:text-amber-300 font-bold">
+                                        {action.who}
+                                      </td>
+                                      <td className="p-2 align-top text-center font-sans text-[10px] text-slate-500 dark:text-slate-400 break-words">
+                                        <div>{action.how || 'Esforço interno'}</div>
+                                        {action.howMuch && (
+                                          <div className="text-[9px] font-mono text-slate-400 mt-0.5">{action.howMuch}</div>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Fallback: Heuristic AI Action Roadmap */}
+                    {/* Fase 1: Quick Wins (0 to 30 days) */}
+                    <div className={`rounded-2xl border overflow-hidden print-avoid-break ${
+                      isPaper ? 'bg-white border-emerald-300' : 'bg-slate-900/90 border-emerald-500/30'
                     }`}>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-mono font-bold">
-                          0 a 30 dias
+                      <div className={`p-3 border-b flex items-center justify-between ${
+                        isPaper ? 'bg-emerald-50 border-emerald-200' : 'bg-emerald-950/40 border-emerald-500/25'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-mono font-bold">
+                            0 a 30 dias
+                          </span>
+                          <h3 className="text-xs font-bold uppercase font-mono text-emerald-800 dark:text-emerald-300">
+                            Fase 1: Vitórias Rápidas (Quick Wins) • Sem Investimento / Baixo Esforço
+                          </h3>
+                        </div>
+                        <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 font-semibold hidden sm:inline">
+                          {diagnosticReport.actionRoadmap.quickWins.length} Ações Prioritárias
                         </span>
-                        <h3 className="text-xs font-bold uppercase font-mono text-emerald-800 dark:text-emerald-300">
-                          Fase 1: Vitórias Rápidas (Quick Wins) • Sem Investimento / Baixo Esforço
-                        </h3>
                       </div>
-                      <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 font-semibold hidden sm:inline">
-                        {diagnosticReport.actionRoadmap.quickWins.length} Ações Prioritárias
-                      </span>
+
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs table-fixed">
+                          <colgroup>
+                            <col className="w-[42%]" />
+                            <col className="w-[18%]" />
+                            <col className="w-[28%]" />
+                            <col className="w-[12%]" />
+                          </colgroup>
+                          <thead>
+                            <tr className={`border-b text-[10px] font-mono uppercase tracking-wider font-bold ${
+                              isPaper ? 'bg-emerald-50/50 border-emerald-100 text-slate-700' : 'bg-slate-950/60 border-slate-800 text-slate-400'
+                            }`}>
+                              <th className="p-2.5">Ação Proposta (O que fazer)</th>
+                              <th className="p-2.5">Etapa Alvo</th>
+                              <th className="p-2.5">Impacto Estimado no Fluxo</th>
+                              <th className="p-2.5 text-center">Esforço</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                            {diagnosticReport.actionRoadmap.quickWins.map((q, idx) => (
+                              <tr
+                                key={idx}
+                                className={`transition-colors print-avoid-break ${
+                                  isPaper ? 'hover:bg-emerald-50/30' : 'hover:bg-slate-800/40'
+                                }`}
+                              >
+                                <td className="p-2.5 align-top font-sans font-medium break-words leading-relaxed text-slate-900 dark:text-slate-100">
+                                  <span className="font-bold block">{q.action}</span>
+                                </td>
+                                <td className="p-2.5 align-top font-sans break-words text-slate-600 dark:text-slate-300">
+                                  <span className="inline-block px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[11px] font-mono font-medium">
+                                    {q.targetStep}
+                                  </span>
+                                </td>
+                                <td className="p-2.5 align-top font-sans break-words text-emerald-700 dark:text-emerald-400 font-medium leading-relaxed">
+                                  {q.impact}
+                                </td>
+                                <td className="p-2.5 align-top text-center">
+                                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                    {q.effort}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
 
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse text-xs table-fixed">
-                        <colgroup>
-                          <col className="w-[42%]" />
-                          <col className="w-[18%]" />
-                          <col className="w-[28%]" />
-                          <col className="w-[12%]" />
-                        </colgroup>
-                        <thead>
-                          <tr className={`border-b text-[10px] font-mono uppercase tracking-wider font-bold ${
-                            isPaper ? 'bg-emerald-50/50 border-emerald-100 text-slate-700' : 'bg-slate-950/60 border-slate-800 text-slate-400'
-                          }`}>
-                            <th className="p-2.5">Ação Proposta (O que fazer)</th>
-                            <th className="p-2.5">Etapa Alvo</th>
-                            <th className="p-2.5">Impacto Estimado no Fluxo</th>
-                            <th className="p-2.5 text-center">Esforço</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                          {diagnosticReport.actionRoadmap.quickWins.map((q, idx) => (
-                            <tr
-                              key={idx}
-                              className={`transition-colors print-avoid-break ${
-                                isPaper ? 'hover:bg-emerald-50/30' : 'hover:bg-slate-800/40'
-                              }`}
-                            >
-                              <td className="p-2.5 align-top font-sans font-medium break-words leading-relaxed text-slate-900 dark:text-slate-100">
-                                <span className="font-bold block">{q.action}</span>
-                              </td>
-                              <td className="p-2.5 align-top font-sans break-words text-slate-600 dark:text-slate-300">
-                                <span className="inline-block px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[11px] font-mono font-medium">
-                                  {q.targetStep}
-                                </span>
-                              </td>
-                              <td className="p-2.5 align-top font-sans break-words text-emerald-700 dark:text-emerald-400 font-medium leading-relaxed">
-                                {q.impact}
-                              </td>
-                              <td className="p-2.5 align-top text-center">
-                                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                                  {q.effort}
-                                </span>
-                              </td>
+                    {/* Fase 2: Structural Improvements (30 to 60 days) */}
+                    <div className={`rounded-2xl border overflow-hidden print-avoid-break ${
+                      isPaper ? 'bg-white border-cyan-300' : 'bg-slate-900/90 border-cyan-500/30'
+                    }`}>
+                      <div className={`p-3 border-b flex items-center justify-between ${
+                        isPaper ? 'bg-cyan-50 border-cyan-200' : 'bg-cyan-950/40 border-cyan-500/25'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded bg-cyan-600 text-white text-[10px] font-mono font-bold">
+                            30 a 60 dias
+                          </span>
+                          <h3 className="text-xs font-bold uppercase font-mono text-cyan-800 dark:text-cyan-300">
+                            Fase 2: Melhorias Estruturais • Padronização, Paralelismo & Acordos de SLA
+                          </h3>
+                        </div>
+                        <span className="text-[10px] font-mono text-cyan-700 dark:text-cyan-400 font-semibold hidden sm:inline">
+                          {diagnosticReport.actionRoadmap.structuralImprovements.length} Ações Prioritárias
+                        </span>
+                      </div>
+
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs table-fixed">
+                          <colgroup>
+                            <col className="w-[42%]" />
+                            <col className="w-[18%]" />
+                            <col className="w-[28%]" />
+                            <col className="w-[12%]" />
+                          </colgroup>
+                          <thead>
+                            <tr className={`border-b text-[10px] font-mono uppercase tracking-wider font-bold ${
+                              isPaper ? 'bg-cyan-50/50 border-cyan-100 text-slate-700' : 'bg-slate-950/60 border-slate-800 text-slate-400'
+                            }`}>
+                              <th className="p-2.5">Ação Proposta (O que fazer)</th>
+                              <th className="p-2.5">Etapa Alvo</th>
+                              <th className="p-2.5">Impacto Estimado no Fluxo</th>
+                              <th className="p-2.5 text-center">Esforço</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                            {diagnosticReport.actionRoadmap.structuralImprovements.map((s, idx) => (
+                              <tr
+                                key={idx}
+                                className={`transition-colors print-avoid-break ${
+                                  isPaper ? 'hover:bg-cyan-50/30' : 'hover:bg-slate-800/40'
+                                }`}
+                              >
+                                <td className="p-2.5 align-top font-sans font-medium break-words leading-relaxed text-slate-900 dark:text-slate-100">
+                                  <span className="font-bold block">{s.action}</span>
+                                </td>
+                                <td className="p-2.5 align-top font-sans break-words text-slate-600 dark:text-slate-300">
+                                  <span className="inline-block px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[11px] font-mono font-medium">
+                                    {s.targetStep}
+                                  </span>
+                                </td>
+                                <td className="p-2.5 align-top font-sans break-words text-cyan-700 dark:text-cyan-400 font-medium leading-relaxed">
+                                  {s.impact}
+                                </td>
+                                <td className="p-2.5 align-top text-center">
+                                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-800">
+                                    {s.effort}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Fase 3: Automation & Digital Transformation (60 to 90 days) */}
+                    <div className={`rounded-2xl border overflow-hidden print-avoid-break ${
+                      isPaper ? 'bg-white border-purple-300' : 'bg-slate-900/90 border-purple-500/30'
+                    }`}>
+                      <div className={`p-3 border-b flex items-center justify-between ${
+                        isPaper ? 'bg-purple-50 border-purple-200' : 'bg-purple-950/40 border-purple-500/25'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded bg-purple-600 text-white text-[10px] font-mono font-bold">
+                            60 a 90 dias
+                          </span>
+                          <h3 className="text-xs font-bold uppercase font-mono text-purple-800 dark:text-purple-300">
+                            Fase 3: Automações de Processo & Transformação Digital
+                          </h3>
+                        </div>
+                        <span className="text-[10px] font-mono text-purple-700 dark:text-purple-400 font-semibold hidden sm:inline">
+                          {diagnosticReport.actionRoadmap.automationProjects.length} Ações Prioritárias
+                        </span>
+                      </div>
+
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs table-fixed">
+                          <colgroup>
+                            <col className="w-[42%]" />
+                            <col className="w-[18%]" />
+                            <col className="w-[28%]" />
+                            <col className="w-[12%]" />
+                          </colgroup>
+                          <thead>
+                            <tr className={`border-b text-[10px] font-mono uppercase tracking-wider font-bold ${
+                              isPaper ? 'bg-purple-50/50 border-purple-100 text-slate-700' : 'bg-slate-950/60 border-slate-800 text-slate-400'
+                            }`}>
+                              <th className="p-2.5">Ação Proposta (O que fazer)</th>
+                              <th className="p-2.5">Etapa Alvo</th>
+                              <th className="p-2.5">Impacto Estimado no Fluxo</th>
+                              <th className="p-2.5 text-center">Esforço</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                            {diagnosticReport.actionRoadmap.automationProjects.map((a, idx) => (
+                              <tr
+                                key={idx}
+                                className={`transition-colors print-avoid-break ${
+                                  isPaper ? 'hover:bg-purple-50/30' : 'hover:bg-slate-800/40'
+                                }`}
+                              >
+                                <td className="p-2.5 align-top font-sans font-medium break-words leading-relaxed text-slate-900 dark:text-slate-100">
+                                  <span className="font-bold block">{a.action}</span>
+                                </td>
+                                <td className="p-2.5 align-top font-sans break-words text-slate-600 dark:text-slate-300">
+                                  <span className="inline-block px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[11px] font-mono font-medium">
+                                    {a.targetStep}
+                                  </span>
+                                </td>
+                                <td className="p-2.5 align-top font-sans break-words text-purple-700 dark:text-purple-400 font-medium leading-relaxed">
+                                  {a.impact}
+                                </td>
+                                <td className="p-2.5 align-top text-center">
+                                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-800">
+                                    {a.effort}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Fase 2: Structural Improvements (30 to 60 days) */}
-                  <div className={`rounded-2xl border overflow-hidden print-avoid-break ${
-                    isPaper ? 'bg-white border-cyan-300' : 'bg-slate-900/90 border-cyan-500/30'
-                  }`}>
-                    <div className={`p-3 border-b flex items-center justify-between ${
-                      isPaper ? 'bg-cyan-50 border-cyan-200' : 'bg-cyan-950/40 border-cyan-500/25'
-                    }`}>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded bg-cyan-600 text-white text-[10px] font-mono font-bold">
-                          30 a 60 dias
-                        </span>
-                        <h3 className="text-xs font-bold uppercase font-mono text-cyan-800 dark:text-cyan-300">
-                          Fase 2: Melhorias Estruturais • Padronização, Paralelismo & Acordos de SLA
-                        </h3>
-                      </div>
-                      <span className="text-[10px] font-mono text-cyan-700 dark:text-cyan-400 font-semibold hidden sm:inline">
-                        {diagnosticReport.actionRoadmap.structuralImprovements.length} Ações Prioritárias
-                      </span>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse text-xs table-fixed">
-                        <colgroup>
-                          <col className="w-[42%]" />
-                          <col className="w-[18%]" />
-                          <col className="w-[28%]" />
-                          <col className="w-[12%]" />
-                        </colgroup>
-                        <thead>
-                          <tr className={`border-b text-[10px] font-mono uppercase tracking-wider font-bold ${
-                            isPaper ? 'bg-cyan-50/50 border-cyan-100 text-slate-700' : 'bg-slate-950/60 border-slate-800 text-slate-400'
-                          }`}>
-                            <th className="p-2.5">Ação Proposta (O que fazer)</th>
-                            <th className="p-2.5">Etapa Alvo</th>
-                            <th className="p-2.5">Impacto Estimado no Fluxo</th>
-                            <th className="p-2.5 text-center">Esforço</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                          {diagnosticReport.actionRoadmap.structuralImprovements.map((s, idx) => (
-                            <tr
-                              key={idx}
-                              className={`transition-colors print-avoid-break ${
-                                isPaper ? 'hover:bg-cyan-50/30' : 'hover:bg-slate-800/40'
-                              }`}
-                            >
-                              <td className="p-2.5 align-top font-sans font-medium break-words leading-relaxed text-slate-900 dark:text-slate-100">
-                                <span className="font-bold block">{s.action}</span>
-                              </td>
-                              <td className="p-2.5 align-top font-sans break-words text-slate-600 dark:text-slate-300">
-                                <span className="inline-block px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[11px] font-mono font-medium">
-                                  {s.targetStep}
-                                </span>
-                              </td>
-                              <td className="p-2.5 align-top font-sans break-words text-cyan-700 dark:text-cyan-400 font-medium leading-relaxed">
-                                {s.impact}
-                              </td>
-                              <td className="p-2.5 align-top text-center">
-                                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-800">
-                                  {s.effort}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* Fase 3: Automation & Digital Transformation (60 to 90 days) */}
-                  <div className={`rounded-2xl border overflow-hidden print-avoid-break ${
-                    isPaper ? 'bg-white border-purple-300' : 'bg-slate-900/90 border-purple-500/30'
-                  }`}>
-                    <div className={`p-3 border-b flex items-center justify-between ${
-                      isPaper ? 'bg-purple-50 border-purple-200' : 'bg-purple-950/40 border-purple-500/25'
-                    }`}>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded bg-purple-600 text-white text-[10px] font-mono font-bold">
-                          60 a 90 dias
-                        </span>
-                        <h3 className="text-xs font-bold uppercase font-mono text-purple-800 dark:text-purple-300">
-                          Fase 3: Automações de Processo & Transformação Digital
-                        </h3>
-                      </div>
-                      <span className="text-[10px] font-mono text-purple-700 dark:text-purple-400 font-semibold hidden sm:inline">
-                        {diagnosticReport.actionRoadmap.automationProjects.length} Ações Prioritárias
-                      </span>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse text-xs table-fixed">
-                        <colgroup>
-                          <col className="w-[42%]" />
-                          <col className="w-[18%]" />
-                          <col className="w-[28%]" />
-                          <col className="w-[12%]" />
-                        </colgroup>
-                        <thead>
-                          <tr className={`border-b text-[10px] font-mono uppercase tracking-wider font-bold ${
-                            isPaper ? 'bg-purple-50/50 border-purple-100 text-slate-700' : 'bg-slate-950/60 border-slate-800 text-slate-400'
-                          }`}>
-                            <th className="p-2.5">Ação Proposta (O que fazer)</th>
-                            <th className="p-2.5">Etapa Alvo</th>
-                            <th className="p-2.5">Impacto Estimado no Fluxo</th>
-                            <th className="p-2.5 text-center">Esforço</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                          {diagnosticReport.actionRoadmap.automationProjects.map((a, idx) => (
-                            <tr
-                              key={idx}
-                              className={`transition-colors print-avoid-break ${
-                                isPaper ? 'hover:bg-purple-50/30' : 'hover:bg-slate-800/40'
-                              }`}
-                            >
-                              <td className="p-2.5 align-top font-sans font-medium break-words leading-relaxed text-slate-900 dark:text-slate-100">
-                                <span className="font-bold block">{a.action}</span>
-                              </td>
-                              <td className="p-2.5 align-top font-sans break-words text-slate-600 dark:text-slate-300">
-                                <span className="inline-block px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[11px] font-mono font-medium">
-                                  {a.targetStep}
-                                </span>
-                              </td>
-                              <td className="p-2.5 align-top font-sans break-words text-purple-700 dark:text-purple-400 font-medium leading-relaxed">
-                                {a.impact}
-                              </td>
-                              <td className="p-2.5 align-top text-center">
-                                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-800">
-                                  {a.effort}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                </div>
+                )}
               </div>
             )}
 

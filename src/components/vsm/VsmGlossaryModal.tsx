@@ -160,6 +160,20 @@ export const LEAN_CONCEPTS: Concept[] = [
     example: 'Durante a dinâmica, a equipe analisa uma etapa com 48 horas de fila (WT) e associa a ela o Kaizen de aprovação automatizada por alçadas. Em consenso, os participantes estipulam que o WT futuro será de 6 horas (-87,5%). O sistema atualiza em tempo real o novo Lead Time do projeto e a nova Eficiência de Fluxo.',
     whyItMatters: 'Princípio do Gemba e Compromisso (Toyota Way): quem deve estipular o estado futuro são as pessoas que executam o processo, gerando "Accountability" e pertencimento. No Lean Office / Serviços, mais de 90% do Lead Time é pura fila (WT). Focar na redução do WT estipulado pela equipe conecta diretamente a fase Improve à fase Control do DMAIC (Six Sigma), comprovando o ROI do projeto.',
     benchmark: 'Redução típica de 50% a 80% de tempo de fila (WT) e salto de 3x a 5x na Eficiência de Fluxo.'
+  },
+  {
+    id: 'kaizen_5w2h',
+    term: 'Plano Kaizen 5W2H & Horizontes 30-60-90 Dias',
+    acronym: '5W2H Kaizen (Do Diagnóstico à Execução)',
+    tag: 'Execução Lean & Governança',
+    color: 'text-amber-400',
+    bg: 'bg-amber-500/10',
+    border: 'border-amber-500/30',
+    summary: 'A ponte metodológica essencial que transforma o Target State do VSM em um plano de ação tático executável. Cada redução de Lead Time (WT Futuro) ganha um Kaizen estruturado com escopo claro (O quê), justificativa ligada ao gargalo (Por quê), setor/etapa (Onde), responsável direto (Quem) e horizonte temporal de implantação (Quando: 30, 60 ou 90 dias).',
+    formula: 'Compromisso 5W2H = O Quê (Escopo) + Por Quê (Meta WT) + Onde (Etapa) + Quem (Owner) + Quando (30/60/90d)',
+    example: 'Ao pactuar uma redução de 72h para 12h no alinhamento de perfil, a equipe formaliza: What = "Criar formulário inteligente padronizado de briefing de vaga", Why = "Eliminar 60h de vaivém de mensagens na etapa de alinhamento", Where = "Etapa 2 - Alinhamento com Gestor", Who = "Mariana (Tech Recruiter)", When = "30 dias (Quick Win)". O "Como" e "Quanto Custa" ficam flexíveis para detalhamento posterior.',
+    whyItMatters: 'Evita a principal falha dos workshops corporativos: sair da sala com um diagnóstico impecável, mas sem donos e prazos definidos. Ao flexibilizar o How (método detalhado) e How Much (custo/investimento), o facilitador impede que o time trave na sessão com discussões prematuras de orçamento, garantindo ritmo dinâmico e alto engajamento no workshop.',
+    benchmark: 'Horizonte 30 dias para Quick Wins (sem orçamento), 60 dias para integrações de processos e 90 dias para automações estruturadas.'
   }
 ];
 

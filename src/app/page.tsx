@@ -19,7 +19,7 @@ import {
   FileSpreadsheet,
   CheckCircle2
 } from 'lucide-react';
-import { VSMStep, VSMProject, WasteType, CustomWorkshop } from '@/types/vsm';
+import { VSMStep, VSMProject, WasteType, CustomWorkshop, KaizenAction5W2H } from '@/types/vsm';
 import { VSM_TEMPLATES } from '@/data/vsmTemplates';
 import {
   calculateVsmMetrics,
@@ -65,6 +65,7 @@ export default function VsmHomePage() {
   const [projectName, setProjectName] = useState('Recrutamento & Seleção (R&S)');
   const [department, setDepartment] = useState('Recursos Humanos / Talent Acquisition');
   const [steps, setSteps] = useState<VSMStep[]>([]);
+  const [kaizenRoadmap, setKaizenRoadmap] = useState<KaizenAction5W2H[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // UI View Controls
@@ -129,6 +130,9 @@ export default function VsmHomePage() {
           setProjectName(parsed.name || 'Mapeamento de Fluxo de Valor');
           setDepartment(parsed.department || 'Corporativo');
           setSteps(parsed.steps);
+          if (parsed.kaizenRoadmap && Array.isArray(parsed.kaizenRoadmap)) {
+            setKaizenRoadmap(parsed.kaizenRoadmap);
+          }
           if (parsed.currentWorkshopId) {
             setCurrentWorkshopId(parsed.currentWorkshopId);
           }
@@ -160,6 +164,7 @@ export default function VsmHomePage() {
         name: projectName,
         department,
         steps,
+        kaizenRoadmap,
         currentWorkshopId,
         updatedAt: new Date().toISOString()
       };
@@ -179,6 +184,7 @@ export default function VsmHomePage() {
           name: projectName,
           department,
           steps,
+          kaizenRoadmap,
           updatedAt: new Date().toISOString()
         };
         try {
@@ -189,7 +195,7 @@ export default function VsmHomePage() {
         return updated;
       });
     }
-  }, [projectName, department, steps, currentWorkshopId, isLoaded]);
+  }, [projectName, department, steps, kaizenRoadmap, currentWorkshopId, isLoaded]);
 
   // Recalculate Lean metrics dynamically
   const metrics = useMemo(() => calculateVsmMetrics(steps), [steps]);
@@ -255,6 +261,7 @@ export default function VsmHomePage() {
       name: name.trim() || projectName,
       department: dept.trim() || department,
       steps: [...steps],
+      kaizenRoadmap: [...kaizenRoadmap],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -290,6 +297,7 @@ export default function VsmHomePage() {
         id: s.id || `step-${Date.now()}-${idx}`
       }));
       setSteps(loadedSteps);
+      setKaizenRoadmap(customTpl.kaizenRoadmap || []);
       setCurrentWorkshopId(customTpl.id);
       setRoleFilter('todos');
       setWasteFilter('todos');
@@ -310,6 +318,7 @@ export default function VsmHomePage() {
     setProjectName(tpl.name);
     setDepartment(tpl.department);
     setSteps(newSteps);
+    setKaizenRoadmap(tpl.kaizenRoadmap || []);
     setRoleFilter('todos');
     setWasteFilter('todos');
     showToast(`Modelo de referência "${tpl.name}" carregado!`, 'success');
@@ -326,8 +335,11 @@ export default function VsmHomePage() {
       setProjectName(defaultTpl.name);
       setDepartment(defaultTpl.department);
       setSteps(initialSteps);
+      setKaizenRoadmap([]);
       setCurrentWorkshopId(null);
-      showToast('Sessão restaurada para o modelo padrão.', 'info');
+      setRoleFilter('todos');
+      setWasteFilter('todos');
+      showToast('Sessão restaurada para o modelo padrão (R&S).', 'info');
     }
   };
 
@@ -841,6 +853,8 @@ export default function VsmHomePage() {
         <VsmFutureStateView
           steps={steps}
           metrics={metrics}
+          kaizenRoadmap={kaizenRoadmap}
+          onUpdateKaizenRoadmap={setKaizenRoadmap}
           onUpdateStep={handleUpdateStep}
           onOpenReportModal={() => setIsReportModalOpen(true)}
           onOpenGlossary={handleOpenGlossary}
@@ -881,6 +895,7 @@ export default function VsmHomePage() {
           department={department}
           steps={steps}
           metrics={metrics}
+          kaizenRoadmap={kaizenRoadmap}
           aiReport={aiReport}
           onRunAiDiagnostic={() => {
             setIsReportModalOpen(false);

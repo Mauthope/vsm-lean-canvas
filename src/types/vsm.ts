@@ -46,6 +46,23 @@ export interface FutureStateMetrics {
   totalCustomStepsCount: number;
 }
 
+export type KaizenHorizon = '30_dias' | '60_dias' | '90_dias';
+
+export interface KaizenAction5W2H {
+  id: string;
+  stepId?: string; // Etapa vinculada (opcional)
+  stepOrder?: number;
+  what: string; // O que fazer (Ação Kaizen)
+  why: string; // Por que fazer (Meta de redução de WT / eliminação de desperdício)
+  where: string; // Onde será aplicado (Etapa / Setor)
+  who: string; // Quem é o responsável / líder da ação
+  when: KaizenHorizon; // 30 dias (Quick Win), 60 dias ou 90 dias
+  how?: string; // Como fazer (Opcional / simplificado no workshop)
+  howMuch?: string; // Quanto custa (Opcional, default "Esforço interno" ou valor)
+  status?: 'planejado' | 'em_andamento' | 'concluido';
+  createdAt?: string;
+}
+
 export interface VSMProject {
   id: string;
   name: string; // Ex: "Mapeamento Admissão e Onboarding"
@@ -55,6 +72,7 @@ export interface VSMProject {
   flowEfficiency: number; // %
   overallYield: number; // % Rolled First Pass Yield (multiplicação dos %C&A)
   steps: VSMStep[];
+  kaizenRoadmap?: KaizenAction5W2H[];
 }
 
 export interface WasteMeta {
@@ -87,6 +105,7 @@ export interface VSMTemplate {
   department: string;
   description: string;
   steps: (Omit<VSMStep, 'id'> | VSMStep)[];
+  kaizenRoadmap?: KaizenAction5W2H[];
   createdAt?: string;
   isCustom?: boolean;
 }
@@ -97,6 +116,7 @@ export interface CustomWorkshop {
   department: string;
   description?: string;
   steps: VSMStep[];
+  kaizenRoadmap?: KaizenAction5W2H[];
   createdAt: string;
   updatedAt: string;
 }
