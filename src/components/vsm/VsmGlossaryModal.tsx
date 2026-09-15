@@ -146,6 +146,20 @@ export const LEAN_CONCEPTS: Concept[] = [
     example: 'Adotar uma ferramenta tipo Calendly para eliminar troca de 5 e-mails para marcar uma entrevista, ou criar um checklist de fotos no app para evitar que o candidato mande documento cortado.',
     whyItMatters: 'Gera o plano de ação concreto do workshop. O VSM sem Kaizen é apenas um desenho; com Kaizen, vira transformação real.',
     benchmark: 'Priorizar Quick Wins (alto impacto e baixo esforço).'
+  },
+  {
+    id: 'future_state',
+    term: 'Future State & Target State (Visão do Estado Futuro Enxuto)',
+    acronym: 'Estado Futuro (Target State & Buy-in)',
+    tag: 'Essência Lean Six Sigma',
+    color: 'text-emerald-400',
+    bg: 'bg-emerald-500/10',
+    border: 'border-emerald-500/30',
+    summary: 'A projeção quantificável e auditável de como o fluxo de valor funcionará após a implementação das melhorias. Segundo Mike Rother e John Shook (Lean Enterprise Institute - "Learning to See"), mapear o Estado Atual sem projetar o Estado Futuro é apenas registrar desperdícios sem direção.',
+    formula: 'Lead Time Futuro = Soma do WT Projetado (Filas Reduzidas) + PT Otimizado',
+    example: 'Durante a dinâmica, a equipe analisa uma etapa com 48 horas de fila (WT) e associa a ela o Kaizen de aprovação automatizada por alçadas. Em consenso, os participantes estipulam que o WT futuro será de 6 horas (-87,5%). O sistema atualiza em tempo real o novo Lead Time do projeto e a nova Eficiência de Fluxo.',
+    whyItMatters: 'Princípio do Gemba e Compromisso (Toyota Way): quem deve estipular o estado futuro são as pessoas que executam o processo, gerando "Accountability" e pertencimento. No Lean Office / Serviços, mais de 90% do Lead Time é pura fila (WT). Focar na redução do WT estipulado pela equipe conecta diretamente a fase Improve à fase Control do DMAIC (Six Sigma), comprovando o ROI do projeto.',
+    benchmark: 'Redução típica de 50% a 80% de tempo de fila (WT) e salto de 3x a 5x na Eficiência de Fluxo.'
   }
 ];
 

@@ -23,6 +23,7 @@ import { VSMStep, VSMProject, WasteType, CustomWorkshop } from '@/types/vsm';
 import { VSM_TEMPLATES } from '@/data/vsmTemplates';
 import {
   calculateVsmMetrics,
+  calculateFutureStateMetrics,
   convertTimeToHours,
   formatHours,
   WASTE_METAS,
@@ -34,6 +35,7 @@ import { VsmMetricsBar } from '@/components/vsm/VsmMetricsBar';
 import { VsmCanvas } from '@/components/vsm/VsmCanvas';
 import { VsmTimelineLadder } from '@/components/vsm/VsmTimelineLadder';
 import { VsmAbstractCanvas } from '@/components/vsm/VsmAbstractCanvas';
+import { VsmFutureStateView } from '@/components/vsm/VsmFutureStateView';
 import { VsmStepModal } from '@/components/vsm/VsmStepModal';
 import { VsmKaizenBoard } from '@/components/vsm/VsmKaizenBoard';
 import { VsmSummaryReportModal } from '@/components/vsm/VsmSummaryReportModal';
@@ -66,7 +68,7 @@ export default function VsmHomePage() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   // UI View Controls
-  const [activeTab, setActiveTab] = useState<'canvas' | 'abstract' | 'ladder' | 'table'>('canvas');
+  const [activeTab, setActiveTab] = useState<'canvas' | 'abstract' | 'ladder' | 'table' | 'future'>('canvas');
   const [roleFilter, setRoleFilter] = useState<string>('todos');
   const [wasteFilter, setWasteFilter] = useState<WasteType | 'todos'>('todos');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -191,6 +193,14 @@ export default function VsmHomePage() {
 
   // Recalculate Lean metrics dynamically
   const metrics = useMemo(() => calculateVsmMetrics(steps), [steps]);
+  const futureMetrics = useMemo(() => calculateFutureStateMetrics(steps, metrics), [steps, metrics]);
+
+  // Handler: Update partial fields of a step (e.g. futureWaitTime)
+  const handleUpdateStep = (stepId: string, updates: Partial<VSMStep>) => {
+    setSteps(prev =>
+      prev.map(s => (s.id === stepId ? { ...s, ...updates } : s))
+    );
+  };
 
   // Unique roles for filtering
   const availableRoles = useMemo(() => {
@@ -519,6 +529,8 @@ export default function VsmHomePage() {
           isFullscreen={isFullscreen}
           onToggleFullscreen={handleToggleFullscreen}
           hasAiDiagnostic={!!aiReport}
+          onOpenFutureState={() => setActiveTab('future')}
+          hasFutureCustomEstimates={futureMetrics.hasCustomEstimates}
         />
 
       {/* 2. Top BagTime KPI Metrics Bar */}
@@ -588,6 +600,24 @@ export default function VsmHomePage() {
           >
             <Layers className="w-3.5 h-3.5" />
             <span>Tabela Auditável</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('future')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'future'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-950/40 font-black'
+                : futureMetrics.hasCustomEstimates
+                ? 'text-emerald-400 hover:text-emerald-300'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Visão Estado Futuro</span>
+            {futureMetrics.hasCustomEstimates && (
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            )}
           </button>
         </div>
 
@@ -802,6 +832,20 @@ export default function VsmHomePage() {
             </table>
           </div>
         </div>
+      )}
+
+      {activeTab === 'future' && (
+        <VsmFutureStateView
+          steps={steps}
+          metrics={metrics}
+          onUpdateStep={handleUpdateStep}
+          onOpenReportModal={() => setIsReportModalOpen(true)}
+          onOpenGlossary={handleOpenGlossary}
+          onSelectStep={stepId => {
+            const s = steps.find(x => x.id === stepId);
+            if (s) handleOpenEditStepModal(s);
+          }}
+        />
       )}
       </div>
 

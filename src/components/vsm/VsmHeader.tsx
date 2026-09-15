@@ -44,6 +44,8 @@ interface VsmHeaderProps {
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
   hasAiDiagnostic?: boolean;
+  onOpenFutureState?: () => void;
+  hasFutureCustomEstimates?: boolean;
 }
 
 export const VsmHeader: React.FC<VsmHeaderProps> = ({
@@ -66,7 +68,9 @@ export const VsmHeader: React.FC<VsmHeaderProps> = ({
   kaizenCount,
   isFullscreen,
   onToggleFullscreen,
-  hasAiDiagnostic
+  hasAiDiagnostic,
+  onOpenFutureState,
+  hasFutureCustomEstimates
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempName, setTempName] = useState(projectName);
@@ -331,6 +335,26 @@ export const VsmHeader: React.FC<VsmHeaderProps> = ({
             </span>
           )}
         </button>
+
+        {/* Future State Button */}
+        {onOpenFutureState && (
+          <button
+            type="button"
+            onClick={onOpenFutureState}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              hasFutureCustomEstimates
+                ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/30 shadow-md shadow-emerald-950/30'
+                : 'bg-slate-900/90 border border-emerald-500/30 text-emerald-400 hover:text-white hover:bg-emerald-950/40'
+            }`}
+            title="Abrir a Visão do Estado Futuro e Matriz Auditável para pactuar metas de WT"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Estado Futuro</span>
+            {hasFutureCustomEstimates && (
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            )}
+          </button>
+        )}
 
         {/* Primary Executive Dossier & Print Report Button */}
         <button

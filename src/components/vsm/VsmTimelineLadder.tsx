@@ -8,13 +8,15 @@ import {
   Layers,
   ArrowRight,
   Info,
-  GitBranch
+  GitBranch,
+  Sparkles
 } from 'lucide-react';
 import { VSMStep, BottleneckAnalysis } from '@/types/vsm';
 import {
   convertTimeToHours,
   formatHours,
-  formatHoursCompact
+  formatHoursCompact,
+  calculateFutureStateMetrics
 } from '@/lib/vsmCalculations';
 
 interface VsmTimelineLadderProps {
@@ -29,6 +31,7 @@ export const VsmTimelineLadder: React.FC<VsmTimelineLadderProps> = ({
   onSelectStep
 }) => {
   const { totalLeadTimeHours, totalProcessHours, totalWaitHours, flowEfficiency } = metrics;
+  const futureMetrics = React.useMemo(() => calculateFutureStateMetrics(steps, metrics), [steps, metrics]);
 
   if (steps.length === 0) return null;
 
@@ -115,6 +118,25 @@ export const VsmTimelineLadder: React.FC<VsmTimelineLadderProps> = ({
                         {step.waitTime} {step.waitTimeUnit}
                       </span>
                     </div>
+
+                    {typeof step.futureWaitTime === 'number' && (
+                      <div className="mt-1 pt-1 border-t border-emerald-500/20">
+                        <div className="flex items-center justify-between text-[8px] font-mono text-emerald-400 mb-0.5">
+                          <span className="flex items-center gap-0.5">
+                            <Sparkles className="w-2 h-2" />
+                            <span>Meta:</span>
+                          </span>
+                          <span className="font-bold">
+                            {step.futureWaitTime} {step.futureWaitTimeUnit || step.waitTimeUnit}
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-900 rounded h-5 p-0.5 border border-emerald-500/40 bg-emerald-500/10 flex items-center justify-center">
+                          <span className="text-[9px] font-mono font-bold text-emerald-300 truncate">
+                            {formatHoursCompact(convertTimeToHours(step.futureWaitTime, step.futureWaitTimeUnit || step.waitTimeUnit, true))}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Stepped Transition Arrow / Notch */}
@@ -192,6 +214,27 @@ export const VsmTimelineLadder: React.FC<VsmTimelineLadderProps> = ({
                   {flowEfficiency.toFixed(1)}%
                 </span>
               </div>
+
+              {/* Future State Consolidation (if defined) */}
+              {futureMetrics.hasCustomEstimates && (
+                <div className="mt-2.5 pt-2 border-t border-emerald-500/30">
+                  <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30">
+                    <div className="flex items-center justify-between text-[9px] uppercase font-bold text-emerald-400 font-mono">
+                      <span className="flex items-center gap-1">
+                        <Sparkles className="w-2.5 h-2.5" />
+                        <span>Meta Futura</span>
+                      </span>
+                      <span className="text-emerald-300 font-black">-{futureMetrics.leadTimeReductionPercent}%</span>
+                    </div>
+                    <span className="text-xs font-black font-mono text-white block mt-0.5">
+                      {formatHours(futureMetrics.futureLeadTimeHours)}
+                    </span>
+                    <span className="text-[9px] font-mono text-slate-300 block mt-0.5">
+                      Eficiência: <strong className="text-cyan-300">{futureMetrics.futureFlowEfficiency.toFixed(1)}%</strong>
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
           </div>

@@ -28,7 +28,7 @@ import {
   Lightbulb,
   FileCheck
 } from 'lucide-react';
-import { VSMStep, BottleneckAnalysis, WasteType } from '@/types/vsm';
+import { VSMStep, BottleneckAnalysis, WasteType, FutureStateMetrics } from '@/types/vsm';
 import {
   formatHours,
   getFlowEfficiencyClassification,
@@ -36,7 +36,8 @@ import {
   WASTE_METAS,
   convertTimeToHours,
   HOURS_PER_WORK_DAY,
-  getStepKaizens
+  getStepKaizens,
+  calculateFutureStateMetrics
 } from '@/lib/vsmCalculations';
 import { generateVsmAiDiagnostic, AiDiagnosticReport } from '@/lib/vsmAiDiagnostic';
 
@@ -106,6 +107,11 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
     month: 'long',
     year: 'numeric'
   });
+
+  // Métricas do Estado Futuro calculadas das metas estipuladas pelos participantes
+  const futureMetrics: FutureStateMetrics = useMemo(() => {
+    return calculateFutureStateMetrics(steps || [], metrics);
+  }, [steps, metrics]);
 
   // Generate fallback heuristic analysis
   const fallbackReport: AiDiagnosticReport = useMemo(() => {
@@ -1239,7 +1245,17 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                         <th className="p-2.5">Nome da Etapa</th>
                         <th className="p-2.5">Responsável (Papel)</th>
                         <th className="p-2.5 text-right whitespace-nowrap">PT (Trabalho)</th>
-                        <th className="p-2.5 text-right whitespace-nowrap">WT (Fila)</th>
+                        <th className="p-2.5 text-right whitespace-nowrap">WT Atual (Fila)</th>
+                        {futureMetrics.hasCustomEstimates && (
+                          <>
+                            <th className="p-2.5 text-right whitespace-nowrap text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
+                              WT Futuro (Meta)
+                            </th>
+                            <th className="p-2.5 text-center whitespace-nowrap text-emerald-600 dark:text-emerald-400">
+                              Redução WT
+                            </th>
+                          </>
+                        )}
                         <th className="p-2.5 text-right whitespace-nowrap">%C&A</th>
                         <th className="p-2.5">Desperdícios</th>
                         <th className="p-2.5">Oportunidade Kaizen</th>
@@ -1248,47 +1264,77 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                     <tbody className={`divide-y font-mono ${
                       isPaper ? 'divide-slate-200' : 'divide-slate-800/60'
                     }`}>
-                      {steps.map(step => (
-                        <tr key={step.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                          <td className="p-2.5 text-center font-bold text-cyan-600 dark:text-cyan-400">
-                            #{step.order}
-                          </td>
-                          <td className="p-2.5 font-sans font-medium text-slate-900 dark:text-white max-w-[200px]">
-                            {step.title}
-                          </td>
-                          <td className="p-2.5 font-sans text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                            {step.role}
-                          </td>
-                          <td className="p-2.5 text-right text-cyan-700 dark:text-cyan-300 whitespace-nowrap">
-                            {step.processTime} {step.processTimeUnit}
-                          </td>
-                          <td className="p-2.5 text-right text-amber-700 dark:text-amber-400 whitespace-nowrap">
-                            {step.waitTime} {step.waitTimeUnit}
-                          </td>
-                          <td className="p-2.5 text-right font-bold text-slate-800 dark:text-slate-200">
-                            {step.percentCompleteAndAccurate}%
-                          </td>
-                          <td className="p-2.5 font-sans text-[11px] text-slate-500 dark:text-slate-400">
-                            {step.wasteTypes?.map(w => WASTE_METAS[w]?.shortLabel).join(', ') || '-'}
-                          </td>
-                          <td className="p-2.5 font-sans text-[11px] text-amber-700 dark:text-amber-300 min-w-[170px] max-w-[240px]">
-                            {(() => {
-                              const kaizens = getStepKaizens(step);
-                              if (kaizens.length === 0) return '-';
-                              return (
-                                <ul className="space-y-1">
-                                  {kaizens.map((k, kIdx) => (
-                                    <li key={kIdx} className="flex items-start gap-1 leading-snug">
-                                      <span className="shrink-0 text-amber-600 dark:text-amber-400">💡</span>
-                                      <span className="break-words">{k}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              );
-                            })()}
-                          </td>
-                        </tr>
-                      ))}
+                      {steps.map(step => {
+                        const hasCustom = typeof step.futureWaitTime === 'number';
+                        const currentWtH = convertTimeToHours(step.waitTime, step.waitTimeUnit, true);
+                        const futureWtH = hasCustom
+                          ? convertTimeToHours(step.futureWaitTime!, step.futureWaitTimeUnit || step.waitTimeUnit, true)
+                          : currentWtH;
+                        const diffH = currentWtH - futureWtH;
+                        const diffPct = currentWtH > 0 ? Math.round((diffH / currentWtH) * 100) : 0;
+
+                        return (
+                          <tr key={step.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                            <td className="p-2.5 text-center font-bold text-cyan-600 dark:text-cyan-400">
+                              #{step.order}
+                            </td>
+                            <td className="p-2.5 font-sans font-medium text-slate-900 dark:text-white max-w-[200px]">
+                              {step.title}
+                            </td>
+                            <td className="p-2.5 font-sans text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                              {step.role}
+                            </td>
+                            <td className="p-2.5 text-right text-cyan-700 dark:text-cyan-300 whitespace-nowrap">
+                              {step.processTime} {step.processTimeUnit}
+                            </td>
+                            <td className="p-2.5 text-right text-amber-700 dark:text-amber-400 whitespace-nowrap font-bold">
+                              {step.waitTime} {step.waitTimeUnit}
+                            </td>
+                            {futureMetrics.hasCustomEstimates && (
+                              <>
+                                <td className="p-2.5 text-right whitespace-nowrap font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/5">
+                                  {hasCustom
+                                    ? `${step.futureWaitTime} ${step.futureWaitTimeUnit || step.waitTimeUnit}`
+                                    : `${step.waitTime} ${step.waitTimeUnit}`}
+                                </td>
+                                <td className="p-2.5 text-center whitespace-nowrap font-bold font-mono">
+                                  {hasCustom && diffH > 0 ? (
+                                    <span className="text-emerald-600 dark:text-emerald-400">
+                                      -{diffPct}%
+                                    </span>
+                                  ) : hasCustom ? (
+                                    <span className="text-slate-400">0%</span>
+                                  ) : (
+                                    <span className="text-slate-400">-</span>
+                                  )}
+                                </td>
+                              </>
+                            )}
+                            <td className="p-2.5 text-right font-bold text-slate-800 dark:text-slate-200">
+                              {step.percentCompleteAndAccurate}%
+                            </td>
+                            <td className="p-2.5 font-sans text-[11px] text-slate-500 dark:text-slate-400">
+                              {step.wasteTypes?.map(w => WASTE_METAS[w]?.shortLabel).join(', ') || '-'}
+                            </td>
+                            <td className="p-2.5 font-sans text-[11px] text-amber-700 dark:text-amber-300 min-w-[170px] max-w-[240px]">
+                              {(() => {
+                                const kaizens = getStepKaizens(step);
+                                if (kaizens.length === 0) return '-';
+                                return (
+                                  <ul className="space-y-1">
+                                    {kaizens.map((k, kIdx) => (
+                                      <li key={kIdx} className="flex items-start gap-1 leading-snug">
+                                        <span className="shrink-0 text-amber-600 dark:text-amber-400">💡</span>
+                                        <span className="break-words">{k}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                );
+                              })()}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                     <tfoot className={`border-t font-mono text-[11px] font-bold ${
                       isPaper ? 'bg-slate-100 border-slate-300 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-200'
@@ -1297,10 +1343,27 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                         <td colSpan={3} className="p-2.5 text-right uppercase">Totais Auditados:</td>
                         <td className="p-2.5 text-right text-cyan-700 dark:text-cyan-400">{formatHours(totalProcessHours)}</td>
                         <td className="p-2.5 text-right text-amber-700 dark:text-amber-400">{formatHours(totalWaitHours)}</td>
-                        <td className="p-2.5 text-right text-purple-700 dark:text-purple-400">{overallYield.toFixed(1)}% (RFPY)</td>
-                        <td colSpan={2} className="p-2.5 text-slate-500 font-sans font-normal">
-                          Lead Time Total: {formatHours(totalLeadTimeHours)}
-                        </td>
+                        {futureMetrics.hasCustomEstimates ? (
+                          <>
+                            <td className="p-2.5 text-right font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10">
+                              {formatHours(futureMetrics.futureWaitHours)}
+                            </td>
+                            <td className="p-2.5 text-center font-bold text-emerald-700 dark:text-emerald-400">
+                              -{futureMetrics.waitReductionPercent}%
+                            </td>
+                            <td className="p-2.5 text-right text-purple-700 dark:text-purple-400">{futureMetrics.futureYield.toFixed(1)}%</td>
+                            <td colSpan={2} className="p-2.5 text-slate-600 dark:text-slate-300 font-sans font-normal">
+                              Lead Time: {formatHours(totalLeadTimeHours)} ➔ <strong className="text-emerald-600 dark:text-emerald-400">{formatHours(futureMetrics.futureLeadTimeHours)}</strong>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="p-2.5 text-right text-purple-700 dark:text-purple-400">{overallYield.toFixed(1)}% (RFPY)</td>
+                            <td colSpan={2} className="p-2.5 text-slate-500 font-sans font-normal">
+                              Lead Time Total: {formatHours(totalLeadTimeHours)}
+                            </td>
+                          </>
+                        )}
                       </tr>
                     </tfoot>
                   </table>
@@ -1311,13 +1374,27 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
             {/* ------------------------------------------------------------- */}
             {/* 7. FUTURE STATE SIMULATION (BEFORE VS AFTER)                  */}
             {/* ------------------------------------------------------------- */}
+            {/* ------------------------------------------------------------- */}
+            {/* 7. FUTURE STATE SIMULATION (BEFORE VS AFTER)                  */}
+            {/* ------------------------------------------------------------- */}
             {includeSimulation && (
               <div className="space-y-4 print-avoid-break">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <h2 className="text-sm uppercase font-bold tracking-wider font-mono text-slate-700 dark:text-slate-300">
-                    6. Visão do Estado Futuro Enxuto (Antes vs Depois)
-                  </h2>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <h2 className="text-sm uppercase font-bold tracking-wider font-mono text-slate-700 dark:text-slate-300">
+                      6. Visão do Estado Futuro Enxuto (Antes vs Depois)
+                    </h2>
+                  </div>
+                  {futureMetrics.hasCustomEstimates ? (
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-bold">
+                      ✨ Metas Pactuadas pela Equipe no Workshop
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-800 dark:text-cyan-300 border border-cyan-500/30 text-[10px] font-mono font-bold">
+                      Projeção Heurística Lean
+                    </span>
+                  )}
                 </div>
 
                 <div className={`p-6 rounded-2xl border space-y-4 ${
@@ -1326,7 +1403,9 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                     : 'bg-emerald-950/20 border-emerald-500/30 text-slate-100'
                 }`}>
                   <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                    {diagnosticReport.futureStateSimulation.summary}
+                    {futureMetrics.hasCustomEstimates
+                      ? 'Simulação consolidada a partir das metas de redução de tempo de fila (WT) estipuladas colaborativamente pelos participantes na Matriz Auditável, com base na implementação das oportunidades Kaizen prioritárias.'
+                      : diagnosticReport.futureStateSimulation.summary}
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
@@ -1340,11 +1419,19 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                       </span>
                       <div className="flex items-baseline gap-2 mt-1">
                         <span className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-                          -{diagnosticReport.futureStateSimulation.leadTimeReductionPercent}%
+                          -{futureMetrics.hasCustomEstimates ? futureMetrics.leadTimeReductionPercent : diagnosticReport.futureStateSimulation.leadTimeReductionPercent}%
                         </span>
                       </div>
                       <span className="text-[11px] font-mono text-slate-600 dark:text-slate-400 block mt-1">
-                        De {(diagnosticReport.futureStateSimulation.currentLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)}d para <strong>~{(diagnosticReport.futureStateSimulation.projectedLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis</strong>
+                        {futureMetrics.hasCustomEstimates ? (
+                          <>
+                            De {(futureMetrics.currentLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)}d para <strong>~{(futureMetrics.futureLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis</strong>
+                          </>
+                        ) : (
+                          <>
+                            De {(diagnosticReport.futureStateSimulation.currentLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)}d para <strong>~{(diagnosticReport.futureStateSimulation.projectedLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis</strong>
+                          </>
+                        )}
                       </span>
                     </div>
 
@@ -1357,11 +1444,21 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                       </span>
                       <div className="flex items-baseline gap-2 mt-1">
                         <span className="text-2xl font-black font-mono text-cyan-600 dark:text-cyan-400">
-                          {diagnosticReport.futureStateSimulation.projectedFlowEfficiency.toFixed(1)}%
+                          {futureMetrics.hasCustomEstimates
+                            ? futureMetrics.futureFlowEfficiency.toFixed(1)
+                            : diagnosticReport.futureStateSimulation.projectedFlowEfficiency.toFixed(1)}%
                         </span>
                       </div>
                       <span className="text-[11px] font-mono text-slate-600 dark:text-slate-400 block mt-1">
-                        De {diagnosticReport.futureStateSimulation.currentFlowEfficiency.toFixed(1)}% (+{Math.round(diagnosticReport.futureStateSimulation.projectedFlowEfficiency - diagnosticReport.futureStateSimulation.currentFlowEfficiency)} pontos percentuais)
+                        {futureMetrics.hasCustomEstimates ? (
+                          <>
+                            De {futureMetrics.currentFlowEfficiency.toFixed(1)}% (+{Math.round(futureMetrics.futureFlowEfficiency - futureMetrics.currentFlowEfficiency)} pontos percentuais)
+                          </>
+                        ) : (
+                          <>
+                            De {diagnosticReport.futureStateSimulation.currentFlowEfficiency.toFixed(1)}% (+{Math.round(diagnosticReport.futureStateSimulation.projectedFlowEfficiency - diagnosticReport.futureStateSimulation.currentFlowEfficiency)} pontos percentuais)
+                          </>
+                        )}
                       </span>
                     </div>
 
@@ -1374,15 +1471,31 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                       </span>
                       <div className="flex items-baseline gap-2 mt-1">
                         <span className="text-2xl font-black font-mono text-purple-600 dark:text-purple-400">
-                          {diagnosticReport.futureStateSimulation.projectedYield}%
+                          {futureMetrics.hasCustomEstimates
+                            ? futureMetrics.futureYield.toFixed(1)
+                            : diagnosticReport.futureStateSimulation.projectedYield}%
                         </span>
                       </div>
                       <span className="text-[11px] font-mono text-slate-600 dark:text-slate-400 block mt-1">
-                        De {diagnosticReport.futureStateSimulation.currentYield.toFixed(1)}% através de checklists na origem
+                        {futureMetrics.hasCustomEstimates ? (
+                          <>
+                            De {futureMetrics.currentYield.toFixed(1)}% através de checklists e melhorias na origem
+                          </>
+                        ) : (
+                          <>
+                            De {diagnosticReport.futureStateSimulation.currentYield.toFixed(1)}% através de checklists na origem
+                          </>
+                        )}
                       </span>
                     </div>
 
                   </div>
+
+                  {futureMetrics.hasCustomEstimates && diagnosticReport.futureStateSimulation.summary && (
+                    <div className="mt-3 pt-3 border-t border-emerald-500/20 text-xs text-slate-600 dark:text-slate-300 italic">
+                      <strong>Parecer Analítico da IA:</strong> {diagnosticReport.futureStateSimulation.summary}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

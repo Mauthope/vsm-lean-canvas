@@ -22,6 +22,28 @@ export interface VSMStep {
   kaizenNotes?: string; // Oportunidades de melhoria levantadas na sessão (mantido para retrocompatibilidade)
   kaizenList?: string[]; // Múltiplas oportunidades/raios de Kaizen na mesma etapa
   isParallel?: boolean;
+  // Campos de Projeção do Estado Futuro (Estipulados pela equipe)
+  futureWaitTime?: number; // WT estimado no estado futuro
+  futureWaitTimeUnit?: TimeUnit; // Unidade do WT futuro (padrão: mesma de waitTimeUnit)
+  futureProcessTime?: number; // PT estimado no estado futuro (opcional)
+  futureProcessTimeUnit?: TimeUnit;
+  futurePercentCompleteAndAccurate?: number; // %C&A estimado no estado futuro (opcional)
+}
+
+export interface FutureStateMetrics {
+  currentWaitHours: number;
+  futureWaitHours: number;
+  waitReductionHours: number;
+  waitReductionPercent: number;
+  currentLeadTimeHours: number;
+  futureLeadTimeHours: number;
+  leadTimeReductionPercent: number;
+  currentFlowEfficiency: number;
+  futureFlowEfficiency: number;
+  currentYield: number;
+  futureYield: number;
+  hasCustomEstimates: boolean;
+  totalCustomStepsCount: number;
 }
 
 export interface VSMProject {

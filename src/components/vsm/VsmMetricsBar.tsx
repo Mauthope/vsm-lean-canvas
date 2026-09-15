@@ -19,7 +19,8 @@ import {
   formatHours,
   getFlowEfficiencyClassification,
   convertTimeToHours,
-  HOURS_PER_WORK_DAY
+  HOURS_PER_WORK_DAY,
+  calculateFutureStateMetrics
 } from '@/lib/vsmCalculations';
 
 interface VsmMetricsBarProps {
@@ -48,6 +49,7 @@ export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
   } = metrics;
 
   const efficiencyMeta = getFlowEfficiencyClassification(flowEfficiency);
+  const futureMetrics = React.useMemo(() => calculateFutureStateMetrics(steps, metrics), [steps, metrics]);
 
   // Calcula dias úteis (8h48min = 8.8h)
   const leadTimeDays = (totalLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1);
@@ -107,6 +109,18 @@ export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
           <span className="text-slate-400" title="1 dia útil = 8h48min (8.8 horas)">Dias Úteis (8h48m):</span>
           <span className="font-mono font-bold text-amber-300">~{leadTimeDays} dias</span>
         </div>
+
+        {futureMetrics.hasCustomEstimates && (
+          <div className="mt-1.5 pt-1.5 border-t border-emerald-500/20 flex items-center justify-between text-[11px] font-mono text-emerald-400">
+            <span className="flex items-center gap-1 font-bold">
+              <Sparkles className="w-2.5 h-2.5" />
+              <span>Meta:</span>
+            </span>
+            <span className="font-bold font-mono">
+              ~{(futureMetrics.futureLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)}d (-{futureMetrics.leadTimeReductionPercent}%)
+            </span>
+          </div>
+        )}
 
         {Boolean(metrics.parallelStagesCount && metrics.parallelStagesCount > 0) && (
           <div className="mt-1 text-[10px] text-purple-400 font-mono flex items-center justify-end gap-1" title="Etapas concorrentes calculadas pelo maior tempo (Caminho Crítico Lean Office)">
@@ -239,6 +253,18 @@ export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
             {flowEfficiency < 5 ? 'Crítico (<5%)' : flowEfficiency < 15 ? 'Típico Adm' : 'Excelente'}
           </span>
         </div>
+
+        {futureMetrics.hasCustomEstimates && (
+          <div className="mt-1.5 pt-1.5 border-t border-emerald-500/20 flex items-center justify-between text-[11px] font-mono text-emerald-400">
+            <span className="flex items-center gap-1 font-bold">
+              <Sparkles className="w-2.5 h-2.5" />
+              <span>Meta:</span>
+            </span>
+            <span className="font-bold font-mono">
+              {futureMetrics.futureFlowEfficiency.toFixed(1)}% (+{(futureMetrics.futureFlowEfficiency - futureMetrics.currentFlowEfficiency).toFixed(1)} pp)
+            </span>
+          </div>
+        )}
       </div>
 
       {/* 4. ROLLED FIRST PASS YIELD (RFPY / %C&A) */}

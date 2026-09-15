@@ -1,4 +1,4 @@
-import { VSMStep, TimeUnit, WasteType, WasteMeta, BottleneckAnalysis } from '@/types/vsm';
+import { VSMStep, TimeUnit, WasteType, WasteMeta, BottleneckAnalysis, FutureStateMetrics } from '@/types/vsm';
 
 /**
  * Convenção de jornada de trabalho:
@@ -371,4 +371,139 @@ export function countWastes(steps: VSMStep[]): Record<WasteType, number> {
   });
 
   return counts;
+}
+
+/**
+ * Calcula as métricas consolidadas do Estado Futuro (Target State)
+ * baseando-se nas metas de WT futuro (e opcionalmente PT / %C&A) estipuladas
+ * pela equipe no workshop. Se uma etapa não tiver WT futuro definido,
+ * mantém o WT atual como valor de base.
+ */
+export function calculateFutureStateMetrics(
+  steps: VSMStep[],
+  currentMetrics?: BottleneckAnalysis
+): FutureStateMetrics {
+  const current = currentMetrics || calculateVsmMetrics(steps);
+
+  if (!steps || steps.length === 0) {
+    return {
+      currentWaitHours: 0,
+      futureWaitHours: 0,
+      waitReductionHours: 0,
+      waitReductionPercent: 0,
+      currentLeadTimeHours: 0,
+      futureLeadTimeHours: 0,
+      leadTimeReductionPercent: 0,
+      currentFlowEfficiency: 0,
+      futureFlowEfficiency: 0,
+      currentYield: 100,
+      futureYield: 100,
+      hasCustomEstimates: false,
+      totalCustomStepsCount: 0
+    };
+  }
+
+  let totalCustomStepsCount = 0;
+  let cumulativeYield = 1.0;
+
+  // Verifica etapas com estimativa customizada e calcula yield futuro
+  steps.forEach(step => {
+    if (typeof step.futureWaitTime === 'number') {
+      totalCustomStepsCount++;
+    }
+    const futureAccuracy =
+      typeof step.futurePercentCompleteAndAccurate === 'number'
+        ? step.futurePercentCompleteAndAccurate
+        : typeof step.percentCompleteAndAccurate === 'number'
+        ? step.percentCompleteAndAccurate
+        : 100;
+
+    const factor = Math.max(0, Math.min(100, futureAccuracy)) / 100;
+    cumulativeYield *= factor;
+  });
+
+  const hasCustomEstimates = totalCustomStepsCount > 0;
+
+  let futureWaitHours = 0;
+  let futureProcessHours = 0;
+  let futureLeadTimeHours = 0;
+
+  // Agrupa estágios futuros respeitando paralelismo e caminho crítico
+  const stages = groupStepsIntoStages(steps);
+
+  stages.forEach(stage => {
+    if (stage.length === 1) {
+      const step = stage[0];
+      const wtHours =
+        typeof step.futureWaitTime === 'number'
+          ? convertTimeToHours(step.futureWaitTime, step.futureWaitTimeUnit || step.waitTimeUnit, true)
+          : convertTimeToHours(step.waitTime, step.waitTimeUnit, true);
+
+      const ptHours =
+        typeof step.futureProcessTime === 'number'
+          ? convertTimeToHours(step.futureProcessTime, step.futureProcessTimeUnit || step.processTimeUnit, true)
+          : convertTimeToHours(step.processTime, step.processTimeUnit, true);
+
+      futureWaitHours += wtHours;
+      futureProcessHours += ptHours;
+      futureLeadTimeHours += (wtHours + ptHours);
+    } else {
+      // Estágio Paralelo: crítico pelo maior lead time futuro
+      let criticalStep = stage[0];
+      const getStepFutureLt = (s: VSMStep) => {
+        const wt =
+          typeof s.futureWaitTime === 'number'
+            ? convertTimeToHours(s.futureWaitTime, s.futureWaitTimeUnit || s.waitTimeUnit, true)
+            : convertTimeToHours(s.waitTime, s.waitTimeUnit, true);
+        const pt =
+          typeof s.futureProcessTime === 'number'
+            ? convertTimeToHours(s.futureProcessTime, s.futureProcessTimeUnit || s.processTimeUnit, true)
+            : convertTimeToHours(s.processTime, s.processTimeUnit, true);
+        return { wt, pt, lt: wt + pt };
+      };
+
+      let maxInfo = getStepFutureLt(criticalStep);
+
+      for (let i = 1; i < stage.length; i++) {
+        const info = getStepFutureLt(stage[i]);
+        if (info.lt > maxInfo.lt || (info.lt === maxInfo.lt && info.wt > maxInfo.wt)) {
+          maxInfo = info;
+          criticalStep = stage[i];
+        }
+      }
+
+      futureWaitHours += maxInfo.wt;
+      futureProcessHours += maxInfo.pt;
+      futureLeadTimeHours += maxInfo.lt;
+    }
+  });
+
+  const futureFlowEfficiency =
+    futureLeadTimeHours > 0 ? (futureProcessHours / futureLeadTimeHours) * 100 : 0;
+
+  const currentWait = current.totalWaitHours;
+  const currentLt = current.totalLeadTimeHours;
+
+  const waitReductionHours = Math.max(0, currentWait - futureWaitHours);
+  const waitReductionPercent =
+    currentWait > 0 ? Math.round(((currentWait - futureWaitHours) / currentWait) * 100) : 0;
+
+  const leadTimeReductionPercent =
+    currentLt > 0 ? Math.round(((currentLt - futureLeadTimeHours) / currentLt) * 100) : 0;
+
+  return {
+    currentWaitHours: currentWait,
+    futureWaitHours,
+    waitReductionHours,
+    waitReductionPercent,
+    currentLeadTimeHours: currentLt,
+    futureLeadTimeHours,
+    leadTimeReductionPercent,
+    currentFlowEfficiency: current.flowEfficiency,
+    futureFlowEfficiency,
+    currentYield: current.overallYield,
+    futureYield: Math.round(cumulativeYield * 1000) / 10,
+    hasCustomEstimates,
+    totalCustomStepsCount
+  };
 }

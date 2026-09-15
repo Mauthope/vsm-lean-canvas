@@ -55,6 +55,12 @@ export const VsmStepCard: React.FC<VsmStepCardProps> = ({
   const ptHours = convertTimeToHours(step.processTime, step.processTimeUnit, true);
   const wtHours = convertTimeToHours(step.waitTime, step.waitTimeUnit, true);
 
+  const hasFutureWt = typeof step.futureWaitTime === 'number';
+  const futureWtHours = hasFutureWt
+    ? convertTimeToHours(step.futureWaitTime!, step.futureWaitTimeUnit || step.waitTimeUnit, true)
+    : wtHours;
+  const wtDeltaPercent = wtHours > 0 && hasFutureWt ? Math.round(((wtHours - futureWtHours) / wtHours) * 100) : 0;
+
   const accuracy = typeof step.percentCompleteAndAccurate === 'number' ? step.percentCompleteAndAccurate : 100;
   const accuracyColor =
     accuracy >= 90
@@ -194,6 +200,18 @@ export const VsmStepCard: React.FC<VsmStepCardProps> = ({
             <div className="text-[9px] font-mono text-slate-400 mt-0.5">
               ≈ {formatHours(wtHours)}
             </div>
+            {hasFutureWt && (
+              <div className="mt-1 pt-1 border-t border-emerald-500/30 flex items-center justify-between text-[9px] font-mono text-emerald-300">
+                <span className="flex items-center gap-0.5 font-bold">
+                  <Sparkles className="w-2.5 h-2.5 text-emerald-400" />
+                  <span>Meta:</span>
+                </span>
+                <span className="font-bold">
+                  {step.futureWaitTime} {step.futureWaitTimeUnit || step.waitTimeUnit}
+                  {wtDeltaPercent > 0 ? ` (-${wtDeltaPercent}%)` : wtDeltaPercent < 0 ? ` (+${Math.abs(wtDeltaPercent)}%)` : ''}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

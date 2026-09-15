@@ -64,6 +64,8 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
   const [kaizenList, setKaizenList] = useState<string[]>([]);
   const [newKaizenText, setNewKaizenText] = useState('');
   const [isParallel, setIsParallel] = useState(false);
+  const [futureWaitTime, setFutureWaitTime] = useState<number | undefined>(undefined);
+  const [futureWaitTimeUnit, setFutureWaitTimeUnit] = useState<TimeUnit>('horas');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -103,6 +105,8 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
       setKaizenList(getStepKaizens(initialStep));
       setNewKaizenText('');
       setIsParallel(Boolean(initialStep.isParallel));
+      setFutureWaitTime(typeof initialStep.futureWaitTime === 'number' ? initialStep.futureWaitTime : undefined);
+      setFutureWaitTimeUnit(initialStep.futureWaitTimeUnit || initialStep.waitTimeUnit || 'horas');
 
       const stepRole = initialStep.role?.trim() || 'Recrutador';
       setSelectedRole(stepRole);
@@ -119,6 +123,8 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
       setProcessTimeUnit('minutos');
       setWaitTime(4);
       setWaitTimeUnit('horas');
+      setFutureWaitTime(undefined);
+      setFutureWaitTimeUnit('horas');
       setPercentCompleteAndAccurate(90);
       setWasteTypes([]);
       setKaizenList([]);
@@ -231,7 +237,9 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
       wasteTypes,
       kaizenNotes: cleanedKaizens.join('\n'),
       kaizenList: cleanedKaizens,
-      isParallel
+      isParallel,
+      futureWaitTime: typeof futureWaitTime === 'number' ? futureWaitTime : undefined,
+      futureWaitTimeUnit: typeof futureWaitTime === 'number' ? (futureWaitTimeUnit || waitTimeUnit) : undefined
     });
 
     onClose();
@@ -500,6 +508,48 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
               </span>
             </div>
 
+          </div>
+
+          {/* Projeção do Estado Futuro (WT Futuro Opcional) */}
+          <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/30">
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 font-mono">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Meta do Estado Futuro: WT Projetado (Opcional)</span>
+              </div>
+              {typeof futureWaitTime === 'number' && (
+                <button
+                  type="button"
+                  onClick={() => setFutureWaitTime(undefined)}
+                  className="text-[10px] text-rose-400 hover:underline cursor-pointer"
+                >
+                  Limpar Meta
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min="0"
+                step="any"
+                placeholder={String(waitTime)}
+                value={typeof futureWaitTime === 'number' ? futureWaitTime : ''}
+                onChange={e => setFutureWaitTime(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                className="w-24 sm:w-28 bg-slate-950 border border-emerald-500/40 rounded-xl px-3 py-2 text-sm font-mono font-bold text-emerald-300 focus:outline-none focus:border-emerald-400"
+              />
+              <select
+                value={futureWaitTimeUnit}
+                onChange={e => setFutureWaitTimeUnit(e.target.value as TimeUnit)}
+                className="flex-1 bg-slate-950 border border-emerald-500/40 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-400"
+              >
+                <option value="minutos">Minutos</option>
+                <option value="horas">Horas</option>
+                <option value="dias">Dias úteis (8h48min)</option>
+              </select>
+            </div>
+            <span className="text-[10px] text-slate-400 font-mono block mt-1">
+              Tempo de fila estimado após implementar as ações Kaizen desta etapa.
+            </span>
           </div>
 
           {/* %C&A Slider */}
