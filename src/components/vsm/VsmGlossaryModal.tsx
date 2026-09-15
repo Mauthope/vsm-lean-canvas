@@ -163,17 +163,17 @@ export const LEAN_CONCEPTS: Concept[] = [
   },
   {
     id: 'kaizen_5w2h',
-    term: 'Plano Kaizen 5W2H & Horizontes 30-60-90 Dias',
+    term: 'Plano Kaizen 5W2H & Cronograma com Responsáveis',
     acronym: '5W2H Kaizen (Do Diagnóstico à Execução)',
     tag: 'Execução Lean & Governança',
     color: 'text-amber-400',
     bg: 'bg-amber-500/10',
     border: 'border-amber-500/30',
-    summary: 'A ponte metodológica essencial que transforma o Target State do VSM em um plano de ação tático executável. Cada redução de Lead Time (WT Futuro) ganha um Kaizen estruturado com escopo claro (O quê), justificativa ligada ao gargalo (Por quê), setor/etapa (Onde), responsável direto (Quem) e horizonte temporal de implantação (Quando: 30, 60 ou 90 dias).',
-    formula: 'Compromisso 5W2H = O Quê (Escopo) + Por Quê (Meta WT) + Onde (Etapa) + Quem (Owner) + Quando (30/60/90d)',
-    example: 'Ao pactuar uma redução de 72h para 12h no alinhamento de perfil, a equipe formaliza: What = "Criar formulário inteligente padronizado de briefing de vaga", Why = "Eliminar 60h de vaivém de mensagens na etapa de alinhamento", Where = "Etapa 2 - Alinhamento com Gestor", Who = "Mariana (Tech Recruiter)", When = "30 dias (Quick Win)". O "Como" e "Quanto Custa" ficam flexíveis para detalhamento posterior.',
-    whyItMatters: 'Evita a principal falha dos workshops corporativos: sair da sala com um diagnóstico impecável, mas sem donos e prazos definidos. Ao flexibilizar o How (método detalhado) e How Much (custo/investimento), o facilitador impede que o time trave na sessão com discussões prematuras de orçamento, garantindo ritmo dinâmico e alto engajamento no workshop.',
-    benchmark: 'Horizonte 30 dias para Quick Wins (sem orçamento), 60 dias para integrações de processos e 90 dias para automações estruturadas.'
+    summary: 'A ponte metodológica essencial que transforma o Target State do VSM em um plano de ação tático executável. Cada redução de Lead Time (WT Futuro) ganha um Kaizen estruturado com escopo claro (O quê), justificativa ligada ao gargalo (Por quê), setor/etapa (Onde), nome da pessoa física responsável direta (Quem - e não o cargo genérico) e datas inicial e final precisas (Quando).',
+    formula: 'Compromisso 5W2H = O Quê (Escopo) + Por Quê (Meta WT) + Onde (Etapa) + Quem (Nome do Responsável) + Quando (Data Inicial ➔ Data Final)',
+    example: 'Ao pactuar uma redução de 72h para 12h no alinhamento de perfil, a equipe formaliza: What = "Criar formulário inteligente padronizado de briefing de vaga", Why = "Eliminar 60h de vaivém de mensagens na etapa de alinhamento", Where = "Etapa 2 - Alinhamento com Gestor", Who = "Mariana Prestes (pessoa física designada)", Quando = "De 20/09/2026 a 20/10/2026 (30 dias)". O "Como" e "Quanto Custa" ficam flexíveis para detalhamento posterior.',
+    whyItMatters: 'Evita a principal falha dos workshops corporativos: sair da sala com um diagnóstico impecável, mas com donos anônimos ("o RH vai ver", "a TI precisa fazer") e prazos abstratos. Ao exigir o nome da pessoa física responsável e datas precisas de início e término em uma tabela consolidada, cria-se responsabilidade real (Accountability) e clareza no Gemba.',
+    benchmark: 'Pactuar líderes com nome e sobrenome e datas claras de início e entrega para 100% das ações.'
   }
 ];
 

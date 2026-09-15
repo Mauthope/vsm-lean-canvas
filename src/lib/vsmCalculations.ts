@@ -507,3 +507,53 @@ export function calculateFutureStateMetrics(
     totalCustomStepsCount
   };
 }
+
+/**
+ * Utilitários de Data para o Plano Kaizen 5W2H
+ */
+export function formatDateBR(isoDate?: string): string {
+  if (!isoDate) return '';
+  if (isoDate.includes('/')) return isoDate;
+  const parts = isoDate.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return isoDate;
+}
+
+export function getTodayISO(): string {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function addDaysISO(baseDateISO: string, days: number): string {
+  try {
+    const [y, m, d] = baseDateISO.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    date.setDate(date.getDate() + days);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch {
+    return baseDateISO;
+  }
+}
+
+export function calculateDateDiffDays(startISO?: string, endISO?: string): number | null {
+  if (!startISO || !endISO) return null;
+  try {
+    const [sy, sm, sd] = startISO.split('-').map(Number);
+    const [ey, em, ed] = endISO.split('-').map(Number);
+    const d1 = new Date(sy, sm - 1, sd);
+    const d2 = new Date(ey, em - 1, ed);
+    const diffTime = d2.getTime() - d1.getTime();
+    return Math.max(0, Math.round(diffTime / (1000 * 60 * 60 * 24)));
+  } catch {
+    return null;
+  }
+}
+

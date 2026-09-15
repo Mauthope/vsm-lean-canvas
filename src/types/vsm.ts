@@ -55,8 +55,10 @@ export interface KaizenAction5W2H {
   what: string; // O que fazer (Ação Kaizen)
   why: string; // Por que fazer (Meta de redução de WT / eliminação de desperdício)
   where: string; // Onde será aplicado (Etapa / Setor)
-  who: string; // Quem é o responsável / líder da ação
-  when: KaizenHorizon; // 30 dias (Quick Win), 60 dias ou 90 dias
+  who: string; // Quem é o responsável direto (Nome da pessoa física, não o cargo)
+  startDate?: string; // Data inicial (YYYY-MM-DD)
+  endDate?: string; // Data final / Prazo (YYYY-MM-DD)
+  when?: KaizenHorizon | string; // Mantido para retrocompatibilidade
   how?: string; // Como fazer (Opcional / simplificado no workshop)
   howMuch?: string; // Quanto custa (Opcional, default "Esforço interno" ou valor)
   status?: 'planejado' | 'em_andamento' | 'concluido';

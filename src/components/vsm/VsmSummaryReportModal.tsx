@@ -37,7 +37,9 @@ import {
   convertTimeToHours,
   HOURS_PER_WORK_DAY,
   getStepKaizens,
-  calculateFutureStateMetrics
+  calculateFutureStateMetrics,
+  formatDateBR,
+  calculateDateDiffDays
 } from '@/lib/vsmCalculations';
 import { generateVsmAiDiagnostic, AiDiagnosticReport } from '@/lib/vsmAiDiagnostic';
 
@@ -434,41 +436,29 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
     }
 
     if (includeRoadmap) {
-      md += `## 7. Roadmap Kaizen de Implementação (30 - 60 - 90 Dias)\n\n`;
       if (kaizenRoadmap && kaizenRoadmap.length > 0) {
-        const qWins = kaizenRoadmap.filter(a => a.when === '30_dias');
-        const sImpr = kaizenRoadmap.filter(a => a.when === '60_dias');
-        const aProj = kaizenRoadmap.filter(a => a.when === '90_dias');
+        md += `## 7. Plano de Ação Kaizen 5W2H Consolidado\n\n`;
+        md += `> **Compromisso Pactuado no Workshop:** Ações de melhoria com líderes designados (pessoas físicas) e cronograma específico (datas inicial e final) para sustentação do Estado Futuro.\n\n`;
+        md += `| # | Ação Kaizen (O Quê) | Meta / Justificativa (Por Quê) | Onde | Responsável (Quem) | Cronograma (Quando) | Método / Custo |\n`;
+        md += `| :---: | :--- | :--- | :--- | :--- | :--- | :--- |\n`;
+        kaizenRoadmap.forEach((a, idx) => {
+          const periodText = a.startDate && a.endDate
+            ? `${formatDateBR(a.startDate)} até ${formatDateBR(a.endDate)}`
+            : a.endDate
+            ? `Até ${formatDateBR(a.endDate)}`
+            : a.startDate
+            ? `A partir de ${formatDateBR(a.startDate)}`
+            : a.when
+            ? a.when.replace('_', ' ')
+            : '-';
+          const diffDays = calculateDateDiffDays(a.startDate, a.endDate);
+          const cronoStr = diffDays !== null ? `${periodText} (${diffDays}d)` : periodText;
+          const ownerStr = a.who || 'A definir (Nome do Líder)';
+          const costStr = `${a.how || 'Esforço interno'} (${a.howMuch || 'R$ 0'})`;
 
-        if (qWins.length > 0) {
-          md += `### Fase 1: Vitórias Rápidas (0 a 30 dias - Quick Wins)\n`;
-          md += `| Ação (O Que) | Objetivo / Meta (Por Que) | Onde | Responsável (Quem) | Método / Custo |\n`;
-          md += `| :--- | :--- | :--- | :--- | :--- |\n`;
-          qWins.forEach(a => {
-            md += `| **${a.what}** | ${a.why} | ${a.where} | **${a.who}** | ${a.how || 'Esforço interno'} (${a.howMuch || 'R$ 0'}) |\n`;
-          });
-          md += `\n`;
-        }
-
-        if (sImpr.length > 0) {
-          md += `### Fase 2: Melhorias Estruturais & Padronização (30 a 60 dias)\n`;
-          md += `| Ação (O Que) | Objetivo / Meta (Por Que) | Onde | Responsável (Quem) | Método / Custo |\n`;
-          md += `| :--- | :--- | :--- | :--- | :--- |\n`;
-          sImpr.forEach(a => {
-            md += `| **${a.what}** | ${a.why} | ${a.where} | **${a.who}** | ${a.how || 'Esforço interno'} (${a.howMuch || 'R$ 0'}) |\n`;
-          });
-          md += `\n`;
-        }
-
-        if (aProj.length > 0) {
-          md += `### Fase 3: Automação & Transformação Digital (60 a 90 dias)\n`;
-          md += `| Ação (O Que) | Objetivo / Meta (Por Que) | Onde | Responsável (Quem) | Método / Custo |\n`;
-          md += `| :--- | :--- | :--- | :--- | :--- |\n`;
-          aProj.forEach(a => {
-            md += `| **${a.what}** | ${a.why} | ${a.where} | **${a.who}** | ${a.how || 'Esforço interno'} (${a.howMuch || 'R$ 0'}) |\n`;
-          });
-          md += `\n`;
-        }
+          md += `| ${idx + 1} | **${a.what}** | ${a.why} | ${a.where} | **${ownerStr}** | ${cronoStr} | ${costStr} |\n`;
+        });
+        md += `\n`;
       } else {
         md += `### Fase 1: Vitórias Rápidas (0 a 30 dias - Quick Wins)\n`;
         md += `| Ação Proposta | Etapa Alvo | Impacto Estimado | Esforço |\n`;
@@ -1569,13 +1559,13 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                   <div className="flex items-center gap-2">
                     <TrendingDown className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                     <h2 className="text-sm uppercase font-bold tracking-wider font-mono text-slate-700 dark:text-slate-300">
-                      7. Roadmap de Implementação Kaizen (30 - 60 - 90 Dias)
+                      7. Plano de Ação Kaizen 5W2H Consolidado
                     </h2>
                   </div>
                   {kaizenRoadmap && kaizenRoadmap.length > 0 ? (
                     <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-bold flex items-center gap-1">
                       <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                      <span>✨ Plano 5W2H Pactuado no Workshop ({kaizenRoadmap.length} ações)</span>
+                      <span>✨ Compromisso Auditável do Workshop ({kaizenRoadmap.length} ações pactuadas)</span>
                     </span>
                   ) : (
                     <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-800 dark:text-cyan-300 border border-cyan-500/30 text-[10px] font-mono font-bold">
@@ -1585,264 +1575,110 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                 </div>
 
                 {kaizenRoadmap && kaizenRoadmap.length > 0 ? (
-                  <div className="space-y-4">
-                    {/* Fase 1: 0 a 30 dias (Quick Wins 5W2H) */}
-                    {(() => {
-                      const phaseActions = kaizenRoadmap.filter(a => a.when === '30_dias');
-                      return (
-                        <div className={`rounded-2xl border overflow-hidden print-avoid-break ${
-                          isPaper ? 'bg-white border-emerald-300' : 'bg-slate-900/90 border-emerald-500/30'
-                        }`}>
-                          <div className={`p-2.5 sm:p-3 border-b flex items-center justify-between ${
-                            isPaper ? 'bg-emerald-50 border-emerald-200' : 'bg-emerald-950/40 border-emerald-500/25'
+                  <div className={`rounded-2xl border overflow-hidden print-avoid-break ${
+                    isPaper ? 'bg-white border-amber-300' : 'bg-slate-900/90 border-amber-500/30'
+                  }`}>
+                    <div className={`p-2.5 sm:p-3 border-b flex items-center justify-between ${
+                      isPaper ? 'bg-amber-50 border-amber-200' : 'bg-amber-950/40 border-amber-500/25'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded bg-amber-600 text-white text-[10px] font-mono font-bold">
+                          5W2H
+                        </span>
+                        <h3 className="text-xs font-bold uppercase font-mono text-amber-900 dark:text-amber-300">
+                          Plano de Ação Kaizen Consolidado • Cronograma & Responsáveis Designados
+                        </h3>
+                      </div>
+                      <span className="text-[10px] font-mono text-amber-800 dark:text-amber-400 font-semibold">
+                        {kaizenRoadmap.length} Ações Pactuadas
+                      </span>
+                    </div>
+
+                    <div className="overflow-x-auto print:overflow-visible">
+                      <table className="w-full text-left border-collapse text-xs table-fixed">
+                        <colgroup>
+                          <col className="w-[28%]" />
+                          <col className="w-[24%]" />
+                          <col className="w-[16%]" />
+                          <col className="w-[16%]" />
+                          <col className="w-[16%]" />
+                        </colgroup>
+                        <thead>
+                          <tr className={`border-b text-[10px] font-mono uppercase tracking-wider font-bold ${
+                            isPaper ? 'bg-amber-50/60 border-amber-100 text-slate-700' : 'bg-slate-950/60 border-slate-800 text-slate-400'
                           }`}>
-                            <div className="flex items-center gap-2">
-                              <span className="px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-mono font-bold">
-                                0 a 30 dias
-                              </span>
-                              <h3 className="text-xs font-bold uppercase font-mono text-emerald-800 dark:text-emerald-300">
-                                Fase 1: Vitórias Rápidas (Quick Wins) • Sem Investimento / Baixo Esforço
-                              </h3>
-                            </div>
-                            <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 font-semibold hidden sm:inline">
-                              {phaseActions.length} Ações Pactuadas
-                            </span>
-                          </div>
+                            <th className="p-2">Ação Kaizen (O Que)</th>
+                            <th className="p-2">Meta / Justificativa (Por Que)</th>
+                            <th className="p-2">Onde (Etapa / Setor)</th>
+                            <th className="p-2">Quem (Nome do Responsável)</th>
+                            <th className="p-2 text-center">Quando (Cronograma)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                          {kaizenRoadmap.map((action, idx) => {
+                            const periodText = action.startDate && action.endDate
+                              ? `${formatDateBR(action.startDate)} até ${formatDateBR(action.endDate)}`
+                              : action.endDate
+                              ? `Até ${formatDateBR(action.endDate)}`
+                              : action.startDate
+                              ? `A partir de ${formatDateBR(action.startDate)}`
+                              : action.when
+                              ? action.when.replace('_', ' ')
+                              : '-';
+                            const diffDays = calculateDateDiffDays(action.startDate, action.endDate);
 
-                          <div className="overflow-x-auto print:overflow-visible">
-                            {phaseActions.length === 0 ? (
-                              <div className="p-3 text-center text-xs text-slate-400 italic">
-                                Nenhuma ação pactuada para esta fase.
-                              </div>
-                            ) : (
-                              <table className="w-full text-left border-collapse text-xs table-fixed">
-                                <colgroup>
-                                  <col className="w-[30%]" />
-                                  <col className="w-[28%]" />
-                                  <col className="w-[18%]" />
-                                  <col className="w-[14%]" />
-                                  <col className="w-[10%]" />
-                                </colgroup>
-                                <thead>
-                                  <tr className={`border-b text-[10px] font-mono uppercase tracking-wider font-bold ${
-                                    isPaper ? 'bg-emerald-50/50 border-emerald-100 text-slate-700' : 'bg-slate-950/60 border-slate-800 text-slate-400'
-                                  }`}>
-                                    <th className="p-2">Ação Kaizen (O que)</th>
-                                    <th className="p-2">Objetivo / Meta (Por que)</th>
-                                    <th className="p-2">Onde</th>
-                                    <th className="p-2">Quem (Dono)</th>
-                                    <th className="p-2 text-center">Método / Custo</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                                  {phaseActions.map((action, idx) => (
-                                    <tr
-                                      key={idx}
-                                      className={`transition-colors print-avoid-break ${
-                                        isPaper ? 'hover:bg-emerald-50/30' : 'hover:bg-slate-800/40'
-                                      }`}
-                                    >
-                                      <td className="p-2 align-top font-sans font-medium break-words leading-relaxed text-slate-900 dark:text-slate-100">
-                                        <span className="font-bold block">{action.what}</span>
-                                      </td>
-                                      <td className="p-2 align-top font-sans break-words text-emerald-700 dark:text-emerald-400 font-medium leading-relaxed">
-                                        {action.why}
-                                      </td>
-                                      <td className="p-2 align-top font-sans break-words text-slate-600 dark:text-slate-300">
-                                        <span className="inline-block px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[10px] font-mono font-medium">
-                                          {action.where}
-                                        </span>
-                                      </td>
-                                      <td className="p-2 align-top font-sans break-words text-amber-700 dark:text-amber-300 font-bold">
-                                        {action.who}
-                                      </td>
-                                      <td className="p-2 align-top text-center font-sans text-[10px] text-slate-500 dark:text-slate-400 break-words">
-                                        <div>{action.how || 'Esforço interno'}</div>
-                                        {action.howMuch && (
-                                          <div className="text-[9px] font-mono text-slate-400 mt-0.5">{action.howMuch}</div>
-                                        )}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    {/* Fase 2: 30 a 60 dias (Melhorias Estruturais 5W2H) */}
-                    {(() => {
-                      const phaseActions = kaizenRoadmap.filter(a => a.when === '60_dias');
-                      return (
-                        <div className={`rounded-2xl border overflow-hidden print-avoid-break ${
-                          isPaper ? 'bg-white border-cyan-300' : 'bg-slate-900/90 border-cyan-500/30'
-                        }`}>
-                          <div className={`p-2.5 sm:p-3 border-b flex items-center justify-between ${
-                            isPaper ? 'bg-cyan-50 border-cyan-200' : 'bg-cyan-950/40 border-cyan-500/25'
-                          }`}>
-                            <div className="flex items-center gap-2">
-                              <span className="px-2 py-0.5 rounded bg-cyan-600 text-white text-[10px] font-mono font-bold">
-                                30 a 60 dias
-                              </span>
-                              <h3 className="text-xs font-bold uppercase font-mono text-cyan-800 dark:text-cyan-300">
-                                Fase 2: Melhorias Estruturais • Padronização, Paralelismo & Acordos de SLA
-                              </h3>
-                            </div>
-                            <span className="text-[10px] font-mono text-cyan-700 dark:text-cyan-400 font-semibold hidden sm:inline">
-                              {phaseActions.length} Ações Pactuadas
-                            </span>
-                          </div>
-
-                          <div className="overflow-x-auto print:overflow-visible">
-                            {phaseActions.length === 0 ? (
-                              <div className="p-3 text-center text-xs text-slate-400 italic">
-                                Nenhuma ação pactuada para esta fase.
-                              </div>
-                            ) : (
-                              <table className="w-full text-left border-collapse text-xs table-fixed">
-                                <colgroup>
-                                  <col className="w-[30%]" />
-                                  <col className="w-[28%]" />
-                                  <col className="w-[18%]" />
-                                  <col className="w-[14%]" />
-                                  <col className="w-[10%]" />
-                                </colgroup>
-                                <thead>
-                                  <tr className={`border-b text-[10px] font-mono uppercase tracking-wider font-bold ${
-                                    isPaper ? 'bg-cyan-50/50 border-cyan-100 text-slate-700' : 'bg-slate-950/60 border-slate-800 text-slate-400'
-                                  }`}>
-                                    <th className="p-2">Ação Kaizen (O que)</th>
-                                    <th className="p-2">Objetivo / Meta (Por que)</th>
-                                    <th className="p-2">Onde</th>
-                                    <th className="p-2">Quem (Dono)</th>
-                                    <th className="p-2 text-center">Método / Custo</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                                  {phaseActions.map((action, idx) => (
-                                    <tr
-                                      key={idx}
-                                      className={`transition-colors print-avoid-break ${
-                                        isPaper ? 'hover:bg-cyan-50/30' : 'hover:bg-slate-800/40'
-                                      }`}
-                                    >
-                                      <td className="p-2 align-top font-sans font-medium break-words leading-relaxed text-slate-900 dark:text-slate-100">
-                                        <span className="font-bold block">{action.what}</span>
-                                      </td>
-                                      <td className="p-2 align-top font-sans break-words text-cyan-700 dark:text-cyan-400 font-medium leading-relaxed">
-                                        {action.why}
-                                      </td>
-                                      <td className="p-2 align-top font-sans break-words text-slate-600 dark:text-slate-300">
-                                        <span className="inline-block px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[10px] font-mono font-medium">
-                                          {action.where}
-                                        </span>
-                                      </td>
-                                      <td className="p-2 align-top font-sans break-words text-amber-700 dark:text-amber-300 font-bold">
-                                        {action.who}
-                                      </td>
-                                      <td className="p-2 align-top text-center font-sans text-[10px] text-slate-500 dark:text-slate-400 break-words">
-                                        <div>{action.how || 'Esforço interno'}</div>
-                                        {action.howMuch && (
-                                          <div className="text-[9px] font-mono text-slate-400 mt-0.5">{action.howMuch}</div>
-                                        )}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    {/* Fase 3: 60 a 90 dias (Projetos & Automação 5W2H) */}
-                    {(() => {
-                      const phaseActions = kaizenRoadmap.filter(a => a.when === '90_dias');
-                      return (
-                        <div className={`rounded-2xl border overflow-hidden print-avoid-break ${
-                          isPaper ? 'bg-white border-purple-300' : 'bg-slate-900/90 border-purple-500/30'
-                        }`}>
-                          <div className={`p-2.5 sm:p-3 border-b flex items-center justify-between ${
-                            isPaper ? 'bg-purple-50 border-purple-200' : 'bg-purple-950/40 border-purple-500/25'
-                          }`}>
-                            <div className="flex items-center gap-2">
-                              <span className="px-2 py-0.5 rounded bg-purple-600 text-white text-[10px] font-mono font-bold">
-                                60 a 90 dias
-                              </span>
-                              <h3 className="text-xs font-bold uppercase font-mono text-purple-800 dark:text-purple-300">
-                                Fase 3: Automações de Processo & Transformação Digital
-                              </h3>
-                            </div>
-                            <span className="text-[10px] font-mono text-purple-700 dark:text-purple-400 font-semibold hidden sm:inline">
-                              {phaseActions.length} Ações Pactuadas
-                            </span>
-                          </div>
-
-                          <div className="overflow-x-auto print:overflow-visible">
-                            {phaseActions.length === 0 ? (
-                              <div className="p-3 text-center text-xs text-slate-400 italic">
-                                Nenhuma ação pactuada para esta fase.
-                              </div>
-                            ) : (
-                              <table className="w-full text-left border-collapse text-xs table-fixed">
-                                <colgroup>
-                                  <col className="w-[30%]" />
-                                  <col className="w-[28%]" />
-                                  <col className="w-[18%]" />
-                                  <col className="w-[14%]" />
-                                  <col className="w-[10%]" />
-                                </colgroup>
-                                <thead>
-                                  <tr className={`border-b text-[10px] font-mono uppercase tracking-wider font-bold ${
-                                    isPaper ? 'bg-purple-50/50 border-purple-100 text-slate-700' : 'bg-slate-950/60 border-slate-800 text-slate-400'
-                                  }`}>
-                                    <th className="p-2">Ação Kaizen (O que)</th>
-                                    <th className="p-2">Objetivo / Meta (Por que)</th>
-                                    <th className="p-2">Onde</th>
-                                    <th className="p-2">Quem (Dono)</th>
-                                    <th className="p-2 text-center">Método / Custo</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                                  {phaseActions.map((action, idx) => (
-                                    <tr
-                                      key={idx}
-                                      className={`transition-colors print-avoid-break ${
-                                        isPaper ? 'hover:bg-purple-50/30' : 'hover:bg-slate-800/40'
-                                      }`}
-                                    >
-                                      <td className="p-2 align-top font-sans font-medium break-words leading-relaxed text-slate-900 dark:text-slate-100">
-                                        <span className="font-bold block">{action.what}</span>
-                                      </td>
-                                      <td className="p-2 align-top font-sans break-words text-purple-700 dark:text-purple-400 font-medium leading-relaxed">
-                                        {action.why}
-                                      </td>
-                                      <td className="p-2 align-top font-sans break-words text-slate-600 dark:text-slate-300">
-                                        <span className="inline-block px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[10px] font-mono font-medium">
-                                          {action.where}
-                                        </span>
-                                      </td>
-                                      <td className="p-2 align-top font-sans break-words text-amber-700 dark:text-amber-300 font-bold">
-                                        {action.who}
-                                      </td>
-                                      <td className="p-2 align-top text-center font-sans text-[10px] text-slate-500 dark:text-slate-400 break-words">
-                                        <div>{action.how || 'Esforço interno'}</div>
-                                        {action.howMuch && (
-                                          <div className="text-[9px] font-mono text-slate-400 mt-0.5">{action.howMuch}</div>
-                                        )}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })()}
+                            return (
+                              <tr
+                                key={action.id || idx}
+                                className={`transition-colors print-avoid-break ${
+                                  isPaper ? 'hover:bg-amber-50/30' : 'hover:bg-slate-800/40'
+                                }`}
+                              >
+                                <td className="p-2 align-top font-sans font-medium break-words leading-relaxed text-slate-900 dark:text-slate-100">
+                                  <span className="font-bold block">{action.what}</span>
+                                  {action.how && (
+                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5 font-normal">
+                                      Como: {action.how}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="p-2 align-top font-sans break-words text-emerald-700 dark:text-emerald-400 font-medium leading-relaxed">
+                                  {action.why}
+                                </td>
+                                <td className="p-2 align-top font-sans break-words text-slate-600 dark:text-slate-300">
+                                  <span className="inline-block px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[10px] font-mono font-medium">
+                                    {action.where}
+                                  </span>
+                                </td>
+                                <td className="p-2 align-top font-sans break-words">
+                                  <div className="flex items-center gap-1">
+                                    <User className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                                    <span className="text-slate-900 dark:text-amber-200 font-bold">
+                                      {action.who || 'A definir (Nome do Líder)'}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="p-2 align-top text-center font-sans break-words">
+                                  <div className="font-mono text-[11px] font-bold text-cyan-800 dark:text-cyan-300">
+                                    {periodText}
+                                  </div>
+                                  {diffDays !== null && (
+                                    <span className="inline-block text-[9px] font-mono px-1 py-0.2 rounded bg-cyan-100 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-800 mt-0.5">
+                                      {diffDays} dias
+                                    </span>
+                                  )}
+                                  {action.howMuch && (
+                                    <div className="text-[9px] font-mono text-slate-400 mt-0.5">
+                                      {action.howMuch}
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
