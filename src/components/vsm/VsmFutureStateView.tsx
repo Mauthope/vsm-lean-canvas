@@ -332,8 +332,8 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
               <tr>
                 <th className="p-3 text-center w-12">#</th>
                 <th className="p-3 min-w-[180px]">Título da Etapa</th>
-                <th className="p-3">Responsável</th>
-                <th className="p-3 min-w-[220px]">Oportunidades Kaizen (Justificativa)</th>
+                <th className="p-3 whitespace-nowrap">Responsável</th>
+                <th className="p-3 min-w-[280px] text-amber-400 font-bold">Oportunidades Kaizen (Justificativa)</th>
                 <th className="p-3 text-right">PT (Esforço)</th>
                 <th className="p-3 text-right min-w-[110px]">WT Atual (Fila)</th>
                 <th className="p-3 text-left min-w-[200px] bg-emerald-950/20 border-x border-emerald-500/20">
@@ -409,18 +409,21 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                     </td>
 
                     {/* 4. Oportunidades Kaizen Associadas */}
-                    <td className="p-3 font-sans text-[11px] text-amber-300 max-w-xs">
+                    <td className="p-3 font-sans min-w-[280px]">
                       {kaizens.length > 0 ? (
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           {kaizens.map((k, kIdx) => (
-                            <div key={kIdx} className="flex items-start gap-1 leading-snug">
-                              <span className="shrink-0 text-amber-400">💡</span>
-                              <span className="break-words text-amber-200/90">{k}</span>
+                            <div
+                              key={kIdx}
+                              className="p-2 rounded-lg bg-amber-950/25 border border-amber-500/25 text-amber-200 text-xs leading-relaxed flex items-start gap-2 shadow-xs"
+                            >
+                              <span className="shrink-0 text-amber-400 text-xs mt-0.5">💡</span>
+                              <span className="break-words font-normal flex-1">{k}</span>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <span className="text-slate-500 italic">Sem Kaizens registrados</span>
+                        <span className="text-slate-500 italic text-xs">Sem Kaizens registrados</span>
                       )}
                     </td>
 

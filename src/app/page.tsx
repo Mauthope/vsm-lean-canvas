@@ -752,15 +752,15 @@ export default function VsmHomePage() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-950 text-[10px] uppercase font-bold font-mono text-slate-400 border-b border-slate-800">
                 <tr>
-                  <th className="p-3 text-center">#</th>
-                  <th className="p-3">Título da Etapa</th>
-                  <th className="p-3">Papel / Área</th>
-                  <th className="p-3 text-right">PT (Esforço)</th>
-                  <th className="p-3 text-right">WT (Fila)</th>
-                  <th className="p-3 text-right">%C&A</th>
-                  <th className="p-3">Desperdícios (Muda)</th>
-                  <th className="p-3">Oportunidade Kaizen</th>
-                  <th className="p-3 text-right">Ações</th>
+                  <th className="p-3 text-center whitespace-nowrap">#</th>
+                  <th className="p-3 min-w-[140px]">Título da Etapa</th>
+                  <th className="p-3 whitespace-nowrap">Papel / Área</th>
+                  <th className="p-3 text-right whitespace-nowrap">PT (Esforço)</th>
+                  <th className="p-3 text-right whitespace-nowrap">WT (Fila)</th>
+                  <th className="p-3 text-right whitespace-nowrap">%C&A</th>
+                  <th className="p-3 min-w-[120px]">Desperdícios (Muda)</th>
+                  <th className="p-3 min-w-[280px] text-amber-400 font-bold">Oportunidades de Melhoria (Kaizen)</th>
+                  <th className="p-3 text-right whitespace-nowrap">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800 font-mono">
@@ -768,29 +768,32 @@ export default function VsmHomePage() {
                   const roleStyle = getRoleStyle(step.role);
                   return (
                     <tr key={step.id} className="hover:bg-slate-950/60 transition-colors">
-                      <td className="p-3 text-center font-bold text-cyan-400">#{step.order}</td>
-                      <td className="p-3 font-sans font-medium text-white max-w-xs">{step.title}</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${roleStyle.bg} ${roleStyle.text} ${roleStyle.border}`}>
+                      <td className="p-3 text-center font-bold text-cyan-400 whitespace-nowrap">#{step.order}</td>
+                      <td className="p-3 font-sans font-medium text-white min-w-[140px] max-w-[240px]">{step.title}</td>
+                      <td className="p-3 whitespace-nowrap">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${roleStyle.bg} ${roleStyle.text} ${roleStyle.border} whitespace-nowrap`}>
                           {step.role}
                         </span>
                       </td>
-                      <td className="p-3 text-right text-cyan-300 font-bold">{step.processTime} {step.processTimeUnit}</td>
-                      <td className="p-3 text-right text-amber-300 font-bold">{step.waitTime} {step.waitTimeUnit}</td>
-                      <td className="p-3 text-right font-bold text-slate-200">{step.percentCompleteAndAccurate}%</td>
-                      <td className="p-3 font-sans text-[11px] text-slate-400">
+                      <td className="p-3 text-right text-cyan-300 font-bold whitespace-nowrap">{step.processTime} {step.processTimeUnit}</td>
+                      <td className="p-3 text-right text-amber-300 font-bold whitespace-nowrap">{step.waitTime} {step.waitTimeUnit}</td>
+                      <td className="p-3 text-right font-bold text-slate-200 whitespace-nowrap">{step.percentCompleteAndAccurate}%</td>
+                      <td className="p-3 font-sans text-[11px] text-slate-400 min-w-[110px]">
                         {step.wasteTypes?.map(w => WASTE_METAS[w]?.shortLabel).join(', ') || '-'}
                       </td>
-                      <td className="p-3 font-sans text-[11px] text-amber-300 max-w-xs">
+                      <td className="p-3 font-sans min-w-[280px]">
                         {(() => {
                           const kaizens = getStepKaizens(step);
-                          if (kaizens.length === 0) return '-';
+                          if (kaizens.length === 0) return <span className="text-slate-500 italic text-xs">-</span>;
                           return (
-                            <div className="space-y-1">
+                            <div className="space-y-1.5">
                               {kaizens.map((k, kIdx) => (
-                                <div key={kIdx} className="flex items-start gap-1 leading-snug">
-                                  <span className="shrink-0 text-amber-400">💡</span>
-                                  <span className="break-words">{k}</span>
+                                <div
+                                  key={kIdx}
+                                  className="p-2 rounded-lg bg-amber-950/25 border border-amber-500/25 text-amber-200 text-xs leading-relaxed flex items-start gap-2 shadow-xs"
+                                >
+                                  <span className="shrink-0 text-amber-400 text-xs mt-0.5">💡</span>
+                                  <span className="break-words font-normal flex-1">{k}</span>
                                 </div>
                               ))}
                             </div>

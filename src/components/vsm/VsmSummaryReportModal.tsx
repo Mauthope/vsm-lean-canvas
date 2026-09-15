@@ -1257,8 +1257,10 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                           </>
                         )}
                         <th className="p-2.5 text-right whitespace-nowrap">%C&A</th>
-                        <th className="p-2.5">Desperdícios</th>
-                        <th className="p-2.5">Oportunidade Kaizen</th>
+                        <th className="p-2.5 text-slate-600 dark:text-slate-300">Desperdícios</th>
+                        <th className="p-2.5 min-w-[260px] text-amber-700 dark:text-amber-400 font-bold">
+                          Oportunidades de Melhoria (Kaizen)
+                        </th>
                       </tr>
                     </thead>
                     <tbody className={`divide-y font-mono ${
@@ -1278,7 +1280,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                             <td className="p-2.5 text-center font-bold text-cyan-600 dark:text-cyan-400">
                               #{step.order}
                             </td>
-                            <td className="p-2.5 font-sans font-medium text-slate-900 dark:text-white max-w-[200px]">
+                            <td className="p-2.5 font-sans font-medium text-slate-900 dark:text-white min-w-[140px] max-w-[220px]">
                               {step.title}
                             </td>
                             <td className="p-2.5 font-sans text-slate-600 dark:text-slate-300 whitespace-nowrap">
@@ -1310,25 +1312,34 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                                 </td>
                               </>
                             )}
-                            <td className="p-2.5 text-right font-bold text-slate-800 dark:text-slate-200">
+                            <td className="p-2.5 text-right font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
                               {step.percentCompleteAndAccurate}%
                             </td>
-                            <td className="p-2.5 font-sans text-[11px] text-slate-500 dark:text-slate-400">
+                            <td className="p-2.5 font-sans text-[11px] text-slate-500 dark:text-slate-400 min-w-[90px]">
                               {step.wasteTypes?.map(w => WASTE_METAS[w]?.shortLabel).join(', ') || '-'}
                             </td>
-                            <td className="p-2.5 font-sans text-[11px] text-amber-700 dark:text-amber-300 min-w-[170px] max-w-[240px]">
+                            <td className="p-2.5 font-sans min-w-[260px]">
                               {(() => {
                                 const kaizens = getStepKaizens(step);
-                                if (kaizens.length === 0) return '-';
+                                if (kaizens.length === 0) {
+                                  return <span className="text-slate-400 dark:text-slate-500 italic text-xs">-</span>;
+                                }
                                 return (
-                                  <ul className="space-y-1">
+                                  <div className="space-y-1.5">
                                     {kaizens.map((k, kIdx) => (
-                                      <li key={kIdx} className="flex items-start gap-1 leading-snug">
-                                        <span className="shrink-0 text-amber-600 dark:text-amber-400">💡</span>
-                                        <span className="break-words">{k}</span>
-                                      </li>
+                                      <div
+                                        key={kIdx}
+                                        className={`p-2 rounded-lg border text-xs leading-relaxed flex items-start gap-2 ${
+                                          isPaper
+                                            ? 'bg-amber-50/70 border-amber-300/80 text-amber-950 shadow-xs'
+                                            : 'bg-amber-950/30 border-amber-500/30 text-amber-200'
+                                        }`}
+                                      >
+                                        <span className="shrink-0 text-amber-600 dark:text-amber-400 text-xs mt-0.5">💡</span>
+                                        <span className="break-words font-normal flex-1">{k}</span>
+                                      </div>
                                     ))}
-                                  </ul>
+                                  </div>
                                 );
                               })()}
                             </td>
