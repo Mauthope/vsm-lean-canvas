@@ -68,7 +68,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 8mm 10mm;
+    margin: 8mm 8mm;
   }
 
   /* Reset body, html and root: force pure white paper background and dark ink */
@@ -237,7 +237,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 
   /* Page setup for A4 printing */
   @page {
-    margin: 10mm 12mm 12mm 12mm;
+    margin: 8mm 8mm 8mm 8mm;
     size: A4 portrait;
   }
 
@@ -296,17 +296,27 @@ h1, h2, h3, h4, h5, h6, .font-heading {
     margin-top: 0.4rem !important;
   }
 
-  /* Tables in print */
+  /* Tables in print: strict boundary containment without clipping */
   table {
     border-collapse: collapse !important;
     width: 100% !important;
-    font-size: 8pt !important;
+    max-width: 100% !important;
+    table-layout: auto !important;
+    font-size: 7.5pt !important;
   }
 
   th, td {
     border: 1px solid #cbd5e1 !important;
-    padding: 3px 5px !important;
+    padding: 2.5px 3.5px !important;
     color: #0f172a !important;
+    word-break: break-word !important;
+  }
+
+  /* Prevent horizontal scroll clipping containers on paper */
+  .overflow-x-auto,
+  [class*="overflow-x-"] {
+    overflow: visible !important;
+    overflow-x: visible !important;
   }
 
   thead {

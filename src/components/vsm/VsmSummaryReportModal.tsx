@@ -1233,32 +1233,40 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                   </span>
                 </div>
 
-                <div className={`overflow-x-auto border rounded-2xl ${
-                  isPaper ? 'border-slate-300 bg-white' : 'border-slate-800 bg-slate-900/60'
+                <div className={`overflow-x-auto print:overflow-visible border rounded-2xl print:rounded-none ${
+                  isPaper ? 'border-slate-300 bg-white' : 'border-slate-800 bg-slate-900/60 print:bg-white print:border-slate-300'
                 }`}>
-                  <table className="w-full text-left text-xs border-collapse">
+                  <table className="w-full text-left text-xs border-collapse print:text-[8pt] print:table-auto">
                     <thead className={`text-[10px] uppercase font-bold font-mono border-b ${
                       isPaper ? 'bg-slate-100 text-slate-700 border-slate-300' : 'bg-slate-900 text-slate-400 border-slate-800'
                     }`}>
                       <tr>
-                        <th className="p-2.5 text-center w-10">#</th>
-                        <th className="p-2.5">Nome da Etapa</th>
-                        <th className="p-2.5">Responsável (Papel)</th>
-                        <th className="p-2.5 text-right whitespace-nowrap">PT (Trabalho)</th>
-                        <th className="p-2.5 text-right whitespace-nowrap">WT Atual (Fila)</th>
+                        <th className="p-2 text-center w-8">#</th>
+                        <th className="p-2 min-w-[100px]">Etapa</th>
+                        <th className="p-2 min-w-[80px]">Responsável</th>
+                        <th className="p-2 text-right whitespace-nowrap">
+                          <span>PT</span>
+                          <span className="block text-[8px] font-normal opacity-70 leading-none mt-0.5">(Trabalho)</span>
+                        </th>
+                        <th className="p-2 text-right whitespace-nowrap">
+                          <span>WT Atual</span>
+                          <span className="block text-[8px] font-normal opacity-70 leading-none mt-0.5">(Fila)</span>
+                        </th>
                         {futureMetrics.hasCustomEstimates && (
                           <>
-                            <th className="p-2.5 text-right whitespace-nowrap text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
-                              WT Futuro (Meta)
+                            <th className="p-2 text-right whitespace-nowrap text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
+                              <span>WT Futuro</span>
+                              <span className="block text-[8px] font-normal opacity-70 leading-none mt-0.5">(Meta)</span>
                             </th>
-                            <th className="p-2.5 text-center whitespace-nowrap text-emerald-600 dark:text-emerald-400">
-                              Redução WT
+                            <th className="p-2 text-center whitespace-nowrap text-emerald-600 dark:text-emerald-400">
+                              <span>Redução</span>
+                              <span className="block text-[8px] font-normal opacity-70 leading-none mt-0.5">WT</span>
                             </th>
                           </>
                         )}
-                        <th className="p-2.5 text-right whitespace-nowrap">%C&A</th>
-                        <th className="p-2.5 text-slate-600 dark:text-slate-300">Desperdícios</th>
-                        <th className="p-2.5 min-w-[260px] text-amber-700 dark:text-amber-400 font-bold">
+                        <th className="p-2 text-right whitespace-nowrap">%C&A</th>
+                        <th className="p-2 text-slate-600 dark:text-slate-300 min-w-[80px]">Desperdícios</th>
+                        <th className="p-2 text-amber-700 dark:text-amber-400 font-bold min-w-[160px]">
                           Oportunidades de Melhoria (Kaizen)
                         </th>
                       </tr>
@@ -1277,29 +1285,29 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
 
                         return (
                           <tr key={step.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                            <td className="p-2.5 text-center font-bold text-cyan-600 dark:text-cyan-400">
+                            <td className="p-2 text-center font-bold text-cyan-600 dark:text-cyan-400">
                               #{step.order}
                             </td>
-                            <td className="p-2.5 font-sans font-medium text-slate-900 dark:text-white min-w-[140px] max-w-[220px]">
+                            <td className="p-2 font-sans font-medium text-slate-900 dark:text-white break-words">
                               {step.title}
                             </td>
-                            <td className="p-2.5 font-sans text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                            <td className="p-2 font-sans text-slate-600 dark:text-slate-300 break-words">
                               {step.role}
                             </td>
-                            <td className="p-2.5 text-right text-cyan-700 dark:text-cyan-300 whitespace-nowrap">
+                            <td className="p-2 text-right text-cyan-700 dark:text-cyan-300 whitespace-nowrap">
                               {step.processTime} {step.processTimeUnit}
                             </td>
-                            <td className="p-2.5 text-right text-amber-700 dark:text-amber-400 whitespace-nowrap font-bold">
+                            <td className="p-2 text-right text-amber-700 dark:text-amber-400 whitespace-nowrap font-bold">
                               {step.waitTime} {step.waitTimeUnit}
                             </td>
                             {futureMetrics.hasCustomEstimates && (
                               <>
-                                <td className="p-2.5 text-right whitespace-nowrap font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/5">
+                                <td className="p-2 text-right whitespace-nowrap font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/5">
                                   {hasCustom
                                     ? `${step.futureWaitTime} ${step.futureWaitTimeUnit || step.waitTimeUnit}`
                                     : `${step.waitTime} ${step.waitTimeUnit}`}
                                 </td>
-                                <td className="p-2.5 text-center whitespace-nowrap font-bold font-mono">
+                                <td className="p-2 text-center whitespace-nowrap font-bold font-mono">
                                   {hasCustom && diffH > 0 ? (
                                     <span className="text-emerald-600 dark:text-emerald-400">
                                       -{diffPct}%
@@ -1312,13 +1320,13 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                                 </td>
                               </>
                             )}
-                            <td className="p-2.5 text-right font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                            <td className="p-2 text-right font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
                               {step.percentCompleteAndAccurate}%
                             </td>
-                            <td className="p-2.5 font-sans text-[11px] text-slate-500 dark:text-slate-400 min-w-[90px]">
+                            <td className="p-2 font-sans text-[11px] text-slate-500 dark:text-slate-400 break-words">
                               {step.wasteTypes?.map(w => WASTE_METAS[w]?.shortLabel).join(', ') || '-'}
                             </td>
-                            <td className="p-2.5 font-sans min-w-[260px]">
+                            <td className="p-2 font-sans">
                               {(() => {
                                 const kaizens = getStepKaizens(step);
                                 if (kaizens.length === 0) {
@@ -1329,7 +1337,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                                     {kaizens.map((k, kIdx) => (
                                       <div
                                         key={kIdx}
-                                        className={`p-2 rounded-lg border text-xs leading-relaxed flex items-start gap-2 ${
+                                        className={`p-1.5 rounded-lg border text-xs leading-relaxed flex items-start gap-1.5 ${
                                           isPaper
                                             ? 'bg-amber-50/70 border-amber-300/80 text-amber-950 shadow-xs'
                                             : 'bg-amber-950/30 border-amber-500/30 text-amber-200'
@@ -1351,26 +1359,26 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                       isPaper ? 'bg-slate-100 border-slate-300 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-200'
                     }`}>
                       <tr>
-                        <td colSpan={3} className="p-2.5 text-right uppercase">Totais Auditados:</td>
-                        <td className="p-2.5 text-right text-cyan-700 dark:text-cyan-400">{formatHours(totalProcessHours)}</td>
-                        <td className="p-2.5 text-right text-amber-700 dark:text-amber-400">{formatHours(totalWaitHours)}</td>
+                        <td colSpan={3} className="p-2 text-right uppercase">Totais Auditados:</td>
+                        <td className="p-2 text-right text-cyan-700 dark:text-cyan-400">{formatHours(totalProcessHours)}</td>
+                        <td className="p-2 text-right text-amber-700 dark:text-amber-400">{formatHours(totalWaitHours)}</td>
                         {futureMetrics.hasCustomEstimates ? (
                           <>
-                            <td className="p-2.5 text-right font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10">
+                            <td className="p-2 text-right font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10">
                               {formatHours(futureMetrics.futureWaitHours)}
                             </td>
-                            <td className="p-2.5 text-center font-bold text-emerald-700 dark:text-emerald-400">
+                            <td className="p-2 text-center font-bold text-emerald-700 dark:text-emerald-400">
                               -{futureMetrics.waitReductionPercent}%
                             </td>
-                            <td className="p-2.5 text-right text-purple-700 dark:text-purple-400">{futureMetrics.futureYield.toFixed(1)}%</td>
-                            <td colSpan={2} className="p-2.5 text-slate-600 dark:text-slate-300 font-sans font-normal">
+                            <td className="p-2 text-right text-purple-700 dark:text-purple-400">{futureMetrics.futureYield.toFixed(1)}%</td>
+                            <td colSpan={2} className="p-2 text-slate-600 dark:text-slate-300 font-sans font-normal">
                               Lead Time: {formatHours(totalLeadTimeHours)} ➔ <strong className="text-emerald-600 dark:text-emerald-400">{formatHours(futureMetrics.futureLeadTimeHours)}</strong>
                             </td>
                           </>
                         ) : (
                           <>
-                            <td className="p-2.5 text-right text-purple-700 dark:text-purple-400">{overallYield.toFixed(1)}% (RFPY)</td>
-                            <td colSpan={2} className="p-2.5 text-slate-500 font-sans font-normal">
+                            <td className="p-2 text-right text-purple-700 dark:text-purple-400">{overallYield.toFixed(1)}% (RFPY)</td>
+                            <td colSpan={2} className="p-2 text-slate-500 font-sans font-normal">
                               Lead Time Total: {formatHours(totalLeadTimeHours)}
                             </td>
                           </>
