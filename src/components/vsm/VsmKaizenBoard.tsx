@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { VSMStep } from '@/types/vsm';
 import { getRoleStyle, getStepKaizens } from '@/lib/vsmCalculations';
+import { AutoResizeTextarea } from './AutoResizeTextarea';
 
 interface VsmKaizenBoardProps {
   isOpen: boolean;
@@ -197,11 +198,11 @@ export const VsmKaizenBoard: React.FC<VsmKaizenBoardProps> = ({
                         >
                           {isEditingThis ? (
                             <div className="space-y-2">
-                              <textarea
-                                rows={2}
+                              <AutoResizeTextarea
+                                minRows={2}
                                 value={editText}
                                 onChange={e => setEditText(e.target.value)}
-                                className="w-full bg-slate-950 border border-cyan-500 rounded-xl p-2.5 text-xs text-white focus:outline-none"
+                                className="w-full bg-slate-950 border border-cyan-500 rounded-xl p-2.5 text-xs text-white focus:outline-none leading-relaxed"
                               />
                               <div className="flex justify-end gap-2">
                                 <button
@@ -251,41 +252,46 @@ export const VsmKaizenBoard: React.FC<VsmKaizenBoardProps> = ({
                     })}
                   </div>
 
-                  {/* Add Another Kaizen to this Step */}
+                  {/* Add Another Kaizen to this Step with AutoResize */}
                   {isAddingHere ? (
                     <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                      <input
-                        type="text"
-                        placeholder="Descreva outro Kaizen para esta etapa..."
+                      <AutoResizeTextarea
+                        minRows={2}
+                        placeholder="Descreva outro Kaizen para esta etapa (o campo se adapta ao tamanho do texto)..."
                         value={newKaizenInput}
                         onChange={e => setNewKaizenInput(e.target.value)}
                         onKeyDown={e => {
-                          if (e.key === 'Enter') {
+                          if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
                             handleAddNewKaizenToStep(step);
                           }
                         }}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-amber-400 leading-relaxed min-h-[48px]"
                       />
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setNewKaizenStepId(null);
-                            setNewKaizenInput('');
-                          }}
-                          className="px-2 py-1 text-xs text-slate-400 hover:text-white"
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleAddNewKaizenToStep(step)}
-                          disabled={!newKaizenInput.trim()}
-                          className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 disabled:opacity-40"
-                        >
-                          Adicionar
-                        </button>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] text-slate-500">
+                          <kbd className="px-1 py-0.5 bg-slate-900 border border-slate-800 rounded text-slate-400 font-mono">Enter</kbd> salvar | <kbd className="px-1 py-0.5 bg-slate-900 border border-slate-800 rounded text-slate-400 font-mono">Shift+Enter</kbd> linha
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewKaizenStepId(null);
+                              setNewKaizenInput('');
+                            }}
+                            className="px-2 py-1 text-xs text-slate-400 hover:text-white"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAddNewKaizenToStep(step)}
+                            disabled={!newKaizenInput.trim()}
+                            className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 disabled:opacity-40"
+                          >
+                            Adicionar
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ) : (

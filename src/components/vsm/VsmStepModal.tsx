@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { VSMStep, TimeUnit, WasteType } from '@/types/vsm';
 import { WASTE_METAS, getRoleStyle, getStepKaizens } from '@/lib/vsmCalculations';
+import { AutoResizeTextarea } from './AutoResizeTextarea';
 
 interface VsmStepModalProps {
   isOpen: boolean;
@@ -600,22 +601,22 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
                 {kaizenList.map((item, idx) => (
                   <div
                     key={idx}
-                    className="p-2.5 rounded-xl bg-slate-900/90 border border-amber-500/20 flex items-start gap-2 group hover:border-amber-500/40 transition-colors"
+                    className="p-2.5 rounded-xl bg-slate-900/90 border border-amber-500/20 flex items-start gap-2.5 group hover:border-amber-500/40 transition-colors"
                   >
-                    <span className="w-5 h-5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-mono font-bold flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="w-5 h-5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-mono font-bold flex items-center justify-center shrink-0 mt-1">
                       #{idx + 1}
                     </span>
-                    <input
-                      type="text"
+                    <AutoResizeTextarea
                       value={item}
                       onChange={e => handleUpdateKaizenItem(idx, e.target.value)}
-                      className="flex-1 bg-transparent text-xs text-white focus:outline-none focus:border-b focus:border-amber-400 placeholder:text-slate-500 font-sans"
+                      minRows={1}
+                      className="flex-1 bg-transparent text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-400/50 rounded-lg px-2 py-1 placeholder:text-slate-500 font-sans leading-relaxed transition-all"
                       placeholder="Descreva a oportunidade de melhoria..."
                     />
                     <button
                       type="button"
                       onClick={() => handleRemoveKaizen(idx)}
-                      className="p-1 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors"
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer shrink-0 mt-0.5"
                       title="Remover este Kaizen"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -625,30 +626,35 @@ export const VsmStepModal: React.FC<VsmStepModalProps> = ({
               </div>
             )}
 
-            {/* Input to add new Kaizen */}
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Adicionar nova ideia ou raio de Kaizen para esta etapa..."
-                value={newKaizenText}
-                onChange={e => setNewKaizenText(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddKaizen();
-                  }
-                }}
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 transition-all placeholder:text-slate-500"
-              />
-              <button
-                type="button"
-                onClick={handleAddKaizen}
-                disabled={!newKaizenText.trim()}
-                className="px-3 py-2 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0 cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Adicionar</span>
-              </button>
+            {/* Input to add new Kaizen with auto-resize */}
+            <div className="space-y-1.5">
+              <div className="flex items-start gap-2">
+                <AutoResizeTextarea
+                  placeholder="Adicionar nova ideia ou oportunidade de Kaizen para esta etapa (o campo se adapta ao tamanho do texto)..."
+                  value={newKaizenText}
+                  onChange={e => setNewKaizenText(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleAddKaizen();
+                    }
+                  }}
+                  minRows={2}
+                  className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 transition-all placeholder:text-slate-500 leading-relaxed min-h-[50px]"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddKaizen}
+                  disabled={!newKaizenText.trim()}
+                  className="px-3.5 py-2.5 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0 cursor-pointer h-fit"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Adicionar</span>
+                </button>
+              </div>
+              <span className="text-[10px] text-slate-500 pl-1 block">
+                Dica: Pressione <kbd className="px-1 py-0.5 bg-slate-900 border border-slate-800 rounded text-slate-400 font-mono">Enter</kbd> para adicionar ou <kbd className="px-1 py-0.5 bg-slate-900 border border-slate-800 rounded text-slate-400 font-mono">Shift + Enter</kbd> para pular linha.
+              </span>
             </div>
           </div>
 
