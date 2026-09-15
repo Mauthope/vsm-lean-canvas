@@ -315,41 +315,140 @@ export function calculateVsmMetrics(steps: VSMStep[]): BottleneckAnalysis {
   };
 }
 
+export interface FlowEfficiencyBenchmark {
+  range: string;
+  min: number;
+  max: number;
+  level: 'critico' | 'tipico' | 'alvo_rh' | 'classe_mundial';
+  tier: 'critical' | 'moderate' | 'excellent' | 'world_class';
+  title: string;
+  badge: string;
+  color: string;
+  border: string;
+  bg: string;
+  descriptionRH: string;
+  description: string;
+  typicalCases: string;
+  typicalScenario: string;
+  target: string;
+}
+
+export const FLOW_EFFICIENCY_BENCHMARKS_HR: FlowEfficiencyBenchmark[] = [
+  {
+    range: '< 5%',
+    min: 0,
+    max: 5,
+    level: 'critico',
+    tier: 'critical',
+    title: 'Crítico / Típico de RH Tradicional',
+    badge: '< 5% • Típico RH Tradicional',
+    color: 'text-rose-400',
+    border: 'border-rose-500/30',
+    bg: 'bg-rose-500/10',
+    descriptionRH: 'Mais de 95% do Lead Time é tempo morto/espera em caixas de entrada, vaivém de aprovações e filas de sistemas.',
+    description: 'Mais de 95% do tempo total é pura espera em caixas de entrada de e-mail e filas.',
+    typicalCases: 'Vaga aguardando dias por alinhamento; admissão parada esperando envio picado de documentos do candidato.',
+    typicalScenario: 'Vagas aguardando aprovação em caixas de e-mail e documentos em vaivém.',
+    target: 'Alavanca Lean: Eliminar esperas e burocracia de aprovação'
+  },
+  {
+    range: '5% a 15%',
+    min: 5,
+    max: 15,
+    level: 'tipico',
+    tier: 'moderate',
+    title: 'Padrão Corporativo Médio',
+    badge: '5% a 15% • Padrão Médio',
+    color: 'text-amber-400',
+    border: 'border-amber-500/30',
+    bg: 'bg-amber-500/10',
+    descriptionRH: 'Processos com SLAs formais definidos, mas ainda com handoffs manuais e dependência de aprovações hierárquicas.',
+    description: 'Processos com SLAs definidos, mas ainda com múltiplos handoffs manuais entre RH, TI, DP e gestores.',
+    typicalCases: 'Troca de e-mails para agendar entrevistas com gestores; chamados de TI abertos em fila para configuração de máquinas.',
+    typicalScenario: 'Agendamentos manuais com gestores e abertura sequencial de chamados de TI.',
+    target: 'Alvo: Evoluir para 15% a 25% com paralelismo e automação'
+  },
+  {
+    range: '15% a 25%',
+    min: 15,
+    max: 25,
+    level: 'alvo_rh',
+    tier: 'excellent',
+    title: 'Alvo de Excelência Lean RH',
+    badge: '15% a 25% • Alvo Lean RH',
+    color: 'text-cyan-400',
+    border: 'border-cyan-500/30',
+    bg: 'bg-cyan-500/10',
+    descriptionRH: 'Meta de ouro para workshops Lean em RH. Eliminação de lotes, paralelismo de etapas e aprovações pré-alinhadas.',
+    description: 'Meta de ouro recomendada para workshops Lean Six Sigma em RH (Best Practice corporativo).',
+    typicalCases: 'Agendamento self-service pelo candidato via link (Calendly); exames médicos e acessos de TI simultâneos.',
+    typicalScenario: 'Autoagendamento pelo candidato (self-service) e tarefas em paralelo sem bloqueios.',
+    target: 'Meta recomendada de sustentação em workshops Lean RH'
+  },
+  {
+    range: '> 25%',
+    min: 25,
+    max: 100,
+    level: 'classe_mundial',
+    tier: 'world_class',
+    title: 'Classe Mundial em Serviços & RH Ágil',
+    badge: '> 25% • Classe Mundial',
+    color: 'text-emerald-400',
+    border: 'border-emerald-500/30',
+    bg: 'bg-emerald-500/10',
+    descriptionRH: 'Processo altamente integrado, quase em tempo real. Automações digitais, assinaturas eletrônicas instantâneas e esteira ágil.',
+    description: 'Fluxo contínuo digital de altíssima velocidade com automações e autosserviço ponta a ponta.',
+    typicalCases: 'Admissão 100% digital com validação automática de dados via OCR em minutos; integração sem papel e sem filas.',
+    typicalScenario: 'Admissão digital ponta a ponta com OCR, assinatura eletrônica instantânea e zero papel.',
+    target: 'Padrão ouro de excelência e referência internacional'
+  }
+];
+
 export function getFlowEfficiencyClassification(efficiency: number): {
   status: 'critico' | 'tipico' | 'bom' | 'excelente';
   label: string;
   badgeClass: string;
   recommendation: string;
+  benchmarkTitle: string;
+  benchmarkTarget: string;
 } {
   if (efficiency < 5) {
     return {
       status: 'critico',
-      label: 'Crítico / Típico Adm (<5%)',
+      label: 'Crítico / Típico RH (<5%)',
       badgeClass: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
-      recommendation: 'Mais de 95% do tempo do processo é puro desperdício em filas e esperas. Foco prioritário em eliminação de handoffs e burocracia.'
+      recommendation: 'Mais de 95% do tempo do processo é puro desperdício em filas e esperas. Foco prioritário em eliminação de handoffs e burocracia.',
+      benchmarkTitle: 'Típico RH Tradicional',
+      benchmarkTarget: 'Meta inicial: alcançar de 5% a 15% cortando esperas'
     };
   }
   if (efficiency < 15) {
     return {
       status: 'tipico',
-      label: 'Moderado (5% a 15%)',
+      label: 'Padrão Corporativo Médio (5% a 15%)',
       badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-      recommendation: 'Fluxo intermediário com oportunidades claras de paralelização e automação de aprovações.'
+      recommendation: 'Fluxo intermediário com oportunidades claras de paralelização e automação de agendamentos e aprovações.',
+      benchmarkTitle: 'Padrão Corporativo Médio',
+      benchmarkTarget: 'Meta recomendada Lean RH: alcançar 15% a 25%'
     };
   }
-  if (efficiency < 30) {
+  if (efficiency < 25) {
     return {
       status: 'bom',
-      label: 'Bom (15% a 30%)',
+      label: 'Alvo de Excelência Lean RH (15% a 25%)',
       badgeClass: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
-      recommendation: 'Bom nível de fluidez para processos corporativos. Próximo passo: otimizar tempos de processamento (PT).'
+      recommendation: 'Excelente nível de fluidez para processos de RH e corporativos. Etapas em paralelo e SLAs enxutos.',
+      benchmarkTitle: 'Alvo de Excelência Lean RH',
+      benchmarkTarget: 'Manter estabilidade e avançar para Classe Mundial (>25%)'
     };
   }
   return {
     status: 'excelente',
-    label: 'World Class (>30%)',
+    label: 'Classe Mundial em Serviços (>25%)',
     badgeClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-    recommendation: 'Excelente eficiência de fluxo enxuto. Processo altamente integrado e contínuo.'
+    recommendation: 'Eficiência de fluxo de classe mundial. Processo com esteira contínua, puxada e digital.',
+    benchmarkTitle: 'Classe Mundial em Serviços & RH',
+    benchmarkTarget: 'Referência máxima de maturidade Lean Office'
   };
 }
 

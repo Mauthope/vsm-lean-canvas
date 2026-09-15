@@ -16,6 +16,7 @@ import {
   Search,
   ArrowRight
 } from 'lucide-react';
+import { FLOW_EFFICIENCY_BENCHMARKS_HR } from '@/lib/vsmCalculations';
 
 interface VsmGlossaryModalProps {
   isOpen: boolean;
@@ -101,11 +102,11 @@ export const LEAN_CONCEPTS: Concept[] = [
     color: 'text-emerald-400',
     bg: 'bg-emerald-500/10',
     border: 'border-emerald-500/30',
-    summary: 'A proporção do tempo total do processo em que houve trabalho real acontecendo em comparação com o tempo em que o processo ficou parado esperando.',
+    summary: 'A proporção do tempo total do processo em que houve trabalho real acontecendo (agregando valor) em comparação com o tempo total que o processo levou (incluindo todas as esperas e filas).',
     formula: 'Eficiência de Fluxo (%) = (Total PT ÷ Total Lead Time) × 100',
-    example: 'Se um processo de compras leva 20 dias úteis (160 horas no total), mas somando o tempo que o comprador e o gestor realmente trabalharam nas tarefas temos apenas 8 horas, a Eficiência de Fluxo é de 8 / 160 = 5%. As outras 152 horas foram desperdício em filas.',
-    whyItMatters: 'Mostra imediatamente se a equipe está lenta por falta de braço (alto PT) ou por barreiras de fluxo, burocracia e filas (alto WT).',
-    benchmark: '< 5% Crítico / Típico corporativo | 5% a 15% Moderado | > 15% Classe Mundial.'
+    example: 'Em um processo de R&S ou Admissão que dura 30 dias úteis (264 horas), se o tempo somado de triagem, entrevistas, checagem e cadastro for de apenas 16 horas de esforço ativo (PT), a Eficiência de Fluxo é de 16 / 264 = 6,0%. As outras 248 horas (94%) foram de pura espera do candidato, agendamento de exame e aprovação da diretoria.',
+    whyItMatters: 'Na manufatura física com esteiras contínuas, a meta é de 25% a 40%. No entanto, em processos de RH e escritório, o inventário é invisível (e-mails, chamados e aprovações paradas), fazendo com que processos não otimizados operem rotineiramente abaixo de 5%. A Eficiência de Fluxo prova que a lentidão não vem de pessoas "trabalhando devagar", mas sim do tempo morto em que a solicitação fica sem ninguém tocando nela.',
+    benchmark: '< 5% Crítico / Típico RH | 5% a 15% Padrão Médio | 15% a 25% Alvo Lean RH | > 25% Classe Mundial'
   },
   {
     id: 'rfpy',
@@ -343,6 +344,41 @@ export const VsmGlossaryModal: React.FC<VsmGlossaryModalProps> = ({
                 <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-xs font-mono text-emerald-300 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
                   <span><strong>Meta / Benchmark:</strong> {currentConcept.benchmark}</span>
+                </div>
+              )}
+
+              {/* Specialized Benchmark Grid for Flow Efficiency */}
+              {currentConcept.id === 'fe' && (
+                <div className="space-y-2 pt-2 border-t border-slate-800">
+                  <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-cyan-400 font-mono">
+                    <span>📊 Faixas de Referência Lean Six Sigma para RH & Escritório:</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    {FLOW_EFFICIENCY_BENCHMARKS_HR.map(b => (
+                      <div
+                        key={b.tier}
+                        className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono font-black text-cyan-300 text-xs">
+                            {b.range}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {b.title}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 leading-snug">
+                          {b.description}
+                        </p>
+                        <div className="text-[10px] text-slate-400 italic">
+                          <strong>Cenário típico:</strong> {b.typicalScenario}
+                        </div>
+                        <div className="text-[10px] font-mono text-emerald-400 pt-1 border-t border-slate-800/80">
+                          <strong>Meta Lean:</strong> {b.target}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

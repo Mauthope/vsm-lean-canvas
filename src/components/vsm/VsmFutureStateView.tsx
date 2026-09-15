@@ -44,6 +44,8 @@ import {
 import {
   formatHours,
   formatHoursCompact,
+  getFlowEfficiencyClassification,
+  FLOW_EFFICIENCY_BENCHMARKS_HR,
   convertTimeToHours,
   HOURS_PER_WORK_DAY,
   getRoleStyle,
@@ -86,6 +88,9 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
   const futureLtDays = (futureMetrics.futureLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1);
   const currentWaitDays = (futureMetrics.currentWaitHours / HOURS_PER_WORK_DAY).toFixed(1);
   const futureWaitDays = (futureMetrics.futureWaitHours / HOURS_PER_WORK_DAY).toFixed(1);
+
+  const efficiencyMetaCurrent = getFlowEfficiencyClassification(futureMetrics.currentFlowEfficiency);
+  const efficiencyMetaFuture = getFlowEfficiencyClassification(futureMetrics.futureFlowEfficiency);
 
   // Ação Rápida 1: Copiar WT Atual como base para o Futuro em todas as etapas
   const handleCopyCurrentToFuture = () => {
@@ -398,9 +403,21 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
           {/* Card 3: Salto na Eficiência de Fluxo */}
           <div className="p-4 rounded-2xl bg-slate-950/80 border border-cyan-500/30 flex flex-col justify-between">
             <div>
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block font-mono">
-                Eficiência de Fluxo (FE)
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block font-mono">
+                  Eficiência de Fluxo (FE)
+                </span>
+                {onOpenGlossary && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenGlossary('fe')}
+                    className="text-[10px] font-mono text-cyan-400/90 hover:text-cyan-300 underline cursor-pointer"
+                    title="Ver referências Lean RH para Eficiência de Fluxo"
+                  >
+                    Ref. RH: 5% a 15%
+                  </button>
+                )}
+              </div>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-2xl sm:text-3xl font-black font-mono text-cyan-400">
                   {futureMetrics.futureFlowEfficiency.toFixed(1)}%
@@ -409,11 +426,14 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                   (+{(futureMetrics.futureFlowEfficiency - futureMetrics.currentFlowEfficiency).toFixed(1)} pp)
                 </span>
               </div>
+              <div className="text-[10px] font-mono text-cyan-300/90 font-medium mt-0.5">
+                {efficiencyMetaFuture.label}
+              </div>
             </div>
             <div className="mt-3 pt-2 border-t border-slate-800/70 text-[11px] font-mono text-slate-400 flex items-center justify-between">
-              <span>De: <strong className="text-slate-200">{futureMetrics.currentFlowEfficiency.toFixed(1)}%</strong></span>
+              <span>De: <strong className="text-slate-200">{futureMetrics.currentFlowEfficiency.toFixed(1)}%</strong> ({efficiencyMetaCurrent.label.split(' ')[0]})</span>
               <ArrowRight className="w-3 h-3 text-cyan-400" />
-              <span>Para: <strong className="text-cyan-300">{futureMetrics.futureFlowEfficiency.toFixed(1)}%</strong></span>
+              <span>Para: <strong className="text-cyan-300">{futureMetrics.futureFlowEfficiency.toFixed(1)}%</strong> ({efficiencyMetaFuture.label.split(' ')[0]})</span>
             </div>
           </div>
 

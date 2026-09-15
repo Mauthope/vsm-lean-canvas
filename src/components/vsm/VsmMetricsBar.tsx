@@ -12,7 +12,8 @@ import {
   TrendingDown,
   HelpCircle,
   Sparkles,
-  GitBranch
+  GitBranch,
+  X
 } from 'lucide-react';
 import { BottleneckAnalysis, VSMStep } from '@/types/vsm';
 import {
@@ -20,7 +21,8 @@ import {
   getFlowEfficiencyClassification,
   convertTimeToHours,
   HOURS_PER_WORK_DAY,
-  calculateFutureStateMetrics
+  calculateFutureStateMetrics,
+  FLOW_EFFICIENCY_BENCHMARKS_HR
 } from '@/lib/vsmCalculations';
 
 interface VsmMetricsBarProps {
@@ -50,6 +52,7 @@ export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
 
   const efficiencyMeta = getFlowEfficiencyClassification(flowEfficiency);
   const futureMetrics = React.useMemo(() => calculateFutureStateMetrics(steps, metrics), [steps, metrics]);
+  const [showFeBenchmarkModal, setShowFeBenchmarkModal] = React.useState(false);
 
   // Calcula dias úteis (8h48min = 8.8h)
   const leadTimeDays = (totalLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1);
@@ -247,11 +250,25 @@ export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
           </div>
         </div>
 
-        <div className="mt-2.5 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs">
-          <span className="text-slate-400 truncate">Status:</span>
-          <span className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded ${efficiencyMeta.badgeClass}`}>
-            {flowEfficiency < 5 ? 'Crítico (<5%)' : flowEfficiency < 15 ? 'Típico Adm' : 'Excelente'}
-          </span>
+        <div className="mt-2.5 pt-2.5 border-t border-slate-800/80 space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-400 truncate">Status:</span>
+            <span className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded ${efficiencyMeta.badgeClass}`}>
+              {efficiencyMeta.label}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-800/60">
+            <span>Ref. Lean RH:</span>
+            <button
+              type="button"
+              onClick={() => setShowFeBenchmarkModal(true)}
+              className="text-cyan-400 hover:text-cyan-300 font-bold underline underline-offset-2 cursor-pointer flex items-center gap-1"
+              title="Clique para ver a tabela completa de referências para RH (5% a 15%)"
+            >
+              <span>5% a 15% (Ver faixas)</span>
+            </button>
+          </div>
         </div>
 
         {futureMetrics.hasCustomEstimates && (
@@ -412,6 +429,120 @@ export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
           )}
         </div>
       </div>
+
+      {/* Modal de Referências de Eficiência de Fluxo para RH */}
+      {showFeBenchmarkModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-2xl bg-slate-950 border border-cyan-500/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                  <Percent className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-white font-heading">
+                    Eficiência de Fluxo (FE): Referências para RH & Serviços
+                  </h3>
+                  <span className="text-xs text-slate-400">
+                    Entenda por que a faixa de 5% a 15% é o padrão corporativo e 15% a 25% é a meta Lean.
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowFeBenchmarkModal(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-5 space-y-4 overflow-y-auto custom-scrollbar">
+              <div className="p-3.5 rounded-2xl bg-cyan-950/20 border border-cyan-500/25 text-xs text-slate-300 leading-relaxed">
+                <p>
+                  <strong>Por que no RH a eficiência é tão diferente da manufatura?</strong> Em indústrias, peças movem-se em esteiras físicas contínuas (alcançando 25% a 40%). No RH e em escritórios, o inventário é <strong>invisível</strong>: solicitações, vagas e admissões passam <strong>90% a 98% do tempo paradas</strong> aguardando aprovações, alinhamento com gestores, respostas de candidatos ou retornos de TI e exames médicos.
+                </p>
+              </div>
+
+              <div className="space-y-2.5">
+                <h4 className="text-xs font-mono uppercase font-bold text-slate-400 tracking-wider">
+                  Faixas de Referência em Processos de RH & Administrativos:
+                </h4>
+
+                <div className="grid grid-cols-1 gap-2.5">
+                  {FLOW_EFFICIENCY_BENCHMARKS_HR.map((b, i) => {
+                    const isCurrent =
+                      (b.level === 'critico' && flowEfficiency < 5) ||
+                      (b.level === 'tipico' && flowEfficiency >= 5 && flowEfficiency < 15) ||
+                      (b.level === 'alvo_rh' && flowEfficiency >= 15 && flowEfficiency < 25) ||
+                      (b.level === 'classe_mundial' && flowEfficiency >= 25);
+
+                    return (
+                      <div
+                        key={i}
+                        className={`p-3 rounded-2xl border transition-all ${
+                          isCurrent
+                            ? 'bg-slate-900 border-cyan-500 shadow-md shadow-cyan-950/30 ring-1 ring-cyan-500/50'
+                            : 'bg-slate-900/50 border-slate-800 text-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded border ${b.bg} ${b.color} ${b.border}`}>
+                              {b.range}
+                            </span>
+                            <span className="text-xs font-bold text-white">
+                              {b.title}
+                            </span>
+                          </div>
+                          {isCurrent && (
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-500 text-slate-950">
+                              Seu Processo Atual ({flowEfficiency.toFixed(1)}%)
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                          {b.descriptionRH}
+                        </p>
+                        <div className="text-[11px] text-slate-500 font-mono mt-1.5 flex items-start gap-1">
+                          <span className="text-slate-400 font-bold shrink-0">Exemplos no RH:</span>
+                          <span>{b.typicalCases}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-800 bg-slate-900/80 flex items-center justify-between">
+              {onOpenGlossary && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFeBenchmarkModal(false);
+                    onOpenGlossary('fe');
+                  }}
+                  className="text-xs font-bold text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  <span>Ver conceito completo no Guia Didático</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowFeBenchmarkModal(false)}
+                className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition-colors cursor-pointer ml-auto"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

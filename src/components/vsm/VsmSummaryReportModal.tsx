@@ -32,6 +32,7 @@ import { VSMStep, BottleneckAnalysis, WasteType, FutureStateMetrics, KaizenActio
 import {
   formatHours,
   getFlowEfficiencyClassification,
+  FLOW_EFFICIENCY_BENCHMARKS_HR,
   countWastes,
   WASTE_METAS,
   convertTimeToHours,
@@ -370,7 +371,7 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
     md += `| **Lead Time Total (LT)** | **${formatHours(totalLeadTimeHours)}** (~${(totalLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis) | Tempo total do pedido até a entrega final${metrics.parallelStagesCount ? ' (Caminho Crítico)' : ''} |\n`;
     md += `| **Tempo de Esforço Ativo (PT)** | **${formatHours(totalProcessHours)}** (~${(totalProcessHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis) | Tempo efetivo com valor agregado real |\n`;
     md += `| **Tempo de Fila / Espera (WT)** | **${formatHours(totalWaitHours)}** (${totalLeadTimeHours > 0 ? ((totalWaitHours / totalLeadTimeHours) * 100).toFixed(1) : 0}% do LT) | Tempo morto onde a tarefa fica ociosa em caixas de entrada |\n`;
-    md += `| **Eficiência de Fluxo (FE)** | **${flowEfficiency.toFixed(1)}%** | ${efficiencyMeta.label} (Meta Classe Mundial: > 25%) |\n`;
+    md += `| **Eficiência de Fluxo (FE)** | **${flowEfficiency.toFixed(1)}%** | ${efficiencyMeta.label} (${efficiencyMeta.benchmarkTarget} • Ref. Lean RH: 5% a 15%) |\n`;
     md += `| **Rolled First Pass Yield (%C&A)** | **${overallYield.toFixed(1)}%** | Rendimento sem retrabalho (Taxa de devoluções: ${(100 - overallYield).toFixed(1)}%) |\n\n`;
     if (metrics.parallelStagesCount && metrics.parallelStagesCount > 0) {
       md += `> **Regra Lean Office Aplicada:** O fluxo contém ${metrics.parallelStagesCount} bloco(s) de atividades em paralelo. Conforme as diretrizes Lean, o tempo de fila (WT) e o Lead Time de tarefas simultâneas são calculados pelo Caminho Crítico (maior tempo entre elas) e não pela soma linear.\n\n`;
@@ -383,6 +384,13 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
       md += `No chão de fábrica, o inventário é visível (pilhas de peças). No escritório e no RH, o inventário é invisível: acumula-se silenciosamente em caixas de e-mail, chamados parados em sistemas e solicitações esperando parecer.\n\n`;
       md += `### A Lei das Filas (Lead Time vs Process Time):\n`;
       md += `O tempo real de trabalho (PT) geralmente representa menos de 5% do Lead Time. Acelerar quem está trabalhando economiza minutos; eliminar o tempo que o chamado fica parado na fila (WT) economiza dias.\n\n`;
+      md += `### Eficiência de Fluxo (FE) no RH: Qual a referência e por que é diferente da indústria?\n`;
+      md += `Na manufatura industrial com esteiras contínuas, eficiências de fluxo alcançam 25% a 40%. No entanto, em **trabalho intelectual, serviços e RH**, mais de 90% a 95% do tempo o item está parado aguardando respostas, aprovações, pareceres ou exames.\n\n`;
+      md += `**Faixas de Referência Oficiais para Lean RH / Office:**\n`;
+      FLOW_EFFICIENCY_BENCHMARKS_HR.forEach(b => {
+        md += `- **${b.range} — ${b.title}:** ${b.description}. *Alvo:* ${b.target}\n`;
+      });
+      md += `\n`;
       md += `### O Efeito Cascata do Retrabalho (%C&A):\n`;
       md += `O %C&A (% Completo e Acurado) mede quantas vezes a informação chega correta na primeira vez. Em uma cadeia de etapas, pequenas falhas multiplicam o retrabalho e destroem a capacidade produtiva.\n\n`;
       md += `### Atividades em Paralelo & Caminho Crítico:\n`;
@@ -427,10 +435,12 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
     if (includeSimulation) {
       md += `## 6. Projeção de Estado Futuro (Antes vs Depois)\n\n`;
       const fs = diagnosticReport.futureStateSimulation;
+      const currentFeMeta = getFlowEfficiencyClassification(fs.currentFlowEfficiency);
+      const projectedFeMeta = getFlowEfficiencyClassification(fs.projectedFlowEfficiency);
       md += `| Dimensão Analisada | Estado Atual (As-Is) | Estado Futuro Projetado (To-Be) | Ganho Estimado |\n`;
       md += `| :--- | :--- | :--- | :--- |\n`;
       md += `| **Lead Time Ponta a Ponta** | ${(fs.currentLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis (${fs.currentLeadTimeHours.toFixed(1)}h) | **~${(fs.projectedLeadTimeHours / HOURS_PER_WORK_DAY).toFixed(1)} dias úteis** (${fs.projectedLeadTimeHours.toFixed(1)}h) | **-${fs.leadTimeReductionPercent}% de redução** |\n`;
-      md += `| **Eficiência de Fluxo (FE)** | ${fs.currentFlowEfficiency.toFixed(1)}% | **${fs.projectedFlowEfficiency.toFixed(1)}%** | **+${Math.round(fs.projectedFlowEfficiency - fs.currentFlowEfficiency)} pontos percentuais** |\n`;
+      md += `| **Eficiência de Fluxo (FE)** | ${fs.currentFlowEfficiency.toFixed(1)}% (${currentFeMeta.label}) | **${fs.projectedFlowEfficiency.toFixed(1)}% (${projectedFeMeta.label})** | **+${Math.round(fs.projectedFlowEfficiency - fs.currentFlowEfficiency)} pp** (${projectedFeMeta.benchmarkTarget}) |\n`;
       md += `| **Rendimento Rolled Yield (%C&A)** | ${fs.currentYield.toFixed(1)}% | **${fs.projectedYield}%** | **Eliminação massiva de devoluções** |\n\n`;
       md += `---\n\n`;
     }
@@ -962,18 +972,18 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                   isPaper ? 'bg-slate-50 border-slate-200' : 'bg-slate-900 border-slate-800'
                 }`}>
                   <span className="text-[10px] uppercase font-bold text-slate-500 block font-mono">
-                    Eficiência de Fluxo
+                    Eficiência de Fluxo (FE)
                   </span>
                   <span className={`text-xl sm:text-2xl font-black font-mono mt-1 block ${
-                    flowEfficiency >= 15 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                    flowEfficiency >= 15 ? 'text-emerald-600 dark:text-emerald-400' : flowEfficiency >= 5 ? 'text-cyan-600 dark:text-cyan-400' : 'text-rose-600 dark:text-rose-400'
                   }`}>
                     {flowEfficiency.toFixed(1)}%
                   </span>
-                  <span className="text-[11px] font-mono text-slate-700 dark:text-slate-300 font-medium block mt-0.5">
+                  <span className="text-[11px] font-mono text-slate-700 dark:text-slate-300 font-bold block mt-0.5">
                     {efficiencyMeta.label}
                   </span>
-                  <span className="text-[10px] text-slate-500 mt-1 block">
-                    Benchmark Mundial: &gt; 25%
+                  <span className="text-[10px] text-cyan-700 dark:text-cyan-400 font-semibold mt-1 block">
+                    Ref. Lean RH: 5% a 15% • Alvo: 15% a 25%
                   </span>
                 </div>
 
@@ -1013,6 +1023,52 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                     <span>{metrics.parallelStagesCount} bloco(s) em paralelo calculados pelo Caminho Crítico (maior tempo entre etapas concorrentes).</span>
                   </div>
                 )}
+              </div>
+
+              {/* Flow Efficiency Executive Benchmark Grid */}
+              <div className={`p-3.5 rounded-xl border text-[11px] space-y-2 ${
+                isPaper ? 'bg-slate-50/90 border-slate-200' : 'bg-slate-900/60 border-slate-800'
+              }`}>
+                <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider font-bold text-slate-500">
+                  <span>📊 Benchmarks de Eficiência de Fluxo (Lean RH / Escritório & Serviços)</span>
+                  <span className="text-cyan-700 dark:text-cyan-400 font-bold">Diagnóstico Atual: {efficiencyMeta.label}</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {FLOW_EFFICIENCY_BENCHMARKS_HR.map(b => {
+                    const isActive = (
+                      (b.tier === 'critical' && flowEfficiency < 5) ||
+                      (b.tier === 'moderate' && flowEfficiency >= 5 && flowEfficiency < 15) ||
+                      (b.tier === 'excellent' && flowEfficiency >= 15 && flowEfficiency < 25) ||
+                      (b.tier === 'world_class' && flowEfficiency >= 25)
+                    );
+                    return (
+                      <div
+                        key={b.tier}
+                        className={`p-2.5 rounded-xl border text-left transition-all ${
+                          isActive
+                            ? (isPaper ? 'bg-cyan-100/90 border-cyan-400 text-cyan-950 ring-1 ring-cyan-400' : 'bg-cyan-950/60 border-cyan-500/50 text-cyan-200 ring-1 ring-cyan-500/40')
+                            : (isPaper ? 'bg-white border-slate-200 text-slate-600' : 'bg-slate-900 border-slate-800 text-slate-400')
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[10px] font-mono mb-1">
+                          <span className="font-bold">{b.range}</span>
+                          {isActive ? (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-600 text-white font-bold font-mono">
+                              Seu Fluxo
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="text-[11px] font-bold leading-tight line-clamp-1">{b.title}</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-snug line-clamp-2">
+                          {b.description}
+                        </div>
+                        <div className="text-[9px] font-mono text-cyan-700 dark:text-cyan-300 mt-1.5 pt-1 border-t border-slate-200 dark:border-slate-800/80 font-semibold">
+                          Alvo: {b.target}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
@@ -1057,6 +1113,40 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                       <strong>Process Time (PT)</strong> é o tempo em que o colaborador está de fato operando a tarefa. 
                       A armadilha clássica da gestão tradicional é cobrar que o time trabalhe mais rápido (tentando reduzir minutos de PT), quando na verdade mais de <strong>90% do tempo</strong> é gasto com o chamado parado na fila de espera (WT) esperando alguém abrir ou aprovar. O foco do Lean é <strong>eliminar a fila</strong>.
                     </p>
+                  </div>
+
+                  {/* Topic 2.5: Flow Efficiency in HR vs Manufacturing */}
+                  <div className="space-y-2 p-3.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-cyan-200 dark:border-cyan-500/20">
+                    <h3 className="text-xs font-bold uppercase font-mono text-cyan-800 dark:text-cyan-300 flex items-center gap-2">
+                      <span>•</span>
+                      <span>Eficiência de Fluxo (FE) no RH e Escritório: Qual a referência e por que é diferente da fábrica?</span>
+                    </h3>
+                    <p className="leading-relaxed text-slate-700 dark:text-slate-300">
+                      Calculada por <code className="font-mono font-bold text-cyan-700 dark:text-cyan-300">FE = (Total PT ÷ Total Lead Time) × 100</code>, a Eficiência de Fluxo indica a porcentagem do tempo total do processo em que houve valor agregado real sendo executado.
+                    </p>
+                    <p className="leading-relaxed text-slate-700 dark:text-slate-300">
+                      Na <strong>manufatura industrial</strong>, esteiras mecânicas e células integradas movimentam peças constantemente, permitindo atingir 25% a 40% de eficiência. 
+                      Já em <strong>serviços de RH e escritório</strong>, o trabalho é cognitivo, assíncrono e dependente de múltiplos departamentos (RH, TI, DP, gestor, medicina ocupacional). 
+                      Por isso, processos não otimizados no RH rotineiramente operam com <strong>menos de 5%</strong> de eficiência (onde mais de 95% do tempo é pura espera de caixas de entrada).
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
+                      <div className="p-2 rounded bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+                        <strong className="text-rose-600 dark:text-rose-400 block">&lt; 5% • Crítico / Típico Tradicional:</strong>
+                        <span className="text-slate-600 dark:text-slate-400">Processo engessado com excesso de aprovações manuais e caixas de entrada sem SLA.</span>
+                      </div>
+                      <div className="p-2 rounded bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+                        <strong className="text-amber-600 dark:text-amber-400 block">5% a 15% • Padrão Corporativo Médio:</strong>
+                        <span className="text-slate-600 dark:text-slate-400">Processos com SLAs definidos, mas ainda com handoffs manuais entre áreas.</span>
+                      </div>
+                      <div className="p-2 rounded bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+                        <strong className="text-emerald-600 dark:text-emerald-400 block">15% a 25% • Alvo de Excelência Lean RH:</strong>
+                        <span className="text-slate-600 dark:text-slate-400">Meta de ouro dos workshops Lean: paralelismo real, self-service e pré-aprovações.</span>
+                      </div>
+                      <div className="p-2 rounded bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+                        <strong className="text-cyan-600 dark:text-cyan-400 block">&gt; 25% • Classe Mundial em RH Ágil:</strong>
+                        <span className="text-slate-600 dark:text-slate-400">Fluxo contínuo digital com integrações automáticas ponta a ponta.</span>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Topic 3: %C&A and Rolled Yield */}
@@ -1495,17 +1585,23 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                             ? futureMetrics.futureFlowEfficiency.toFixed(1)
                             : diagnosticReport.futureStateSimulation.projectedFlowEfficiency.toFixed(1)}%
                         </span>
+                        <span className="text-[10px] font-mono text-cyan-700 dark:text-cyan-300 font-bold">
+                          {getFlowEfficiencyClassification(futureMetrics.hasCustomEstimates ? futureMetrics.futureFlowEfficiency : diagnosticReport.futureStateSimulation.projectedFlowEfficiency).label}
+                        </span>
                       </div>
                       <span className="text-[11px] font-mono text-slate-600 dark:text-slate-400 block mt-1">
                         {futureMetrics.hasCustomEstimates ? (
                           <>
-                            De {futureMetrics.currentFlowEfficiency.toFixed(1)}% (+{Math.round(futureMetrics.futureFlowEfficiency - futureMetrics.currentFlowEfficiency)} pontos percentuais)
+                            De {futureMetrics.currentFlowEfficiency.toFixed(1)}% ({getFlowEfficiencyClassification(futureMetrics.currentFlowEfficiency).label.split(' ')[0]}) (+{Math.round(futureMetrics.futureFlowEfficiency - futureMetrics.currentFlowEfficiency)} pp)
                           </>
                         ) : (
                           <>
-                            De {diagnosticReport.futureStateSimulation.currentFlowEfficiency.toFixed(1)}% (+{Math.round(diagnosticReport.futureStateSimulation.projectedFlowEfficiency - diagnosticReport.futureStateSimulation.currentFlowEfficiency)} pontos percentuais)
+                            De {diagnosticReport.futureStateSimulation.currentFlowEfficiency.toFixed(1)}% ({getFlowEfficiencyClassification(diagnosticReport.futureStateSimulation.currentFlowEfficiency).label.split(' ')[0]}) (+{Math.round(diagnosticReport.futureStateSimulation.projectedFlowEfficiency - diagnosticReport.futureStateSimulation.currentFlowEfficiency)} pp)
                           </>
                         )}
+                      </span>
+                      <span className="text-[9px] font-mono text-emerald-700 dark:text-emerald-400 font-semibold block mt-1">
+                        {getFlowEfficiencyClassification(futureMetrics.hasCustomEstimates ? futureMetrics.futureFlowEfficiency : diagnosticReport.futureStateSimulation.projectedFlowEfficiency).benchmarkTarget}
                       </span>
                     </div>
 
