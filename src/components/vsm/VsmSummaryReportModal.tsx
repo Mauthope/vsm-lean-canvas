@@ -1050,25 +1050,41 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                     return (
                       <div
                         key={b.tier}
-                        className={`p-2.5 rounded-xl border text-left transition-all ${
+                        className={`p-2.5 rounded-xl border text-left transition-all flex flex-col justify-between ${
                           isActive
                             ? (isPaper ? 'bg-cyan-100/90 border-cyan-400 text-cyan-950 ring-1 ring-cyan-400' : 'bg-cyan-950/60 border-cyan-500/50 text-cyan-200 ring-1 ring-cyan-500/40')
                             : (isPaper ? 'bg-white border-slate-200 text-slate-600' : 'bg-slate-900 border-slate-800 text-slate-400')
                         }`}
                       >
-                        <div className="flex items-center justify-between text-[10px] font-mono mb-1">
-                          <span className="font-bold">{b.range}</span>
-                          {isActive ? (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-600 text-white font-bold font-mono">
-                              Seu Fluxo
-                            </span>
-                          ) : null}
+                        <div>
+                          <div className="flex items-center justify-between text-[10px] font-mono mb-1">
+                            <span className="font-bold">{b.range}</span>
+                            {isActive ? (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-700 text-white font-bold font-mono shadow-xs">
+                                Seu Fluxo
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className={`text-[11px] font-bold leading-snug ${
+                            isActive
+                              ? (isPaper ? 'text-cyan-950' : 'text-cyan-100')
+                              : (isPaper ? 'text-slate-900' : 'text-slate-200')
+                          }`}>
+                            {b.title}
+                          </div>
+                          <div className={`text-[10px] mt-1 leading-relaxed ${
+                            isActive
+                              ? (isPaper ? 'text-cyan-900' : 'text-cyan-200/90')
+                              : (isPaper ? 'text-slate-600' : 'text-slate-400')
+                          }`}>
+                            {b.description}
+                          </div>
                         </div>
-                        <div className="text-[11px] font-bold leading-tight line-clamp-1">{b.title}</div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-snug line-clamp-2">
-                          {b.description}
-                        </div>
-                        <div className="text-[9px] font-mono text-cyan-700 dark:text-cyan-300 mt-1.5 pt-1 border-t border-slate-200 dark:border-slate-800/80 font-semibold">
+                        <div className={`text-[9px] font-mono mt-2 pt-1.5 border-t font-semibold leading-tight ${
+                          isActive
+                            ? (isPaper ? 'text-cyan-800 border-cyan-300' : 'text-cyan-300 border-cyan-800/80')
+                            : (isPaper ? 'text-slate-600 border-slate-200' : 'text-slate-400 border-slate-800/80')
+                        }`}>
                           Alvo: {b.target}
                         </div>
                       </div>

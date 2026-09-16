@@ -188,6 +188,13 @@ h1, h2, h3, h4, h5, h6, .font-heading {
     print-color-adjust: exact !important;
   }
 
+  /* Ensure no text truncation or line clamping in printed dossier */
+  #vsm-printable-dossier,
+  #vsm-printable-dossier * {
+    -webkit-line-clamp: unset !important;
+    text-overflow: clip !important;
+  }
+
   /* Force override any dark classes to ensure clean, light paper appearance */
   html.dark #vsm-printable-dossier,
   .dark #vsm-printable-dossier {
