@@ -13,6 +13,7 @@ import {
   HelpCircle,
   Sparkles,
   GitBranch,
+  BookOpen,
   X
 } from 'lucide-react';
 import { BottleneckAnalysis, VSMStep } from '@/types/vsm';
@@ -22,7 +23,8 @@ import {
   convertTimeToHours,
   HOURS_PER_WORK_DAY,
   calculateFutureStateMetrics,
-  FLOW_EFFICIENCY_BENCHMARKS_HR
+  FLOW_EFFICIENCY_BENCHMARKS_HR,
+  FLOW_EFFICIENCY_BIBLIOGRAPHY
 } from '@/lib/vsmCalculations';
 
 interface VsmMetricsBarProps {
@@ -514,6 +516,44 @@ export const VsmMetricsBar: React.FC<VsmMetricsBarProps> = ({
                     );
                   })}
                 </div>
+
+                {/* Bibliographic Foundation & Authors */}
+                <div className="mt-5 pt-4 border-t border-slate-800 space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <h4 className="text-xs font-mono uppercase font-bold text-slate-300 tracking-wider">
+                      Fundamentação Teórica & Autores de Referência:
+                    </h4>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Estes percentuais e diagnósticos são embasados nas obras seminais de Lean Office, Prêmio Shingo e gestão de fluxo no trabalho do conhecimento:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    {FLOW_EFFICIENCY_BIBLIOGRAPHY.map(ref => (
+                      <div
+                        key={ref.id}
+                        className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between text-[10px] font-mono">
+                          <span className="font-bold text-cyan-300">{ref.author} ({ref.year})</span>
+                          <span className="text-slate-500 font-medium">
+                            {ref.publisherOrAward.includes('Shingo') ? '🏆 Shingo Prize' : 'Lean Service'}
+                          </span>
+                        </div>
+                        <div className="text-xs font-bold text-white leading-snug">
+                          {ref.work}
+                        </div>
+                        <div className="text-[10px] text-slate-400 italic">
+                          {ref.publisherOrAward}
+                        </div>
+                        <p className="text-[11px] text-slate-300 leading-relaxed pt-1 border-t border-slate-800/80">
+                          {ref.benchmarkStatement}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
               </div>
             </div>
 

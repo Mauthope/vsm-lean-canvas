@@ -16,7 +16,10 @@ import {
   Search,
   ArrowRight
 } from 'lucide-react';
-import { FLOW_EFFICIENCY_BENCHMARKS_HR } from '@/lib/vsmCalculations';
+import {
+  FLOW_EFFICIENCY_BENCHMARKS_HR,
+  FLOW_EFFICIENCY_BIBLIOGRAPHY
+} from '@/lib/vsmCalculations';
 
 interface VsmGlossaryModalProps {
   isOpen: boolean;
@@ -378,6 +381,38 @@ export const VsmGlossaryModal: React.FC<VsmGlossaryModalProps> = ({
                         </div>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Bibliographic Foundation */}
+                  <div className="pt-3 border-t border-slate-800 space-y-2">
+                    <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">
+                      <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Autores e Obras que Definiram Estes Padrões:</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2 text-xs">
+                      {FLOW_EFFICIENCY_BIBLIOGRAPHY.map(ref => (
+                        <div
+                          key={ref.id}
+                          className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-1"
+                        >
+                          <div className="flex items-center justify-between text-[10px] font-mono">
+                            <span className="font-bold text-cyan-300">{ref.author} ({ref.year})</span>
+                            <span className="text-slate-500 font-medium">
+                              {ref.publisherOrAward.includes('Shingo') ? '🏆 Shingo Prize' : 'Lean Service'}
+                            </span>
+                          </div>
+                          <div className="text-xs font-semibold text-slate-200">
+                            {ref.work}
+                          </div>
+                          <div className="text-[10px] text-slate-400 italic">
+                            {ref.publisherOrAward}
+                          </div>
+                          <p className="text-[11px] text-slate-400 leading-snug pt-0.5">
+                            {ref.benchmarkStatement}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}

@@ -33,6 +33,7 @@ import {
   formatHours,
   getFlowEfficiencyClassification,
   FLOW_EFFICIENCY_BENCHMARKS_HR,
+  FLOW_EFFICIENCY_BIBLIOGRAPHY,
   countWastes,
   WASTE_METAS,
   convertTimeToHours,
@@ -389,6 +390,11 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
       md += `**Faixas de Referência Oficiais para Lean RH / Office:**\n`;
       FLOW_EFFICIENCY_BENCHMARKS_HR.forEach(b => {
         md += `- **${b.range} — ${b.title}:** ${b.description}. *Alvo:* ${b.target}\n`;
+      });
+      md += `\n`;
+      md += `**Fundamentação Teórica & Quem Definiu Estes Padrões (Bibliografia):**\n`;
+      FLOW_EFFICIENCY_BIBLIOGRAPHY.forEach(ref => {
+        md += `- **${ref.author} (${ref.year}) — *${ref.work}* (${ref.publisherOrAward}):** ${ref.benchmarkStatement}\n`;
       });
       md += `\n`;
       md += `### O Efeito Cascata do Retrabalho (%C&A):\n`;
@@ -1069,6 +1075,10 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                     );
                   })}
                 </div>
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-800/80 text-[10px] text-slate-500 flex flex-wrap items-center justify-between gap-1 font-mono">
+                  <span>📚 <strong>Fundamentação Teórica:</strong> Karen Martin & Mike Osterling (Shingo Prize), Niklas Modig (This is Lean), David J. Anderson (Kanban).</span>
+                  <span className="text-cyan-700 dark:text-cyan-400 font-semibold">Padrão Lean Office / Knowledge Work</span>
+                </div>
               </div>
             </div>
 
@@ -1145,6 +1155,36 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                       <div className="p-2 rounded bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
                         <strong className="text-cyan-600 dark:text-cyan-400 block">&gt; 25% • Classe Mundial em RH Ágil:</strong>
                         <span className="text-slate-600 dark:text-slate-400">Fluxo contínuo digital com integrações automáticas ponta a ponta.</span>
+                      </div>
+                    </div>
+
+                    {/* Bibliographic Literature Citations */}
+                    <div className="pt-2 mt-2 border-t border-cyan-200 dark:border-cyan-500/20 space-y-1.5">
+                      <div className="flex items-center gap-1.5 font-bold font-mono text-cyan-900 dark:text-cyan-300 text-[11px] uppercase">
+                        <BookOpen className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                        <span>Quem definiu estes percentuais? (Fundamentação Teórica & Autores de Referência):</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                        {FLOW_EFFICIENCY_BIBLIOGRAPHY.map(ref => (
+                          <div
+                            key={ref.id}
+                            className="p-2.5 rounded-lg bg-white/80 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1 text-[11px]"
+                          >
+                            <div className="flex items-center justify-between text-[10px] font-mono">
+                              <strong className="text-cyan-800 dark:text-cyan-300">{ref.author} ({ref.year})</strong>
+                              <span className="text-slate-500">{ref.publisherOrAward.includes('Shingo') ? '🏆 Shingo Prize' : 'Referência'}</span>
+                            </div>
+                            <div className="font-semibold text-slate-800 dark:text-slate-200 text-[11px]">
+                              {ref.work}
+                            </div>
+                            <div className="text-[10px] text-slate-500 italic">
+                              {ref.publisherOrAward}
+                            </div>
+                            <p className="text-[10.5px] text-slate-600 dark:text-slate-400 leading-snug pt-1 border-t border-slate-100 dark:border-slate-800">
+                              {ref.benchmarkStatement}
+                            </p>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>

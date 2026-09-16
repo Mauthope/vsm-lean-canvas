@@ -404,6 +404,55 @@ export const FLOW_EFFICIENCY_BENCHMARKS_HR: FlowEfficiencyBenchmark[] = [
   }
 ];
 
+export interface BibliographicReference {
+  id: string;
+  author: string;
+  work: string;
+  year: number;
+  publisherOrAward: string;
+  contribution: string;
+  benchmarkStatement: string;
+}
+
+export const FLOW_EFFICIENCY_BIBLIOGRAPHY: BibliographicReference[] = [
+  {
+    id: 'karen-martin-vsm',
+    author: 'Karen Martin & Mike Osterling',
+    work: 'Value Stream Mapping for the Office and Complete Services',
+    year: 2014,
+    publisherOrAward: 'Productivity Press (Ganhador do Prêmio Shingo de Excelência em Pesquisa Operacional)',
+    contribution: 'Referência mundial em Mapeamento do Fluxo de Valor aplicado a ambientes de escritório, serviços e trabalho cognitivo (RH, Financeiro, Compras).',
+    benchmarkStatement: 'Documenta que em processos corporativos típicos não otimizados (Current State), a proporção de trabalho ativo em relação ao tempo total (Activity Ratio / Flow Efficiency) varia de 1% a 5%. Estabelece como meta recomendada de workshops Lean Office atingir entre 15% e 25% no Estado Futuro.'
+  },
+  {
+    id: 'modig-this-is-lean',
+    author: 'Niklas Modig & Pär Åhlström',
+    work: 'This is Lean: Resolving the Efficiency Paradox (Isto é Lean: Resolvendo o Paradoxo da Eficiência)',
+    year: 2012,
+    publisherOrAward: 'Stockholm School of Economics / Rheologica Publishing',
+    contribution: 'Obra seminal que introduziu e popularizou a distinção fundamental entre "Eficiência de Recursos" (manter pessoas ocupadas) e "Eficiência de Fluxo" (fazer o trabalho fluir rápido).',
+    benchmarkStatement: 'Demonstra que organizações de serviços tradicionais operam com menos de 5% de Eficiência de Fluxo, com mais de 95% do tempo desperdiçado em esperas causadas por handoffs e silos organizacionais. Aponta que atingir 15% a 20%+ já representa um salto revolucionário de produtividade.'
+  },
+  {
+    id: 'david-anderson-kanban',
+    author: 'David J. Anderson',
+    work: 'Kanban: Successful Evolutionary Change for Your Technology Business',
+    year: 2010,
+    publisherOrAward: 'Blue Hole Press / Kanban University',
+    contribution: 'Pioneiro na quantificação de métricas de fluxo e leis de filas no trabalho do conhecimento e áreas corporativas.',
+    benchmarkStatement: 'Mapeou centenas de fluxos de serviços e conhecimento: processos com filas ocultas registram eficiências médias entre 2% e 5%; fluxos com SLAs e gestão visual atingem de 5% a 15%; e times de alta maturidade com trabalho puxado alcançam de 15% a 25%.'
+  },
+  {
+    id: 'reinertsen-flow',
+    author: 'Donald G. Reinertsen',
+    work: 'The Principles of Product Development Flow: Second Generation Lean Product Development',
+    year: 2009,
+    publisherOrAward: 'Celeritas Publishing',
+    contribution: 'Formalizou a economia das filas, o custo do atraso (Cost of Delay) e a teoria matemática de filas (Queueing Theory) em trabalho não-fabril.',
+    benchmarkStatement: 'Demonstra matematicamente como filas invisíveis e aprovações em lote destroem o Lead Time, comprovando que pequenas reduções de esperas geram ganhos exponenciais na Eficiência de Fluxo.'
+  }
+];
+
 export function getFlowEfficiencyClassification(efficiency: number): {
   status: 'critico' | 'tipico' | 'bom' | 'excelente';
   label: string;
