@@ -786,26 +786,25 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
           <table className="w-full text-left text-xs border-collapse">
             <thead className="bg-slate-950 text-[10px] uppercase font-bold font-mono text-slate-400 border-b border-slate-800">
               <tr>
-                <th className="p-3 text-center w-12">#</th>
-                <th className="p-3 min-w-[180px]">Título da Etapa</th>
-                <th className="p-3 whitespace-nowrap">Responsável</th>
-                <th className="p-3 min-w-[260px] text-amber-400 font-bold">Oportunidades Kaizen (Ideias Mapeadas)</th>
-                <th className="p-3 text-right">PT (Esforço)</th>
-                <th className="p-3 text-right min-w-[110px]">WT Atual (Fila)</th>
-                <th className="p-3 text-left min-w-[200px] bg-emerald-950/20 border-x border-emerald-500/20">
+                <th className="px-2 py-2.5 text-center w-10">#</th>
+                <th className="px-2.5 py-2.5 text-left">Etapa & Papel</th>
+                <th className="px-2.5 py-2.5 text-left text-amber-400 font-bold">Oportunidades Kaizen (Ideias Mapeadas)</th>
+                <th className="px-2 py-2.5 text-right w-16 whitespace-nowrap">PT</th>
+                <th className="px-2.5 py-2.5 text-right w-24 whitespace-nowrap">WT Atual</th>
+                <th className="px-2.5 py-2.5 text-left w-36 bg-emerald-950/20 border-x border-emerald-500/20 whitespace-nowrap">
                   <span className="text-emerald-400 flex items-center gap-1 font-bold">
                     <Sparkles className="w-3 h-3" />
-                    WT Futuro Estimado
+                    WT Futuro
                   </span>
                 </th>
-                <th className="p-3 text-center min-w-[130px]">Redução / Ganho</th>
-                <th className="p-3 text-right min-w-[160px]">Ações Rápidas</th>
+                <th className="px-2 py-2.5 text-center w-20 whitespace-nowrap">Redução</th>
+                <th className="px-2.5 py-2.5 text-right w-44 whitespace-nowrap">Ações Rápidas</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800 font-mono">
               {filteredSteps.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="p-8 text-center text-slate-400 font-sans">
+                  <td colSpan={8} className="p-8 text-center text-slate-400 font-sans">
                     <p className="text-sm font-bold text-slate-300">Nenhuma etapa encontrada com o filtro atual.</p>
                     <button
                       type="button"
@@ -849,49 +848,45 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                       }`}
                     >
                       {/* 1. Ordem */}
-                      <td className="p-3 text-center font-bold text-cyan-400">
+                      <td className="px-2 py-2 text-center font-bold text-cyan-400">
                         #{step.order}
                       </td>
 
-                      {/* 2. Título da Etapa */}
-                      <td className="p-3 font-sans font-medium text-white max-w-xs">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span
-                            className="hover:text-cyan-300 cursor-pointer transition-colors"
-                            onClick={() => onSelectStep?.(step.id)}
-                          >
-                            {step.title}
+                      {/* 2. Etapa & Papel */}
+                      <td className="px-2.5 py-2 font-sans">
+                        <div
+                          className="font-semibold text-white text-xs hover:text-cyan-300 cursor-pointer transition-colors leading-tight"
+                          onClick={() => onSelectStep?.(step.id)}
+                        >
+                          {step.title}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold border ${roleStyle.bg} ${roleStyle.text} ${roleStyle.border} whitespace-nowrap`}>
+                            {step.role}
                           </span>
-                          {step.isParallel && (
-                            <span className="px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[9px] font-mono flex items-center gap-0.5">
-                              <GitBranch className="w-2.5 h-2.5" />
-                              Paralelo
-                            </span>
-                          )}
                           {isBottleneck && (
                             <span className="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[9px] font-mono font-bold flex items-center gap-0.5">
                               <Flame className="w-2.5 h-2.5 text-rose-400" />
                               Gargalo
                             </span>
                           )}
+                          {step.isParallel && (
+                            <span className="px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[9px] font-mono flex items-center gap-0.5">
+                              <GitBranch className="w-2.5 h-2.5" />
+                              Paralelo
+                            </span>
+                          )}
                         </div>
                       </td>
 
-                      {/* 3. Papel / Responsável */}
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${roleStyle.bg} ${roleStyle.text} ${roleStyle.border} whitespace-nowrap`}>
-                          {step.role}
-                        </span>
-                      </td>
-
-                      {/* 4. Oportunidades Kaizen Mapeadas (Referência da Etapa) */}
-                      <td className="p-3 font-sans min-w-[260px]">
+                      {/* 3. Oportunidades Kaizen Mapeadas */}
+                      <td className="px-2.5 py-2 font-sans">
                         {kaizens.length > 0 ? (
                           <div className="space-y-1">
                             {kaizens.map((k, kIdx) => (
                               <div
                                 key={kIdx}
-                                className="p-1.5 rounded-lg bg-amber-950/20 border border-amber-500/20 text-amber-200/90 text-xs leading-relaxed flex items-start gap-1.5"
+                                className="p-1.5 rounded-lg bg-amber-950/20 border border-amber-500/20 text-amber-200/90 text-xs leading-snug flex items-start gap-1.5"
                               >
                                 <span className="shrink-0 text-amber-400 text-xs mt-0.5">💡</span>
                                 <span className="break-words font-medium">{k}</span>
@@ -903,13 +898,13 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                         )}
                       </td>
 
-                      {/* 5. PT Atual */}
-                      <td className="p-3 text-right text-cyan-300 font-bold whitespace-nowrap">
+                      {/* 4. PT Atual */}
+                      <td className="px-2 py-2 text-right text-cyan-300 font-bold whitespace-nowrap">
                         {step.processTime} {step.processTimeUnit}
                       </td>
 
-                      {/* 6. WT Atual */}
-                      <td className="p-3 text-right whitespace-nowrap">
+                      {/* 5. WT Atual */}
+                      <td className="px-2.5 py-2 text-right whitespace-nowrap">
                         <div className="font-bold text-amber-300 font-mono">
                           {step.waitTime} {step.waitTimeUnit}
                         </div>
@@ -918,9 +913,9 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                         </div>
                       </td>
 
-                      {/* 7. WT Futuro Estimado (INPUT INTERATIVO) */}
-                      <td className="p-3 bg-emerald-950/25 border-x border-emerald-500/20">
-                        <div className="flex items-center gap-1.5">
+                      {/* 6. WT Futuro Estimado (INPUT INTERATIVO) */}
+                      <td className="px-2.5 py-2 bg-emerald-950/25 border-x border-emerald-500/20 whitespace-nowrap">
+                        <div className="flex items-center gap-1">
                           <input
                             type="number"
                             min="0"
@@ -934,7 +929,7 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                                 futureWaitTimeUnit: step.futureWaitTimeUnit || step.waitTimeUnit
                               });
                             }}
-                            className={`w-20 px-2 py-1.5 rounded-lg text-xs font-bold font-mono border focus:outline-none focus:ring-1 transition-all ${
+                            className={`w-16 px-1.5 py-1 rounded-lg text-xs font-bold font-mono border focus:outline-none focus:ring-1 transition-all ${
                               hasCustom
                                 ? 'bg-emerald-950 border-emerald-400 text-emerald-200 focus:ring-emerald-400'
                                 : 'bg-slate-950 border-slate-700 text-slate-400 focus:border-cyan-400 focus:ring-cyan-400'
@@ -949,23 +944,23 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                                 futureWaitTimeUnit: e.target.value as TimeUnit
                               });
                             }}
-                            className="bg-slate-950 border border-slate-700 text-slate-300 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-emerald-400"
+                            className="bg-slate-950 border border-slate-700 text-slate-300 rounded-lg px-1.5 py-1 text-xs font-mono focus:outline-none focus:border-emerald-400"
                           >
                             <option value="minutos">min</option>
                             <option value="horas">horas</option>
                             <option value="dias">dias</option>
                           </select>
                         </div>
-                        <div className="text-[9px] font-mono text-emerald-400/80 mt-1 pl-1">
-                          ≈ {formatHoursCompact(futureWtHours)} {hasCustom ? '(meta pactuada)' : '(base atual)'}
+                        <div className="text-[9px] font-mono text-emerald-400/80 mt-0.5 pl-0.5">
+                          ≈ {formatHoursCompact(futureWtHours)} {hasCustom ? '(meta)' : '(base)'}
                         </div>
                       </td>
 
-                      {/* 8. Redução / Ganho Estimado (Delta) */}
-                      <td className="p-3 text-center whitespace-nowrap">
+                      {/* 7. Redução / Ganho Estimado (Delta) */}
+                      <td className="px-2 py-2 text-center whitespace-nowrap">
                         {hasCustom && diffHours > 0.01 ? (
                           <div className="inline-flex flex-col items-center">
-                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black font-mono">
+                            <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black font-mono">
                               -{diffPercent}%
                             </span>
                             <span className="text-[10px] text-emerald-400 font-mono mt-0.5">
@@ -974,7 +969,7 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                           </div>
                         ) : hasCustom && diffHours < -0.01 ? (
                           <div className="inline-flex flex-col items-center">
-                            <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-black font-mono">
+                            <span className="px-1.5 py-0.2 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-black font-mono">
                               +{Math.abs(diffPercent)}%
                             </span>
                             <span className="text-[10px] text-rose-400 font-mono mt-0.5">
@@ -992,46 +987,49 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                         )}
                       </td>
 
-                      {/* 9. Ações Rápidas por Linha */}
-                      <td className="p-3 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setStepReduction(step, 50)}
-                            className="px-2 py-1 rounded bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-300 text-[10px] font-mono font-bold transition-colors cursor-pointer"
-                            title="Reduzir 50% do WT atual"
-                          >
-                            -50%
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setStepReduction(step, 75)}
-                            className="px-2 py-1 rounded bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-300 text-[10px] font-mono font-bold transition-colors cursor-pointer"
-                            title="Reduzir 75% do WT atual"
-                          >
-                            -75%
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              onUpdateStep(step.id, {
-                                futureWaitTime: 0,
-                                futureWaitTimeUnit: step.waitTimeUnit
-                              });
-                            }}
-                            className="px-2 py-1 rounded bg-emerald-950/60 hover:bg-emerald-500 hover:text-slate-950 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono font-bold transition-colors cursor-pointer"
-                            title="Zerar o tempo de espera (Fluxo Contínuo / Fila Zero)"
-                          >
-                            Zerar
-                          </button>
+                      {/* 8. Ações Rápidas por Linha */}
+                      <td className="px-2.5 py-2 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <div className="inline-flex rounded-lg border border-slate-700/80 bg-slate-950/80 p-0.5 text-[10px] font-mono font-bold shadow-xs">
+                            <button
+                              type="button"
+                              onClick={() => setStepReduction(step, 50)}
+                              className="px-1.5 py-0.5 rounded text-slate-300 hover:text-white hover:bg-emerald-600 transition-colors cursor-pointer"
+                              title="Reduzir 50% do WT atual"
+                            >
+                              -50%
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setStepReduction(step, 75)}
+                              className="px-1.5 py-0.5 rounded text-slate-300 hover:text-white hover:bg-emerald-600 transition-colors cursor-pointer"
+                              title="Reduzir 75% do WT atual"
+                            >
+                              -75%
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onUpdateStep(step.id, {
+                                  futureWaitTime: 0,
+                                  futureWaitTimeUnit: step.waitTimeUnit
+                                });
+                              }}
+                              className="px-1.5 py-0.5 rounded text-emerald-400 hover:text-slate-950 hover:bg-emerald-400 transition-colors cursor-pointer"
+                              title="Zerar o tempo de espera (Fluxo Contínuo / Fila Zero)"
+                            >
+                              Zero
+                            </button>
+                          </div>
+
                           <button
                             type="button"
                             onClick={() => toggleStep5W2H(step)}
-                            className={`px-2.5 py-1 rounded-lg border text-[11px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                            className={`px-2 py-1 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 shadow-xs ${
                               isStep5W2HOpen
-                                ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md ring-2 ring-amber-400/30'
+                                ? 'bg-amber-500 text-slate-950 border-amber-400 ring-2 ring-amber-400/30'
                                 : stepActions.length > 0
-                                ? 'bg-amber-950/70 hover:bg-amber-900 text-amber-200 border-amber-500/50 shadow-xs'
+                                ? 'bg-amber-950/70 hover:bg-amber-900 text-amber-200 border-amber-500/50'
                                 : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
                             }`}
                             title={isStep5W2HOpen ? 'Recolher quadro 5W2H desta etapa' : 'Abrir/Preencher quadro 5W2H desta etapa'}
@@ -1046,7 +1044,7 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                               </span>
                             )}
                             {stepActions.some(a => !a.who || !a.who.trim()) && (
-                              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" title="Existe ação sem líder definido nesta etapa!" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" title="Existe ação sem líder definido nesta etapa!" />
                             )}
                             {isStep5W2HOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                           </button>
@@ -1058,19 +1056,19 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                     {/* Linha Expansível (Sub-row): Quadro 5W2H da Etapa (7 Informações) */}
                     {isStep5W2HOpen && (
                       <tr className="bg-slate-950/95 border-b-2 border-amber-500/40">
-                        <td colSpan={9} className="p-4 sm:p-5 bg-gradient-to-b from-slate-950 to-slate-900/95 border-l-4 border-l-amber-500 shadow-inner">
-                          <div className="space-y-4 font-sans">
+                        <td colSpan={8} className="p-3 sm:p-4 bg-gradient-to-b from-slate-950 to-slate-900/95 border-l-4 border-l-amber-500 shadow-inner">
+                          <div className="space-y-3 font-sans">
                             {/* Cabeçalho Enxuto do Quadro 5W2H */}
-                            <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-800">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-300 font-mono font-bold text-xs flex items-center justify-center border border-amber-500/30">
+                            <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-800 flex-wrap">
+                              <div className="flex items-center gap-2">
+                                <span className="w-5 h-5 rounded-md bg-amber-500/20 text-amber-300 font-mono font-bold text-xs flex items-center justify-center border border-amber-500/30">
                                   #{step.order}
                                 </span>
-                                <h4 className="text-sm font-bold text-white font-heading">
+                                <h4 className="text-xs sm:text-sm font-bold text-white font-heading">
                                   Quadro 5W2H • Etapa #{step.order}: {step.title}
                                 </h4>
-                                <span className="text-xs text-slate-400 font-mono hidden sm:inline">
-                                  — Preencha as 7 informações da ação Kaizen para viabilizar o Estado Futuro
+                                <span className="text-[11px] text-slate-400 font-mono hidden md:inline">
+                                  — Preencha as 7 informações para viabilizar o Estado Futuro
                                 </span>
                               </div>
 
@@ -1078,19 +1076,19 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleAddNewAction(step)}
-                                  className="px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                                  className="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs"
                                   title="Adicionar outra ação 5W2H nesta etapa"
                                 >
-                                  <Plus className="w-3.5 h-3.5" />
+                                  <Plus className="w-3 h-3" />
                                   <span>+ Outro 5W2H</span>
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => toggleStep5W2H(step)}
-                                  className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-mono transition-colors border border-slate-700 cursor-pointer flex items-center gap-1"
-                                  title="Recolher quadro 5W2H desta etapa"
+                                  className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-mono transition-colors border border-slate-700 cursor-pointer flex items-center gap-1"
+                                  title="Recolher quadro 5W2H"
                                 >
-                                  <ChevronUp className="w-3.5 h-3.5" />
+                                  <ChevronUp className="w-3 h-3" />
                                   <span>Recolher</span>
                                 </button>
                               </div>
@@ -1098,47 +1096,47 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
 
                             {/* Cards das Ações 5W2H (As 7 Informações) */}
                             {stepActions.length === 0 ? (
-                              <div className="p-6 rounded-xl border border-dashed border-slate-800 bg-slate-950/40 text-center space-y-2">
+                              <div className="p-4 rounded-xl border border-dashed border-slate-800 bg-slate-950/40 text-center space-y-2">
                                 <p className="text-xs text-slate-400 font-sans">
                                   Nenhum plano 5W2H cadastrado para a <strong>Etapa #{step.order} ({step.title})</strong>.
                                 </p>
                                 <button
                                   type="button"
                                   onClick={() => handleAddNewAction(step)}
-                                  className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold font-mono transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                                  className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold font-mono transition-all inline-flex items-center gap-1 cursor-pointer shadow-sm active:scale-95"
                                 >
                                   <Plus className="w-3.5 h-3.5" />
                                   <span>Criar Plano 5W2H (7 Informações)</span>
                                 </button>
                               </div>
                             ) : (
-                              <div className="space-y-4">
+                              <div className="space-y-3">
                                 {stepActions.map((action, actionIdx) => {
                                   const diffDays = calculateDateDiffDays(action.startDate, action.endDate);
 
                                   return (
                                     <div
                                       key={action.id}
-                                      className="p-4 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-amber-500/40 transition-all space-y-3.5 shadow-md"
+                                      className="p-3 sm:p-3.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-amber-500/40 transition-all space-y-2.5 shadow-md"
                                     >
                                       {/* Barra Superior do Card: Identificação + Status + Excluir */}
-                                      <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-slate-800 flex-wrap">
-                                        <div className="flex items-center gap-2">
-                                          <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono font-bold text-xs border border-amber-500/30">
-                                            {stepActions.length > 1 ? `Ação 5W2H #${actionIdx + 1}` : 'Ação 5W2H'}
+                                      <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-800/80 flex-wrap">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono font-bold text-[10px] border border-amber-500/30 shrink-0">
+                                            {stepActions.length > 1 ? `5W2H #${actionIdx + 1}` : '5W2H'}
                                           </span>
-                                          <span className="text-xs font-bold text-white font-sans truncate max-w-md">
+                                          <span className="text-xs font-semibold text-slate-200 truncate">
                                             {action.what || 'Nova Ação Kaizen'}
                                           </span>
                                         </div>
 
-                                        <div className="flex items-center gap-2">
-                                          <div className="flex items-center gap-1.5">
+                                        <div className="flex items-center gap-2 shrink-0">
+                                          <div className="flex items-center gap-1">
                                             <span className="text-[10px] font-mono text-slate-400 uppercase font-bold">Status:</span>
                                             <select
                                               value={action.status || 'planejado'}
                                               onChange={e => handleUpdateAction(action.id, { status: e.target.value as any })}
-                                              className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
+                                              className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-0.5 text-xs font-mono font-bold text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
                                             >
                                               <option value="planejado">Planejado</option>
                                               <option value="em_andamento">Em Andamento</option>
@@ -1152,70 +1150,55 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                                             className="p-1 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
                                             title="Excluir este plano 5W2H"
                                           >
-                                            <Trash2 className="w-4 h-4" />
+                                            <Trash2 className="w-3.5 h-3.5" />
                                           </button>
                                         </div>
                                       </div>
 
-                                      {/* AS 7 INFORMAÇÕES DO 5W2H */}
-                                      <div className="space-y-3 font-sans">
+                                      {/* AS 7 INFORMAÇÕES DO 5W2H - GRID ORGANIZADO SEM ROLAGEM */}
+                                      <div className="space-y-2.5 font-sans">
                                         {/* Linha 1: 1. O QUE (What) & 2. POR QUE (Why) */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                                           {/* 1. O QUE (What) */}
                                           <div className="space-y-1">
-                                            <label className="text-[11px] font-mono uppercase font-bold text-amber-300 flex items-center gap-1.5">
-                                              <CheckSquare className="w-3.5 h-3.5 text-amber-400" />
-                                              <span>1. O QUE (What) — Ação Kaizen</span>
+                                            <label className="text-[10px] font-mono uppercase font-bold text-amber-300 flex items-center gap-1">
+                                              <CheckSquare className="w-3 h-3 text-amber-400" />
+                                              <span>1. O QUE (What — Ação Kaizen)</span>
                                             </label>
                                             <textarea
                                               rows={2}
                                               value={action.what}
                                               onChange={e => handleUpdateAction(action.id, { what: e.target.value })}
-                                              placeholder="Descreva a ação pactuada no workshop (agrupando as oportunidades mapeadas)..."
-                                              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-colors resize-none leading-relaxed"
+                                              placeholder="Descreva a ação pactuada (pode agrupar as ideias Kaizen da etapa)..."
+                                              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-colors resize-none leading-relaxed"
                                             />
                                           </div>
 
                                           {/* 2. POR QUE (Why) */}
                                           <div className="space-y-1">
-                                            <label className="text-[11px] font-mono uppercase font-bold text-emerald-300 flex items-center gap-1.5">
-                                              <Target className="w-3.5 h-3.5 text-emerald-400" />
-                                              <span>2. POR QUE (Why) — Justificativa / Meta</span>
+                                            <label className="text-[10px] font-mono uppercase font-bold text-emerald-300 flex items-center gap-1">
+                                              <Target className="w-3 h-3 text-emerald-400" />
+                                              <span>2. POR QUE (Why — Meta de WT / Justificativa)</span>
                                             </label>
                                             <textarea
                                               rows={2}
                                               value={action.why}
                                               onChange={e => handleUpdateAction(action.id, { why: e.target.value })}
-                                              placeholder="Meta de redução do tempo de fila (WT) ou ganho de fluidez..."
-                                              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition-colors resize-none leading-relaxed"
+                                              placeholder="Meta pactuada de redução do tempo de fila (WT) ou ganho de fluidez..."
+                                              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition-colors resize-none leading-relaxed"
                                             />
                                           </div>
                                         </div>
 
-                                        {/* Linha 2: 3. ONDE (Where), 4. QUEM (Who) & 5. QUANDO (When) */}
-                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                                          {/* 3. ONDE (Where) */}
-                                          <div className="md:col-span-3 space-y-1">
-                                            <label className="text-[11px] font-mono uppercase font-bold text-slate-300 flex items-center gap-1.5">
-                                              <MapPin className="w-3.5 h-3.5 text-cyan-400" />
-                                              <span>3. ONDE (Where)</span>
-                                            </label>
-                                            <input
-                                              type="text"
-                                              value={action.where}
-                                              onChange={e => handleUpdateAction(action.id, { where: e.target.value })}
-                                              placeholder={`Etapa #${step.order} • ${step.title}`}
-                                              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400"
-                                            />
-                                          </div>
-
+                                        {/* Linha 2: 4. QUEM (Who) & 5. QUANDO (When) */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                                           {/* 4. QUEM (Who - Nome da Pessoa Física) */}
-                                          <div className="md:col-span-4 space-y-1">
-                                            <label className="text-[11px] font-mono uppercase font-bold text-amber-300 flex items-center justify-between">
-                                              <span className="flex items-center gap-1.5">
-                                                <User className="w-3.5 h-3.5 text-amber-400" />
+                                          <div className="space-y-1">
+                                            <div className="flex items-center justify-between">
+                                              <label className="text-[10px] font-mono uppercase font-bold text-amber-300 flex items-center gap-1">
+                                                <User className="w-3 h-3 text-amber-400" />
                                                 <span>4. QUEM (Who — Nome do Líder)</span>
-                                              </span>
+                                              </label>
                                               {!action.who.trim() ? (
                                                 <span className="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[9px] font-mono font-bold">
                                                   ⚠️ Definir Nome
@@ -1225,13 +1208,13 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                                                   <Check className="w-2.5 h-2.5" /> Ok
                                                 </span>
                                               )}
-                                            </label>
+                                            </div>
                                             <input
                                               type="text"
                                               value={action.who}
                                               onChange={e => handleUpdateAction(action.id, { who: e.target.value })}
-                                              placeholder="Nome da pessoa física responsável..."
-                                              className={`w-full rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                                              placeholder="Nome da pessoa física responsável (ex: Mariana Prestes)..."
+                                              className={`w-full rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all ${
                                                 !action.who.trim()
                                                   ? 'bg-rose-950/20 border-2 border-amber-500/80 text-amber-200 placeholder-amber-400/60 focus:border-amber-400'
                                                   : 'bg-slate-950 border border-slate-700 text-amber-200 focus:border-amber-400'
@@ -1239,42 +1222,42 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                                             />
                                           </div>
 
-                                          {/* 5. QUANDO (When - Data Inicial e Final) */}
-                                          <div className="md:col-span-5 space-y-1">
-                                            <label className="text-[11px] font-mono uppercase font-bold text-cyan-300 flex items-center justify-between">
-                                              <span className="flex items-center gap-1.5">
-                                                <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+                                          {/* 5. QUANDO (When - Data Inicial e Final + Atalhos) */}
+                                          <div className="space-y-1">
+                                            <div className="flex items-center justify-between">
+                                              <label className="text-[10px] font-mono uppercase font-bold text-cyan-300 flex items-center gap-1">
+                                                <Calendar className="w-3 h-3 text-cyan-400" />
                                                 <span>5. QUANDO (When — Prazos)</span>
-                                              </span>
+                                              </label>
                                               {diffDays !== null && (
                                                 <span className="text-[9px] font-mono text-cyan-400 font-bold">
-                                                  {diffDays} dias de duração
+                                                  {diffDays} dias
                                                 </span>
                                               )}
-                                            </label>
+                                            </div>
 
                                             <div className="grid grid-cols-2 gap-2">
-                                              <div>
-                                                <span className="text-[9px] font-mono text-slate-400 block mb-0.5">Início:</span>
+                                              <div className="flex items-center gap-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1">
+                                                <span className="text-[9px] font-mono text-slate-400 shrink-0">Início:</span>
                                                 <input
                                                   type="date"
                                                   value={action.startDate || ''}
                                                   onChange={e => handleUpdateAction(action.id, { startDate: e.target.value })}
-                                                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-400 cursor-pointer"
+                                                  className="w-full bg-transparent text-xs font-mono text-slate-200 focus:outline-none cursor-pointer"
                                                 />
                                               </div>
-                                              <div>
-                                                <span className="text-[9px] font-mono text-slate-400 block mb-0.5">Término:</span>
+                                              <div className="flex items-center gap-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1">
+                                                <span className="text-[9px] font-mono text-slate-400 shrink-0">Fim:</span>
                                                 <input
                                                   type="date"
                                                   value={action.endDate || ''}
                                                   onChange={e => handleUpdateAction(action.id, { endDate: e.target.value })}
-                                                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-400 cursor-pointer"
+                                                  className="w-full bg-transparent text-xs font-mono text-slate-200 focus:outline-none cursor-pointer"
                                                 />
                                               </div>
                                             </div>
 
-                                            {/* Atalhos Rápidos de Prazo */}
+                                            {/* Atalhos Rápidos Compactos */}
                                             <div className="flex items-center gap-1 pt-0.5">
                                               <span className="text-[9px] font-mono text-slate-500">Atalhos:</span>
                                               {[15, 30, 45, 60, 90].map(d => (
@@ -1288,7 +1271,7 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                                                       endDate: addDaysISO(base, d)
                                                     });
                                                   }}
-                                                  className="px-1.5 py-0.5 rounded bg-slate-950 hover:bg-cyan-950 hover:text-cyan-300 text-[9px] font-mono text-slate-400 border border-slate-800 cursor-pointer transition-colors"
+                                                  className="px-1.5 py-0.2 rounded bg-slate-950 hover:bg-cyan-950 hover:text-cyan-300 text-[9px] font-mono text-slate-400 border border-slate-800 cursor-pointer transition-colors"
                                                 >
                                                   +{d}d
                                                 </button>
@@ -1297,35 +1280,50 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                                           </div>
                                         </div>
 
-                                        {/* Linha 3: 6. COMO (How) & 7. QUANTO CUSTA (How Much) */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-0.5">
+                                        {/* Linha 3: 3. ONDE (Where), 6. COMO (How) & 7. QUANTO CUSTA (How Much) */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                                          {/* 3. ONDE (Where) */}
+                                          <div className="space-y-1">
+                                            <label className="text-[10px] font-mono uppercase font-bold text-slate-300 flex items-center gap-1">
+                                              <MapPin className="w-3 h-3 text-cyan-400" />
+                                              <span>3. ONDE (Where)</span>
+                                            </label>
+                                            <input
+                                              type="text"
+                                              value={action.where}
+                                              onChange={e => handleUpdateAction(action.id, { where: e.target.value })}
+                                              placeholder={`Etapa #${step.order} • ${step.title}`}
+                                              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                                            />
+                                          </div>
+
                                           {/* 6. COMO (How) */}
                                           <div className="space-y-1">
-                                            <label className="text-[11px] font-mono uppercase font-bold text-slate-300 flex items-center gap-1.5">
-                                              <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" />
-                                              <span>6. COMO (How) — Método / Ferramenta</span>
+                                            <label className="text-[10px] font-mono uppercase font-bold text-slate-300 flex items-center gap-1">
+                                              <SlidersHorizontal className="w-3 h-3 text-cyan-400" />
+                                              <span>6. COMO (How)</span>
                                             </label>
                                             <input
                                               type="text"
                                               value={action.how || ''}
                                               onChange={e => handleUpdateAction(action.id, { how: e.target.value })}
-                                              placeholder="Método, ferramenta ou procedimento (ex: POP padronizado, checklist, automação)..."
-                                              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                                              placeholder="Método (ex: POP, checklist, automação)..."
+                                              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400"
                                             />
                                           </div>
 
                                           {/* 7. QUANTO CUSTA (How Much) */}
                                           <div className="space-y-1">
-                                            <label className="text-[11px] font-mono uppercase font-bold text-slate-300 flex items-center gap-1.5">
-                                              <Percent className="w-3.5 h-3.5 text-emerald-400" />
-                                              <span>7. QUANTO CUSTA (How Much) — Custo / Recursos</span>
+                                            <label className="text-[10px] font-mono uppercase font-bold text-slate-300 flex items-center gap-1">
+                                              <Percent className="w-3 h-3 text-emerald-400" />
+                                              <span>7. QUANTO CUSTA (How Much)</span>
                                             </label>
                                             <input
                                               type="text"
                                               value={action.howMuch || ''}
                                               onChange={e => handleUpdateAction(action.id, { howMuch: e.target.value })}
-                                              placeholder="Custo estimado ou esforço interno (ex: R$ 0 esforço interno)..."
-                                              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-400"
+                                              placeholder="Custo (ex: R$ 0 esforço interno)..."
+                                              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-400"
                                             />
                                           </div>
                                         </div>
@@ -1334,14 +1332,14 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                                   );
                                 })}
 
-                                {/* Botão para adicionar outra ação na etapa caso queiram */}
-                                <div className="flex justify-end pt-1">
+                                {/* Botão para adicionar outra ação */}
+                                <div className="flex justify-end pt-0.5">
                                   <button
                                     type="button"
                                     onClick={() => handleAddNewAction(step)}
-                                    className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-cyan-300 border border-slate-700 hover:border-cyan-500/40 text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                                    className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-cyan-300 border border-slate-700 hover:border-cyan-500/40 text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                                   >
-                                    <Plus className="w-3.5 h-3.5" />
+                                    <Plus className="w-3 h-3" />
                                     <span>+ Adicionar Outro Plano 5W2H Nesta Etapa</span>
                                   </button>
                                 </div>
@@ -1360,22 +1358,22 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
             {/* Rodapé Consolidado */}
             <tfoot className="border-t-2 border-slate-700 bg-slate-950 font-mono text-xs font-bold text-white">
               <tr>
-                <td colSpan={4} className="p-3 text-right uppercase tracking-wider text-slate-400">
+                <td colSpan={3} className="px-3 py-2.5 text-right uppercase tracking-wider text-slate-400">
                   Totais Auditados do Fluxo:
                 </td>
-                <td className="p-3 text-right text-cyan-400">
+                <td className="px-2 py-2.5 text-right text-cyan-400">
                   {formatHours(futureMetrics.currentLeadTimeHours - futureMetrics.currentWaitHours)}
                 </td>
-                <td className="p-3 text-right text-amber-400">
+                <td className="px-2.5 py-2.5 text-right text-amber-400">
                   {formatHours(futureMetrics.currentWaitHours)}
                 </td>
-                <td className="p-3 bg-emerald-950/30 border-x border-emerald-500/30 text-emerald-300 font-black">
+                <td className="px-2.5 py-2.5 bg-emerald-950/30 border-x border-emerald-500/30 text-emerald-300 font-black">
                   {formatHours(futureMetrics.futureWaitHours)}
                 </td>
-                <td className="p-3 text-center text-emerald-400 font-black">
+                <td className="px-2 py-2.5 text-center text-emerald-400 font-black">
                   -{futureMetrics.waitReductionPercent}%
                 </td>
-                <td className="p-3 text-right text-[11px] text-slate-300 font-normal">
+                <td className="px-2.5 py-2.5 text-right text-[11px] text-slate-300 font-normal">
                   <div className="flex flex-col items-end gap-0.5 font-mono">
                     <span>Lead Time: {formatHours(futureMetrics.currentLeadTimeHours)} ➔ <strong className="text-emerald-300">{formatHours(futureMetrics.futureLeadTimeHours)}</strong></span>
                     <span className="text-[10px] text-amber-300 font-bold">
