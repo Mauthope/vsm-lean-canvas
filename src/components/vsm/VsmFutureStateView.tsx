@@ -150,22 +150,7 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
   type StepFilterMode = 'all' | 'with_kaizen' | 'with_5w2h' | 'missing_leader';
   const [stepFilter, setStepFilter] = React.useState<StepFilterMode>('all');
   const [stepSearch, setStepSearch] = React.useState('');
-  const [expandedActions, setExpandedActions] = React.useState<Record<string, boolean>>({});
   const [expandedSteps5W2H, setExpandedSteps5W2H] = React.useState<Record<string, boolean>>({});
-
-  const toggleExpand = (id: string) => {
-    setExpandedActions(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const toggleStep5W2H = (stepId: string) => {
-    setExpandedSteps5W2H(prev => ({ ...prev, [stepId]: !prev[stepId] }));
-  };
-
-  const handleExpandAllSteps5W2H = () => {
-    const next: Record<string, boolean> = {};
-    steps.forEach(s => { next[s.id] = true; });
-    setExpandedSteps5W2H(next);
-  };
 
   const handleCollapseAllSteps5W2H = () => {
     setExpandedSteps5W2H({});
@@ -318,23 +303,35 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
     }
   };
 
-  // Adicionar Nova Ação
+  // Adicionar Nova Ação 5W2H para uma Etapa
   const handleAddNewAction = (step?: VSMStep) => {
     const today = getTodayISO();
+    let whyText = 'Melhoria contínua do fluxo de valor';
+    if (step) {
+      const hasCustom = typeof step.futureWaitTime === 'number';
+      const currentWtH = convertTimeToHours(step.waitTime, step.waitTimeUnit, true);
+      const futureWtH = hasCustom
+        ? convertTimeToHours(step.futureWaitTime!, step.futureWaitTimeUnit || step.waitTimeUnit, true)
+        : currentWtH;
+      const diffH = currentWtH - futureWtH;
+      const diffPct = currentWtH > 0 ? Math.round((diffH / currentWtH) * 100) : 0;
+      whyText = diffH > 0
+        ? `Viabilizar a redução do WT de ${step.waitTime} ${step.waitTimeUnit} para ${step.futureWaitTime} ${step.futureWaitTimeUnit || step.waitTimeUnit} (-${diffPct}%)`
+        : `Eliminar desperdícios e reduzir tempo de fila na etapa #${step.order}`;
+    }
+
     const newAction: KaizenAction5W2H = {
       id: `action-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       stepId: step?.id,
       stepOrder: step?.order,
       what: '',
-      why: step
-        ? `Viabilizar a redução de espera na etapa #${step.order} (${step.title})`
-        : 'Melhoria contínua do fluxo de valor',
+      why: whyText,
       where: step ? `Etapa #${step.order} • ${step.title}` : 'Fluxo Geral',
       who: '', // Nome da pessoa física responsável
       startDate: today,
       endDate: addDaysISO(today, 30),
-      how: 'Revisão de procedimento operacional',
-      howMuch: 'R$ 0 (esforço interno)',
+      how: '',
+      howMuch: 'Esforço interno (R$ 0)',
       status: 'planejado',
       createdAt: new Date().toISOString()
     };
@@ -344,48 +341,64 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
     }
   };
 
-  // Converter oportunidade Kaizen em Ação 5W2H com 1 clique
-  const handleConvertKaizenTo5W2H = (step: VSMStep, kaizenText: string) => {
-    const today = getTodayISO();
-    const hasCustom = typeof step.futureWaitTime === 'number';
-    const currentWtH = convertTimeToHours(step.waitTime, step.waitTimeUnit, true);
-    const futureWtH = hasCustom
-      ? convertTimeToHours(step.futureWaitTime!, step.futureWaitTimeUnit || step.waitTimeUnit, true)
-      : currentWtH;
-    const diffH = currentWtH - futureWtH;
-    const diffPct = currentWtH > 0 ? Math.round((diffH / currentWtH) * 100) : 0;
+  // Alternar visualização da gaveta 5W2H de uma etapa (com inicialização automática caso esteja vazia)
+  const toggleStep5W2H = (step: VSMStep) => {
+    const isOpening = !expandedSteps5W2H[step.id];
+    setExpandedSteps5W2H(prev => ({ ...prev, [step.id]: !prev[step.id] }));
 
-    let days = 30;
-    if (diffPct >= 75 || /automa|sistema|integra|portal|api/i.test(kaizenText)) {
-      days = 60;
+    if (isOpening) {
+      const existing = (kaizenRoadmap || []).filter(a => a.stepId === step.id);
+      if (existing.length === 0) {
+        handleAddNewAction(step);
+      }
     }
-    if (/desenvolv|erp|software|contrat|reestrutur/i.test(kaizenText)) {
-      days = 90;
+  };
+
+  // Expandir todas as etapas com inicialização de ações vazias
+  const handleExpandAllSteps5W2H = () => {
+    const next: Record<string, boolean> = {};
+    const newRoadmap = [...(kaizenRoadmap || [])];
+    let changed = false;
+
+    steps.forEach(s => {
+      next[s.id] = true;
+      const hasAction = newRoadmap.some(a => a.stepId === s.id);
+      if (!hasAction) {
+        const today = getTodayISO();
+        const hasCustom = typeof s.futureWaitTime === 'number';
+        const currentWtH = convertTimeToHours(s.waitTime, s.waitTimeUnit, true);
+        const futureWtH = hasCustom
+          ? convertTimeToHours(s.futureWaitTime!, s.futureWaitTimeUnit || s.waitTimeUnit, true)
+          : currentWtH;
+        const diffH = currentWtH - futureWtH;
+        const diffPct = currentWtH > 0 ? Math.round((diffH / currentWtH) * 100) : 0;
+        const whyText = diffH > 0
+          ? `Viabilizar a redução do WT de ${s.waitTime} ${s.waitTimeUnit} para ${s.futureWaitTime} ${s.futureWaitTimeUnit || s.waitTimeUnit} (-${diffPct}%)`
+          : `Eliminar desperdícios e acelerar a etapa #${s.order}`;
+
+        newRoadmap.push({
+          id: `action-${Date.now()}-${s.id}-${Math.random().toString(36).substring(2, 6)}`,
+          stepId: s.id,
+          stepOrder: s.order,
+          what: '',
+          why: whyText,
+          where: `Etapa #${s.order} • ${s.title}`,
+          who: '',
+          startDate: today,
+          endDate: addDaysISO(today, 30),
+          how: '',
+          howMuch: 'Esforço interno (R$ 0)',
+          status: 'planejado',
+          createdAt: new Date().toISOString()
+        });
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      onUpdateKaizenRoadmap?.(newRoadmap);
     }
-
-    const whyText = diffH > 0
-      ? `Viabilizar a meta pactuada de redução do WT de ${step.waitTime} ${step.waitTimeUnit} para ${step.futureWaitTime} ${step.futureWaitTimeUnit || step.waitTimeUnit} (-${diffPct}%) na etapa #${step.order}.`
-      : `Eliminar desperdícios operacionais e acelerar a etapa #${step.order} (${step.title}).`;
-
-    const newAction: KaizenAction5W2H = {
-      id: `action-${Date.now()}-${step.id}-${Math.random().toString(36).substring(2, 6)}`,
-      stepId: step.id,
-      stepOrder: step.order,
-      what: kaizenText,
-      why: whyText,
-      where: `Etapa #${step.order} • ${step.title}`,
-      who: '', // Em aberto para o workshop definir a pessoa física
-      startDate: today,
-      endDate: addDaysISO(today, days),
-      how: 'Padronização de procedimento e alinhamento da equipe',
-      howMuch: 'R$ 0 (esforço interno)',
-      status: 'planejado',
-      createdAt: new Date().toISOString()
-    };
-
-    onUpdateKaizenRoadmap?.([...(kaizenRoadmap || []), newAction]);
-    // Abre a gaveta 5W2H da etapa para edição imediata
-    setExpandedSteps5W2H(prev => ({ ...prev, [step.id]: true }));
+    setExpandedSteps5W2H(next);
   };
 
   const handleUpdateAction = (actionId: string, updates: Partial<KaizenAction5W2H>) => {
@@ -776,7 +789,7 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                 <th className="p-3 text-center w-12">#</th>
                 <th className="p-3 min-w-[180px]">Título da Etapa</th>
                 <th className="p-3 whitespace-nowrap">Responsável</th>
-                <th className="p-3 min-w-[280px] text-amber-400 font-bold">Oportunidades Kaizen (Justificativa)</th>
+                <th className="p-3 min-w-[260px] text-amber-400 font-bold">Oportunidades Kaizen (Ideias Mapeadas)</th>
                 <th className="p-3 text-right">PT (Esforço)</th>
                 <th className="p-3 text-right min-w-[110px]">WT Atual (Fila)</th>
                 <th className="p-3 text-left min-w-[200px] bg-emerald-950/20 border-x border-emerald-500/20">
@@ -871,50 +884,22 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                         </span>
                       </td>
 
-                      {/* 4. Oportunidades Kaizen Associadas com Conversão 1-Clique */}
-                      <td className="p-3 font-sans min-w-[280px]">
+                      {/* 4. Oportunidades Kaizen Mapeadas (Referência da Etapa) */}
+                      <td className="p-3 font-sans min-w-[260px]">
                         {kaizens.length > 0 ? (
-                          <div className="space-y-1.5">
-                            {kaizens.map((k, kIdx) => {
-                              const alreadyLinked = stepActions.some(
-                                a => a.what.trim().toLowerCase() === k.trim().toLowerCase()
-                              );
-                              return (
-                                <div
-                                  key={kIdx}
-                                  className="p-2 rounded-lg bg-amber-950/25 border border-amber-500/25 text-amber-200 text-xs leading-relaxed flex flex-col gap-1.5 shadow-xs"
-                                >
-                                  <div className="flex items-start gap-1.5">
-                                    <span className="shrink-0 text-amber-400 text-xs mt-0.5">💡</span>
-                                    <span className="break-words font-normal flex-1">{k}</span>
-                                  </div>
-                                  <div className="flex items-center justify-end">
-                                    {alreadyLinked ? (
-                                      <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[9px] font-mono font-bold flex items-center gap-1">
-                                        <Check className="w-2.5 h-2.5 text-emerald-400" />
-                                        <span>5W2H Ativo</span>
-                                      </span>
-                                    ) : (
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleConvertKaizenTo5W2H(step, k);
-                                        }}
-                                        className="px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-mono font-bold transition-all flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
-                                        title="Transformar esta oportunidade Kaizen em ação 5W2H com metas pactuadas"
-                                      >
-                                        <Sparkles className="w-2.5 h-2.5" />
-                                        <span>+ Criar 5W2H</span>
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
+                          <div className="space-y-1">
+                            {kaizens.map((k, kIdx) => (
+                              <div
+                                key={kIdx}
+                                className="p-1.5 rounded-lg bg-amber-950/20 border border-amber-500/20 text-amber-200/90 text-xs leading-relaxed flex items-start gap-1.5"
+                              >
+                                <span className="shrink-0 text-amber-400 text-xs mt-0.5">💡</span>
+                                <span className="break-words font-medium">{k}</span>
+                              </div>
+                            ))}
                           </div>
                         ) : (
-                          <span className="text-slate-500 italic text-xs">Sem Kaizens registrados</span>
+                          <span className="text-slate-500 italic text-xs">Sem Kaizens mapeados</span>
                         )}
                       </td>
 
@@ -1041,7 +1026,7 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                           </button>
                           <button
                             type="button"
-                            onClick={() => toggleStep5W2H(step.id)}
+                            onClick={() => toggleStep5W2H(step)}
                             className={`px-2.5 py-1 rounded-lg border text-[11px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                               isStep5W2HOpen
                                 ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md ring-2 ring-amber-400/30'
@@ -1049,7 +1034,7 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                                 ? 'bg-amber-950/70 hover:bg-amber-900 text-amber-200 border-amber-500/50 shadow-xs'
                                 : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
                             }`}
-                            title={isStep5W2HOpen ? 'Recolher gaveta 5W2H desta etapa' : 'Abrir/Preencher ações 5W2H desta etapa'}
+                            title={isStep5W2HOpen ? 'Recolher quadro 5W2H desta etapa' : 'Abrir/Preencher quadro 5W2H desta etapa'}
                           >
                             <ClipboardList className="w-3.5 h-3.5" />
                             <span>5W2H</span>
@@ -1070,27 +1055,22 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
 
                     </tr>
 
-                    {/* Linha Expansível (Sub-row): Plano 5W2H Integrado da Etapa */}
+                    {/* Linha Expansível (Sub-row): Quadro 5W2H da Etapa (7 Informações) */}
                     {isStep5W2HOpen && (
                       <tr className="bg-slate-950/95 border-b-2 border-amber-500/40">
                         <td colSpan={9} className="p-4 sm:p-5 bg-gradient-to-b from-slate-950 to-slate-900/95 border-l-4 border-l-amber-500 shadow-inner">
                           <div className="space-y-4 font-sans">
-                            {/* Banner Superior da Etapa no 5W2H */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                            {/* Cabeçalho Enxuto do Quadro 5W2H */}
+                            <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-800">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-300 font-mono font-bold text-xs flex items-center justify-center border border-amber-500/30">
                                   #{step.order}
                                 </span>
-                                <span className="text-sm font-bold text-white font-heading">
-                                  Plano 5W2H • Etapa #{step.order}: {step.title}
-                                </span>
-                                <span className="text-xs text-slate-400 font-mono">
-                                  • WT Atual: <strong className="text-amber-300">{step.waitTime} {step.waitTimeUnit}</strong> ➔ WT Futuro Meta: <strong className="text-emerald-300">{effectiveFutureWaitTime} {effectiveFutureUnit}</strong>
-                                  {diffPercent > 0 && (
-                                    <span className="ml-1.5 px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
-                                      -{diffPercent}%
-                                    </span>
-                                  )}
+                                <h4 className="text-sm font-bold text-white font-heading">
+                                  Quadro 5W2H • Etapa #{step.order}: {step.title}
+                                </h4>
+                                <span className="text-xs text-slate-400 font-mono hidden sm:inline">
+                                  — Preencha as 7 informações da ação Kaizen para viabilizar o Estado Futuro
                                 </span>
                               </div>
 
@@ -1098,338 +1078,276 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleAddNewAction(step)}
-                                  className="px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold font-mono transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+                                  className="px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                                  title="Adicionar outra ação 5W2H nesta etapa"
                                 >
                                   <Plus className="w-3.5 h-3.5" />
-                                  <span>+ Nova Ação 5W2H</span>
+                                  <span>+ Outro 5W2H</span>
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => toggleStep5W2H(step.id)}
-                                  className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-mono transition-colors border border-slate-700 cursor-pointer"
-                                  title="Recolher gaveta 5W2H"
+                                  onClick={() => toggleStep5W2H(step)}
+                                  className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-mono transition-colors border border-slate-700 cursor-pointer flex items-center gap-1"
+                                  title="Recolher quadro 5W2H desta etapa"
                                 >
-                                  <ChevronUp className="w-3.5 h-3.5 inline mr-1" />
-                                  Recolher
+                                  <ChevronUp className="w-3.5 h-3.5" />
+                                  <span>Recolher</span>
                                 </button>
                               </div>
                             </div>
 
-                            {/* Bloco de Oportunidades Kaizen Mapeadas (Se existirem) */}
-                            {kaizens.length > 0 && (
-                              <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/30 space-y-2">
-                                <div className="text-[11px] font-mono font-bold text-amber-300 uppercase tracking-wide flex items-center gap-1.5">
-                                  <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
-                                  <span>Ideias Kaizen Identificadas Nesta Etapa (Clique para transformar em Ação 5W2H):</span>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                  {kaizens.map((k, kIdx) => {
-                                    const isAlreadyAdded = stepActions.some(
-                                      a => a.what.trim().toLowerCase() === k.trim().toLowerCase()
-                                    );
-                                    return (
-                                      <div
-                                        key={kIdx}
-                                        className="p-2.5 rounded-lg bg-slate-950/80 border border-amber-500/20 flex items-center justify-between gap-3 text-xs"
-                                      >
-                                        <div className="flex items-start gap-2 flex-1 min-w-0">
-                                          <span className="shrink-0 text-amber-400 text-xs mt-0.5">💡</span>
-                                          <span className="text-slate-200 break-words font-sans">{k}</span>
-                                        </div>
-                                        <div className="shrink-0">
-                                          {isAlreadyAdded ? (
-                                            <span className="px-2 py-1 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-bold flex items-center gap-1">
-                                              <Check className="w-3 h-3 text-emerald-400" />
-                                              <span>5W2H Ativo</span>
-                                            </span>
-                                          ) : (
-                                            <button
-                                              type="button"
-                                              onClick={() => handleConvertKaizenTo5W2H(step, k)}
-                                              className="px-2.5 py-1 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-bold font-mono transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs"
-                                              title="Transformar esta ideia em ação 5W2H com metas de redução de WT calculadas"
-                                            >
-                                              <Sparkles className="w-3 h-3 text-slate-950" />
-                                              <span>+ Criar 5W2H</span>
-                                            </button>
-                                          )}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Lista de Ações 5W2H da Etapa */}
+                            {/* Cards das Ações 5W2H (As 7 Informações) */}
                             {stepActions.length === 0 ? (
                               <div className="p-6 rounded-xl border border-dashed border-slate-800 bg-slate-950/40 text-center space-y-2">
                                 <p className="text-xs text-slate-400 font-sans">
-                                  Nenhuma ação 5W2H cadastrada ainda para a <strong>Etapa #{step.order} ({step.title})</strong>.
+                                  Nenhum plano 5W2H cadastrado para a <strong>Etapa #{step.order} ({step.title})</strong>.
                                 </p>
-                                <div className="flex items-center justify-center gap-2 pt-1">
-                                  {kaizens.length > 0 ? (
-                                    <span className="text-[11px] text-amber-400/80 font-mono">
-                                      ☝️ Clique em <strong>&quot;+ Criar 5W2H&quot;</strong> em uma das ideias acima para iniciar
-                                    </span>
-                                  ) : (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleAddNewAction(step)}
-                                      className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer"
-                                    >
-                                      <Plus className="w-3.5 h-3.5" />
-                                      <span>Criar Primeira Ação 5W2H Desta Etapa</span>
-                                    </button>
-                                  )}
-                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddNewAction(step)}
+                                  className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold font-mono transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                  <span>Criar Plano 5W2H (7 Informações)</span>
+                                </button>
                               </div>
                             ) : (
-                              <div className="space-y-3">
-                                <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-                                  <span className="font-bold text-amber-300">
-                                    {stepActions.length} ação(ões) 5W2H vinculada(s) a esta etapa:
-                                  </span>
-                                  <span className="text-slate-500 text-[10px]">
-                                    As alterações aqui refletem instantaneamente no Roadmap Consolidado e no Relatório Executivo
-                                  </span>
-                                </div>
-
+                              <div className="space-y-4">
                                 {stepActions.map((action, actionIdx) => {
                                   const diffDays = calculateDateDiffDays(action.startDate, action.endDate);
-                                  const isCardExpanded = Boolean(expandedActions[action.id]);
 
                                   return (
                                     <div
                                       key={action.id}
-                                      className="p-3.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-amber-500/50 transition-all space-y-3 shadow-md"
+                                      className="p-4 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-amber-500/40 transition-all space-y-3.5 shadow-md"
                                     >
-                                      {/* Linha superior: Ação #X, Status, Excluir */}
-                                      <div className="flex items-center justify-between gap-3 pb-2 border-b border-slate-800 flex-wrap">
+                                      {/* Barra Superior do Card: Identificação + Status + Excluir */}
+                                      <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-slate-800 flex-wrap">
                                         <div className="flex items-center gap-2">
-                                          <span className="w-5 h-5 rounded bg-amber-500/20 text-amber-300 font-mono font-bold text-[10px] flex items-center justify-center border border-amber-500/30">
-                                            #{actionIdx + 1}
+                                          <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono font-bold text-xs border border-amber-500/30">
+                                            {stepActions.length > 1 ? `Ação 5W2H #${actionIdx + 1}` : 'Ação 5W2H'}
                                           </span>
-                                          <span className="text-xs font-bold text-white font-sans truncate max-w-sm">
+                                          <span className="text-xs font-bold text-white font-sans truncate max-w-md">
                                             {action.what || 'Nova Ação Kaizen'}
                                           </span>
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                          <select
-                                            value={action.status || 'planejado'}
-                                            onChange={e => handleUpdateAction(action.id, { status: e.target.value as any })}
-                                            className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-[11px] font-mono font-bold text-slate-300 focus:outline-none focus:border-amber-500 cursor-pointer"
-                                          >
-                                            <option value="planejado">Planejado</option>
-                                            <option value="em_andamento">Em Andamento</option>
-                                            <option value="concluido">Concluído</option>
-                                          </select>
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="text-[10px] font-mono text-slate-400 uppercase font-bold">Status:</span>
+                                            <select
+                                              value={action.status || 'planejado'}
+                                              onChange={e => handleUpdateAction(action.id, { status: e.target.value as any })}
+                                              className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
+                                            >
+                                              <option value="planejado">Planejado</option>
+                                              <option value="em_andamento">Em Andamento</option>
+                                              <option value="concluido">Concluído</option>
+                                            </select>
+                                          </div>
 
                                           <button
                                             type="button"
                                             onClick={() => handleDeleteAction(action.id)}
                                             className="p-1 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
-                                            title="Excluir ação"
+                                            title="Excluir este plano 5W2H"
                                           >
-                                            <Trash2 className="w-3.5 h-3.5" />
+                                            <Trash2 className="w-4 h-4" />
                                           </button>
                                         </div>
                                       </div>
 
-                                      {/* Campos principais do 5W2H */}
-                                      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 font-sans">
-                                        {/* What (O que fazer) */}
-                                        <div className="md:col-span-6 space-y-1">
-                                          <label className="text-[10px] font-mono uppercase font-bold text-amber-400 flex items-center gap-1">
-                                            <CheckSquare className="w-3 h-3" />
-                                            <span>O Que Fazer (What - Ação Kaizen)</span>
-                                          </label>
-                                          <textarea
-                                            rows={2}
-                                            value={action.what}
-                                            onChange={e => handleUpdateAction(action.id, { what: e.target.value })}
-                                            placeholder="Descreva a ação de melhoria Kaizen pactuada..."
-                                            className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500 transition-colors resize-none leading-relaxed"
-                                          />
-                                        </div>
-
-                                        {/* Why (Por Que / Meta de WT) */}
-                                        <div className="md:col-span-6 space-y-1">
-                                          <label className="text-[10px] font-mono uppercase font-bold text-emerald-400 flex items-center gap-1">
-                                            <Target className="w-3 h-3" />
-                                            <span>Por Que / Meta (Why - Redução de WT)</span>
-                                          </label>
-                                          <textarea
-                                            rows={2}
-                                            value={action.why}
-                                            onChange={e => handleUpdateAction(action.id, { why: e.target.value })}
-                                            placeholder="Meta de redução de espera ou ganho de fluidez..."
-                                            className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors resize-none leading-relaxed"
-                                          />
-                                        </div>
-                                      </div>
-
-                                      {/* Responsável (Who) e Prazos (When) */}
-                                      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-1 font-sans">
-                                        {/* Onde (Where) */}
-                                        <div className="md:col-span-3 space-y-1">
-                                          <label className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1">
-                                            <MapPin className="w-3 h-3 text-cyan-400" />
-                                            <span>Onde (Where)</span>
-                                          </label>
-                                          <input
-                                            type="text"
-                                            value={action.where}
-                                            onChange={e => handleUpdateAction(action.id, { where: e.target.value })}
-                                            placeholder="Etapa ou local..."
-                                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500"
-                                          />
-                                        </div>
-
-                                        {/* Quem (Who) - Pessoa Física */}
-                                        <div className="md:col-span-4 space-y-1">
-                                          <label className="text-[10px] font-mono uppercase font-bold text-amber-300 flex items-center justify-between">
-                                            <span className="flex items-center gap-1">
-                                              <User className="w-3 h-3 text-amber-400" />
-                                              <span>Quem (Nome do Líder)</span>
-                                            </span>
-                                            {!action.who.trim() ? (
-                                              <span className="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[9px] font-mono font-bold flex items-center gap-0.5">
-                                                ⚠️ Definir Líder
-                                              </span>
-                                            ) : (
-                                              <span className="text-[9px] font-mono text-emerald-400 font-bold flex items-center gap-0.5">
-                                                <Check className="w-2.5 h-2.5" /> Líder Definido
-                                              </span>
-                                            )}
-                                          </label>
-                                          <input
-                                            type="text"
-                                            value={action.who}
-                                            onChange={e => handleUpdateAction(action.id, { who: e.target.value })}
-                                            placeholder="Ex: Mariana Prestes, Carlos Silva..."
-                                            className={`w-full rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all ${
-                                              !action.who.trim()
-                                                ? 'bg-rose-950/20 border-2 border-amber-500/80 text-amber-200 placeholder-amber-400/60 focus:border-amber-400 focus:ring-1 focus:ring-amber-400'
-                                                : 'bg-slate-950 border border-slate-800 text-amber-200 focus:border-amber-400'
-                                            }`}
-                                          />
-                                        </div>
-
-                                        {/* Quando (When) - Data Inicial e Final */}
-                                        <div className="md:col-span-5 space-y-1">
-                                          <label className="text-[10px] font-mono uppercase font-bold text-cyan-300 flex items-center justify-between">
-                                            <span className="flex items-center gap-1">
-                                              <Calendar className="w-3 h-3 text-cyan-400" />
-                                              <span>Quando (Data Inicial e Final)</span>
-                                            </span>
-                                            {diffDays !== null && (
-                                              <span className="text-[9px] font-mono text-cyan-400 font-bold">
-                                                {diffDays} dias
-                                              </span>
-                                            )}
-                                          </label>
-
-                                          <div className="grid grid-cols-2 gap-2">
-                                            <div>
-                                              <div className="text-[9px] font-mono text-slate-400 mb-0.5">Início:</div>
-                                              <input
-                                                type="date"
-                                                value={action.startDate || ''}
-                                                onChange={e => handleUpdateAction(action.id, { startDate: e.target.value })}
-                                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-400 cursor-pointer"
-                                              />
-                                            </div>
-                                            <div>
-                                              <div className="text-[9px] font-mono text-slate-400 mb-0.5">Término:</div>
-                                              <input
-                                                type="date"
-                                                value={action.endDate || ''}
-                                                onChange={e => handleUpdateAction(action.id, { endDate: e.target.value })}
-                                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-400 cursor-pointer"
-                                              />
-                                            </div>
+                                      {/* AS 7 INFORMAÇÕES DO 5W2H */}
+                                      <div className="space-y-3 font-sans">
+                                        {/* Linha 1: 1. O QUE (What) & 2. POR QUE (Why) */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                          {/* 1. O QUE (What) */}
+                                          <div className="space-y-1">
+                                            <label className="text-[11px] font-mono uppercase font-bold text-amber-300 flex items-center gap-1.5">
+                                              <CheckSquare className="w-3.5 h-3.5 text-amber-400" />
+                                              <span>1. O QUE (What) — Ação Kaizen</span>
+                                            </label>
+                                            <textarea
+                                              rows={2}
+                                              value={action.what}
+                                              onChange={e => handleUpdateAction(action.id, { what: e.target.value })}
+                                              placeholder="Descreva a ação pactuada no workshop (agrupando as oportunidades mapeadas)..."
+                                              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-colors resize-none leading-relaxed"
+                                            />
                                           </div>
 
-                                          {/* Atalhos Rápidos de Prazo */}
-                                          <div className="flex items-center gap-1 pt-0.5">
-                                            <span className="text-[9px] font-mono text-slate-500">Atalhos:</span>
-                                            {[15, 30, 45, 60, 90].map(d => (
-                                              <button
-                                                key={d}
-                                                type="button"
-                                                onClick={() => {
-                                                  const base = action.startDate || getTodayISO();
-                                                  handleUpdateAction(action.id, {
-                                                    startDate: base,
-                                                    endDate: addDaysISO(base, d)
-                                                  });
-                                                }}
-                                                className="px-1.5 py-0.5 rounded bg-slate-950 hover:bg-cyan-950 hover:text-cyan-300 text-[9px] font-mono text-slate-400 border border-slate-800 cursor-pointer transition-colors"
-                                              >
-                                                +{d}d
-                                              </button>
-                                            ))}
+                                          {/* 2. POR QUE (Why) */}
+                                          <div className="space-y-1">
+                                            <label className="text-[11px] font-mono uppercase font-bold text-emerald-300 flex items-center gap-1.5">
+                                              <Target className="w-3.5 h-3.5 text-emerald-400" />
+                                              <span>2. POR QUE (Why) — Justificativa / Meta</span>
+                                            </label>
+                                            <textarea
+                                              rows={2}
+                                              value={action.why}
+                                              onChange={e => handleUpdateAction(action.id, { why: e.target.value })}
+                                              placeholder="Meta de redução do tempo de fila (WT) ou ganho de fluidez..."
+                                              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition-colors resize-none leading-relaxed"
+                                            />
                                           </div>
                                         </div>
-                                      </div>
 
-                                      {/* Expansor Opcional: Como (How) e Quanto Custa (How Much) */}
-                                      <div className="pt-1 font-sans">
-                                        <button
-                                          type="button"
-                                          onClick={() => toggleExpand(action.id)}
-                                          className="text-[11px] text-slate-400 hover:text-slate-200 font-mono flex items-center gap-1 transition-colors cursor-pointer"
-                                        >
-                                          {isCardExpanded ? (
-                                            <>
-                                              <ChevronUp className="w-3 h-3 text-slate-400" />
-                                              <span>Ocultar detalhes de execução (How / How Much)</span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <ChevronDown className="w-3 h-3 text-slate-400" />
-                                              <span>Editar detalhes de execução (How / How Much)</span>
-                                            </>
-                                          )}
-                                        </button>
+                                        {/* Linha 2: 3. ONDE (Where), 4. QUEM (Who) & 5. QUANDO (When) */}
+                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                                          {/* 3. ONDE (Where) */}
+                                          <div className="md:col-span-3 space-y-1">
+                                            <label className="text-[11px] font-mono uppercase font-bold text-slate-300 flex items-center gap-1.5">
+                                              <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+                                              <span>3. ONDE (Where)</span>
+                                            </label>
+                                            <input
+                                              type="text"
+                                              value={action.where}
+                                              onChange={e => handleUpdateAction(action.id, { where: e.target.value })}
+                                              placeholder={`Etapa #${step.order} • ${step.title}`}
+                                              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                                            />
+                                          </div>
 
-                                        {isCardExpanded && (
-                                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 mt-2 border-t border-slate-800/60 animate-in slide-in-from-top-1 duration-200">
-                                            <div>
-                                              <label className="text-[10px] font-mono uppercase font-bold text-slate-400 block mb-1">
-                                                Como Fazer (How):
-                                              </label>
-                                              <input
-                                                type="text"
-                                                value={action.how || ''}
-                                                onChange={e => handleUpdateAction(action.id, { how: e.target.value })}
-                                                placeholder="Método, procedimento ou tecnologia..."
-                                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500"
-                                              />
+                                          {/* 4. QUEM (Who - Nome da Pessoa Física) */}
+                                          <div className="md:col-span-4 space-y-1">
+                                            <label className="text-[11px] font-mono uppercase font-bold text-amber-300 flex items-center justify-between">
+                                              <span className="flex items-center gap-1.5">
+                                                <User className="w-3.5 h-3.5 text-amber-400" />
+                                                <span>4. QUEM (Who — Nome do Líder)</span>
+                                              </span>
+                                              {!action.who.trim() ? (
+                                                <span className="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[9px] font-mono font-bold">
+                                                  ⚠️ Definir Nome
+                                                </span>
+                                              ) : (
+                                                <span className="text-[9px] font-mono text-emerald-400 font-bold flex items-center gap-0.5">
+                                                  <Check className="w-2.5 h-2.5" /> Ok
+                                                </span>
+                                              )}
+                                            </label>
+                                            <input
+                                              type="text"
+                                              value={action.who}
+                                              onChange={e => handleUpdateAction(action.id, { who: e.target.value })}
+                                              placeholder="Nome da pessoa física responsável..."
+                                              className={`w-full rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                                                !action.who.trim()
+                                                  ? 'bg-rose-950/20 border-2 border-amber-500/80 text-amber-200 placeholder-amber-400/60 focus:border-amber-400'
+                                                  : 'bg-slate-950 border border-slate-700 text-amber-200 focus:border-amber-400'
+                                              }`}
+                                            />
+                                          </div>
+
+                                          {/* 5. QUANDO (When - Data Inicial e Final) */}
+                                          <div className="md:col-span-5 space-y-1">
+                                            <label className="text-[11px] font-mono uppercase font-bold text-cyan-300 flex items-center justify-between">
+                                              <span className="flex items-center gap-1.5">
+                                                <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+                                                <span>5. QUANDO (When — Prazos)</span>
+                                              </span>
+                                              {diffDays !== null && (
+                                                <span className="text-[9px] font-mono text-cyan-400 font-bold">
+                                                  {diffDays} dias de duração
+                                                </span>
+                                              )}
+                                            </label>
+
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <div>
+                                                <span className="text-[9px] font-mono text-slate-400 block mb-0.5">Início:</span>
+                                                <input
+                                                  type="date"
+                                                  value={action.startDate || ''}
+                                                  onChange={e => handleUpdateAction(action.id, { startDate: e.target.value })}
+                                                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-400 cursor-pointer"
+                                                />
+                                              </div>
+                                              <div>
+                                                <span className="text-[9px] font-mono text-slate-400 block mb-0.5">Término:</span>
+                                                <input
+                                                  type="date"
+                                                  value={action.endDate || ''}
+                                                  onChange={e => handleUpdateAction(action.id, { endDate: e.target.value })}
+                                                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-400 cursor-pointer"
+                                                />
+                                              </div>
                                             </div>
 
-                                            <div>
-                                              <label className="text-[10px] font-mono uppercase font-bold text-slate-400 block mb-1">
-                                                Quanto Custa (How Much):
-                                              </label>
-                                              <input
-                                                type="text"
-                                                value={action.howMuch || ''}
-                                                onChange={e => handleUpdateAction(action.id, { howMuch: e.target.value })}
-                                                placeholder="Ex: R$ 0 (esforço interno) ou valor estimado..."
-                                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500"
-                                              />
+                                            {/* Atalhos Rápidos de Prazo */}
+                                            <div className="flex items-center gap-1 pt-0.5">
+                                              <span className="text-[9px] font-mono text-slate-500">Atalhos:</span>
+                                              {[15, 30, 45, 60, 90].map(d => (
+                                                <button
+                                                  key={d}
+                                                  type="button"
+                                                  onClick={() => {
+                                                    const base = action.startDate || getTodayISO();
+                                                    handleUpdateAction(action.id, {
+                                                      startDate: base,
+                                                      endDate: addDaysISO(base, d)
+                                                    });
+                                                  }}
+                                                  className="px-1.5 py-0.5 rounded bg-slate-950 hover:bg-cyan-950 hover:text-cyan-300 text-[9px] font-mono text-slate-400 border border-slate-800 cursor-pointer transition-colors"
+                                                >
+                                                  +{d}d
+                                                </button>
+                                              ))}
                                             </div>
                                           </div>
-                                        )}
+                                        </div>
+
+                                        {/* Linha 3: 6. COMO (How) & 7. QUANTO CUSTA (How Much) */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-0.5">
+                                          {/* 6. COMO (How) */}
+                                          <div className="space-y-1">
+                                            <label className="text-[11px] font-mono uppercase font-bold text-slate-300 flex items-center gap-1.5">
+                                              <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" />
+                                              <span>6. COMO (How) — Método / Ferramenta</span>
+                                            </label>
+                                            <input
+                                              type="text"
+                                              value={action.how || ''}
+                                              onChange={e => handleUpdateAction(action.id, { how: e.target.value })}
+                                              placeholder="Método, ferramenta ou procedimento (ex: POP padronizado, checklist, automação)..."
+                                              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                                            />
+                                          </div>
+
+                                          {/* 7. QUANTO CUSTA (How Much) */}
+                                          <div className="space-y-1">
+                                            <label className="text-[11px] font-mono uppercase font-bold text-slate-300 flex items-center gap-1.5">
+                                              <Percent className="w-3.5 h-3.5 text-emerald-400" />
+                                              <span>7. QUANTO CUSTA (How Much) — Custo / Recursos</span>
+                                            </label>
+                                            <input
+                                              type="text"
+                                              value={action.howMuch || ''}
+                                              onChange={e => handleUpdateAction(action.id, { howMuch: e.target.value })}
+                                              placeholder="Custo estimado ou esforço interno (ex: R$ 0 esforço interno)..."
+                                              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-400"
+                                            />
+                                          </div>
+                                        </div>
                                       </div>
                                     </div>
                                   );
                                 })}
+
+                                {/* Botão para adicionar outra ação na etapa caso queiram */}
+                                <div className="flex justify-end pt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAddNewAction(step)}
+                                    className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-cyan-300 border border-slate-700 hover:border-cyan-500/40 text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    <span>+ Adicionar Outro Plano 5W2H Nesta Etapa</span>
+                                  </button>
+                                </div>
                               </div>
                             )}
+
                           </div>
                         </td>
                       </tr>
