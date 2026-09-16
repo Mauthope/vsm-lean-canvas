@@ -38,6 +38,7 @@ interface VsmAiDiagnosticModalProps {
   metrics: BottleneckAnalysis;
   onOpenFullPrintReport?: () => void;
   onSaveAiReport?: (report: AiDiagnosticReport & { provider?: string; isLiveAi?: boolean }) => void;
+  onOpenGlossary?: (topic?: string) => void;
 }
 
 export const VsmAiDiagnosticModal: React.FC<VsmAiDiagnosticModalProps> = ({
@@ -48,7 +49,8 @@ export const VsmAiDiagnosticModal: React.FC<VsmAiDiagnosticModalProps> = ({
   steps,
   metrics,
   onOpenFullPrintReport,
-  onSaveAiReport
+  onSaveAiReport,
+  onOpenGlossary
 }) => {
   const [activeTab, setActiveTab] = useState<'summary' | 'bottlenecks' | 'futureState' | 'roadmap'>('summary');
   const [focusArea, setFocusArea] = useState<'all' | 'speed' | 'quality' | 'automation'>('all');
@@ -388,7 +390,18 @@ ${r.actionRoadmap.automationProjects.map(a => `- **${a.action}** [Impacto: ${a.i
                   <span className="text-[10px] uppercase font-bold text-slate-400 font-mono">
                     Score de Maturidade Lean
                   </span>
-                  <Award className="w-4 h-4 text-purple-400" />
+                  {onOpenGlossary ? (
+                    <button
+                      type="button"
+                      onClick={() => onOpenGlossary('maturity_score')}
+                      className="text-purple-400 hover:text-purple-300 p-0.5 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="Ver memorial dos 3 pilares no Guia Lean"
+                    >
+                      <Award className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <Award className="w-4 h-4 text-purple-400" />
+                  )}
                 </div>
                 <div className="my-2 flex items-baseline gap-1.5">
                   <span className="text-3xl font-black font-mono text-white">
@@ -396,9 +409,20 @@ ${r.actionRoadmap.automationProjects.map(a => `- **${a.action}** [Impacto: ${a.i
                   </span>
                   <span className="text-xs text-slate-500 font-mono">/ 100</span>
                 </div>
-                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border truncate ${activeReport.maturityColor}`}>
-                  {activeReport.maturityLabel}
-                </span>
+                <div className="flex items-center justify-between gap-1">
+                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border truncate ${activeReport.maturityColor}`}>
+                    {activeReport.maturityLabel}
+                  </span>
+                  {onOpenGlossary && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenGlossary('maturity_score')}
+                      className="text-[9px] font-mono text-cyan-400 hover:text-cyan-300 hover:underline cursor-pointer shrink-0"
+                    >
+                      Ver cálculo
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Lead Time Potential */}

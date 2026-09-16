@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   BookOpen,
@@ -14,7 +14,8 @@ import {
   HelpCircle,
   Lightbulb,
   Search,
-  ArrowRight
+  ArrowRight,
+  Award
 } from 'lucide-react';
 import {
   FLOW_EFFICIENCY_BENCHMARKS_HR,
@@ -178,6 +179,20 @@ export const LEAN_CONCEPTS: Concept[] = [
     example: 'Ao pactuar uma redução de 72h para 12h no alinhamento de perfil, a equipe formaliza: What = "Criar formulário inteligente padronizado de briefing de vaga", Why = "Eliminar 60h de vaivém de mensagens na etapa de alinhamento", Where = "Etapa 2 - Alinhamento com Gestor", Who = "Mariana Prestes (pessoa física designada)", Quando = "De 20/09/2026 a 20/10/2026 (30 dias)". O "Como" e "Quanto Custa" ficam flexíveis para detalhamento posterior.',
     whyItMatters: 'Evita a principal falha dos workshops corporativos: sair da sala com um diagnóstico impecável, mas com donos anônimos ("o RH vai ver", "a TI precisa fazer") e prazos abstratos. Ao exigir o nome da pessoa física responsável e datas precisas de início e término em uma tabela consolidada, cria-se responsabilidade real (Accountability) e clareza no Gemba.',
     benchmark: 'Pactuar líderes com nome e sobrenome e datas claras de início e entrega para 100% das ações.'
+  },
+  {
+    id: 'maturity_score',
+    term: 'Nota de Maturidade Lean do Processo (Score 0 a 100)',
+    acronym: 'Maturidade Lean (Score 0-100 & 3 Pilares)',
+    tag: 'Diagnóstico & Governança',
+    color: 'text-cyan-400',
+    bg: 'bg-cyan-500/10',
+    border: 'border-cyan-500/30',
+    summary: 'Indicador executivo composto (de 0 a 100 pontos, calibrado entre 15 e 98) que quantifica a saúde e maturidade Lean de um fluxo de trabalho corporativo ou de RH. Avalia simultaneamente a Eficiência de Fluxo (tempo), a Qualidade Rolada (%C&A / primeira passagem sem retrabalho) e o engajamento contínuo em melhorias (iniciativas Kaizen pactuadas).',
+    formula: 'Nota de Maturidade = Score Eficiência (até 40 pts) + Score Qualidade (até 40 pts) + Score Kaizen (até 20 pts)',
+    example: 'Um fluxo de RH/Escritório com 6,2% de Eficiência de Fluxo obtém (6,2 / 15) × 40 = 16,5 pts de tempo; com 72% de Qualidade Rolada (%C&A acumulado) obtém (72 / 85) × 40 = 33,9 pts de qualidade; e com 3 ações Kaizen pactuadas para 6 etapas obtém 20 pts de cultura Kaizen. Nota Final = 16,5 + 33,9 + 20 = 70 pontos ("Maturidade Intermediária").',
+    whyItMatters: 'Oferece à alta liderança e aos facilitadores um indicador objetivo, matemático e auditável para comparar a evolução do fluxo antes e depois do workshop Lean, eliminando debates subjetivos sobre se o processo está rápido ou burocrático.',
+    benchmark: '≥ 75 pts: Classe Mundial | 50 a 74 pts: Intermediária | 35 a 49 pts: Típico Corporativo | < 35 pts: Inicial'
   }
 ];
 
@@ -190,6 +205,12 @@ export const VsmGlossaryModal: React.FC<VsmGlossaryModalProps> = ({
   const [selectedConceptId, setSelectedConceptId] = useState<string>(
     initialTopic || LEAN_CONCEPTS[0].id
   );
+
+  useEffect(() => {
+    if (initialTopic) {
+      setSelectedConceptId(initialTopic);
+    }
+  }, [initialTopic, isOpen]);
 
   if (!isOpen) return null;
 
@@ -413,6 +434,134 @@ export const VsmGlossaryModal: React.FC<VsmGlossaryModalProps> = ({
                         </div>
                       ))}
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Specialized Interactive Memorial for Lean Maturity Score */}
+              {currentConcept.id === 'maturity_score' && (
+                <div className="space-y-4 pt-3 border-t border-slate-800">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-cyan-400 font-mono">
+                    <Award className="w-4 h-4 text-cyan-400" />
+                    <span>Memorial dos 3 Pilares da Nota (Composição dos 100 Pontos):</span>
+                  </div>
+
+                  {/* 3 Pillars Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {/* Pilar 1 */}
+                    <div className="p-3 rounded-2xl bg-slate-900/80 border border-cyan-500/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                          Pilar 1 • Até 40 pts
+                        </span>
+                        <Zap className="w-3.5 h-3.5 text-cyan-400" />
+                      </div>
+                      <h5 className="text-xs font-bold text-white">
+                        Eficiência de Fluxo (FE)
+                      </h5>
+                      <div className="text-[10px] font-mono font-bold text-cyan-300 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
+                        min(40, (FE ÷ 15%) × 40)
+                      </div>
+                      <p className="text-[11px] text-slate-300 leading-snug">
+                        Mede quanto tempo o item avança em esforço real (PT) vs. o tempo morto em filas (WT). Atinge a nota máxima (40 pts) com <strong className="text-cyan-300">15% ou mais</strong> de eficiência.
+                      </p>
+                    </div>
+
+                    {/* Pilar 2 */}
+                    <div className="p-3 rounded-2xl bg-slate-900/80 border border-purple-500/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/30">
+                          Pilar 2 • Até 40 pts
+                        </span>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" />
+                      </div>
+                      <h5 className="text-xs font-bold text-white">
+                        Qualidade Rolada (%C&A)
+                      </h5>
+                      <div className="text-[10px] font-mono font-bold text-purple-300 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
+                        min(40, (RFPY ÷ 85%) × 40)
+                      </div>
+                      <p className="text-[11px] text-slate-300 leading-snug">
+                        Multiplicação da acurácia de todas as etapas. Avalia entregas de primeira sem vaivém de dúvidas ou correção de dados. Atinge 40 pts a partir de <strong className="text-purple-300">85%</strong> de rendimento acumulado.
+                      </p>
+                    </div>
+
+                    {/* Pilar 3 */}
+                    <div className="p-3 rounded-2xl bg-slate-900/80 border border-amber-500/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                          Pilar 3 • Até 20 pts
+                        </span>
+                        <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+                      </div>
+                      <h5 className="text-xs font-bold text-white">
+                        Engajamento Kaizen
+                      </h5>
+                      <div className="text-[10px] font-mono font-bold text-amber-300 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
+                        min(20, (Kaizens ÷ (Etapas × 0.40)) × 20)
+                      </div>
+                      <p className="text-[11px] text-slate-300 leading-snug">
+                        Mede a maturidade do time em propor melhorias concretas. Atinge 20 pts quando ao menos <strong className="text-amber-300">40% das etapas</strong> possuem planos de melhoria estruturados.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Classification Tiers */}
+                  <div className="space-y-2 pt-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono block">
+                      Classificação Executiva das Faixas de Maturidade:
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
+                      <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <strong className="text-emerald-400">75 a 100 • Classe Mundial / Lean Otimizado</strong>
+                          <span className="text-[10px] text-emerald-300 font-bold">Nível A</span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 font-sans">
+                          Fluxo contínuo ágil e digital, paralelismo efetivo, tempo de fila residual e retrabalho quase nulo.
+                        </p>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <strong className="text-cyan-400">50 a 74 • Maturidade Intermediária</strong>
+                          <span className="text-[10px] text-cyan-300 font-bold">Nível B</span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 font-sans">
+                          Processo estruturado com bons SLAs, mas ainda com passagens de bastão manuais e esperas parciais.
+                        </p>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <strong className="text-amber-400">35 a 49 • Típico Corporativo</strong>
+                          <span className="text-[10px] text-amber-300 font-bold">Nível C</span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 font-sans">
+                          Padrão mais comum no mercado: 90%+ do Lead Time parado em caixas de entrada de e-mail e aprovações hierárquicas.
+                        </p>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <strong className="text-rose-400">15 a 34 • Processo Inicial & Fragmentado</strong>
+                          <span className="text-[10px] text-rose-300 font-bold">Nível D</span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 font-sans">
+                          Gargalos severos de espera, alto retrabalho e ausência de padronização, exigindo intervenção Kaizen imediata.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Motor Heurístico vs AI */}
+                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                    <strong className="text-slate-200 block font-mono text-xs">
+                      ⚙️ Motor Especialista Lean vs. Diagnóstico com Inteligência Artificial:
+                    </strong>
+                    <p className="leading-relaxed">
+                      O <strong>Motor Local</strong> calcula a pontuação de forma 100% matemática, auditável e instantânea a cada alteração no canvas. Quando acionado o módulo de <strong>IA (OpenAI/Gemini)</strong>, a IA analisa os nomes dos cargos, as causas-raiz e os gargalos para fornecer o parecer consultivo qualitativo e o roadmap de 30-60-90 dias.
+                    </p>
                   </div>
                 </div>
               )}

@@ -397,6 +397,12 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
         md += `- **${ref.author} (${ref.year}) — *${ref.work}* (${ref.publisherOrAward}):** ${ref.benchmarkStatement}\n`;
       });
       md += `\n`;
+      md += `### Memorial de Cálculo da Nota de Maturidade Lean (Score 0 a 100):\n`;
+      md += `A Nota de Maturidade Lean (${diagnosticReport.maturityScore}/100 • ${diagnosticReport.maturityLabel}) é composta por 3 pilares auditáveis:\n`;
+      md += `1. **Eficiência de Fluxo (FE) — até 40 pts:** min(40, (FE ÷ 15%) × 40). Avalia tempo ativo de agregação de valor vs. filas de espera (WT).\n`;
+      md += `2. **Qualidade Rolada (%C&A / RFPY) — até 40 pts:** min(40, (RFPY ÷ 85%) × 40). Avalia entregas certas de primeira sem retrabalho.\n`;
+      md += `3. **Engajamento Kaizen — até 20 pts:** min(20, (Kaizens ÷ (Etapas × 0.40)) × 20). Avalia a densidade de planos de melhoria acordados pelo time.\n`;
+      md += `- **Faixas:** ≥75 Classe Mundial | 50-74 Intermediária | 35-49 Típico Corporativo | <35 Inicial\n\n`;
       md += `### O Efeito Cascata do Retrabalho (%C&A):\n`;
       md += `O %C&A (% Completo e Acurado) mede quantas vezes a informação chega correta na primeira vez. Em uma cadeia de etapas, pequenas falhas multiplicam o retrabalho e destroem a capacidade produtiva.\n\n`;
       md += `### Atividades em Paralelo & Caminho Crítico:\n`;
@@ -866,6 +872,9 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                   <span className="text-xs font-bold block mt-1 text-slate-800 dark:text-slate-200">
                     {diagnosticReport.maturityLabel}
                   </span>
+                  <span className="text-[9px] font-mono text-cyan-700 dark:text-cyan-400 block mt-0.5 font-semibold">
+                    3 Pilares: FE + %C&A + Kaizen (ver Seção 3)
+                  </span>
                 </div>
 
               </div>
@@ -1202,6 +1211,54 @@ export const VsmSummaryReportModal: React.FC<VsmSummaryReportModalProps> = ({
                           </div>
                         ))}
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Topic 2.6: Lean Maturity Score Calculation Memorial */}
+                  <div className="space-y-2 p-3.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-cyan-200 dark:border-cyan-500/20">
+                    <h3 className="text-xs font-bold uppercase font-mono text-cyan-800 dark:text-cyan-300 flex items-center gap-2">
+                      <Award className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                      <span>Como Funciona a Nota de Maturidade Lean do Processo (Score 0 a 100)</span>
+                    </h3>
+                    <p className="leading-relaxed text-slate-700 dark:text-slate-300">
+                      A <strong>Nota de Maturidade Lean</strong> é um índice executivo auditável que avalia a saúde global do fluxo. Ela pondera matematicamente <strong>3 pilares essenciais</strong> com pesos calibrados para a realidade de escritórios e RH (total de 100 pontos, calibrado entre 15 e 98):
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
+                      <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1">
+                        <strong className="text-cyan-700 dark:text-cyan-400 block font-mono">1. Eficiência de Fluxo (Até 40 pts)</strong>
+                        <div className="text-[10px] font-mono text-cyan-800 dark:text-cyan-300 font-bold">
+                          min(40, (FE ÷ 15%) × 40)
+                        </div>
+                        <p className="text-slate-600 dark:text-slate-400 text-[10.5px]">
+                          Mede a proporção entre trabalho de valor agregado (PT) e tempo morto de fila (WT). Atinge a nota máxima (40 pts) a partir de 15% de eficiência.
+                        </p>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1">
+                        <strong className="text-purple-700 dark:text-purple-400 block font-mono">2. Qualidade Rolada (Até 40 pts)</strong>
+                        <div className="text-[10px] font-mono text-purple-800 dark:text-purple-300 font-bold">
+                          min(40, (RFPY ÷ 85%) × 40)
+                        </div>
+                        <p className="text-slate-600 dark:text-slate-400 text-[10.5px]">
+                          Mede entregas perfeitas na 1ª vez sem retrabalho (%C&A acumulado). Atinge 40 pts a partir de 85% de rendimento acumulado de primeira passagem.
+                        </p>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1">
+                        <strong className="text-amber-700 dark:text-amber-400 block font-mono">3. Cultura Kaizen (Até 20 pts)</strong>
+                        <div className="text-[10px] font-mono text-amber-800 dark:text-amber-300 font-bold">
+                          min(20, (Kaizens ÷ (Etapas × 0.40)) × 20)
+                        </div>
+                        <p className="text-slate-600 dark:text-slate-400 text-[10.5px]">
+                          Avalia o engajamento do time em estruturar planos de melhoria. Atinge 20 pts quando ao menos 40% das etapas mapeadas contam com ações Kaizen.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t border-cyan-200 dark:border-cyan-500/20 flex flex-wrap items-center justify-between gap-2 font-mono text-[10.5px]">
+                      <span className="text-slate-700 dark:text-slate-300">
+                        <strong>Faixas Executivas:</strong> ≥75 Classe Mundial | 50-74 Intermediária | 35-49 Típico Corporativo | &lt;35 Inicial
+                      </span>
+                      <span className="text-cyan-700 dark:text-cyan-400 font-bold">
+                        Diagnóstico Atual: {diagnosticReport.maturityScore}/100 ({diagnosticReport.maturityLabel})
+                      </span>
                     </div>
                   </div>
 

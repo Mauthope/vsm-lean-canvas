@@ -923,6 +923,7 @@ export default function VsmHomePage() {
           setIsReportModalOpen(true);
         }}
         onSaveAiReport={(report) => setAiReport(report)}
+        onOpenGlossary={handleOpenGlossary}
       />
 
       <VsmNewWorkshopModal
