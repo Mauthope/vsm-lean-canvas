@@ -279,6 +279,72 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
       createdAt: new Date().toISOString()
     };
     onUpdateKaizenRoadmap?.([...(kaizenRoadmap || []), newAction]);
+    if (step) {
+      setExpandedSteps5W2H(prev => ({ ...prev, [step.id]: true }));
+    }
+  };
+
+  // Controle de abertura da gaveta 5W2H de cada etapa na Matriz Auditável
+  const [expandedSteps5W2H, setExpandedSteps5W2H] = React.useState<Record<string, boolean>>({});
+
+  const toggleStep5W2H = (stepId: string) => {
+    setExpandedSteps5W2H(prev => ({ ...prev, [stepId]: !prev[stepId] }));
+  };
+
+  const handleExpandAllSteps5W2H = () => {
+    const next: Record<string, boolean> = {};
+    steps.forEach(s => { next[s.id] = true; });
+    setExpandedSteps5W2H(next);
+  };
+
+  const handleCollapseAllSteps5W2H = () => {
+    setExpandedSteps5W2H({});
+  };
+
+  const allSteps5W2HExpanded = steps.length > 0 && steps.every(s => Boolean(expandedSteps5W2H[s.id]));
+
+  // Converter oportunidade Kaizen em Ação 5W2H com 1 clique
+  const handleConvertKaizenTo5W2H = (step: VSMStep, kaizenText: string) => {
+    const today = getTodayISO();
+    const hasCustom = typeof step.futureWaitTime === 'number';
+    const currentWtH = convertTimeToHours(step.waitTime, step.waitTimeUnit, true);
+    const futureWtH = hasCustom
+      ? convertTimeToHours(step.futureWaitTime!, step.futureWaitTimeUnit || step.waitTimeUnit, true)
+      : currentWtH;
+    const diffH = currentWtH - futureWtH;
+    const diffPct = currentWtH > 0 ? Math.round((diffH / currentWtH) * 100) : 0;
+
+    let days = 30;
+    if (diffPct >= 75 || /automa|sistema|integra|portal|api/i.test(kaizenText)) {
+      days = 60;
+    }
+    if (/desenvolv|erp|software|contrat|reestrutur/i.test(kaizenText)) {
+      days = 90;
+    }
+
+    const whyText = diffH > 0
+      ? `Viabilizar a meta pactuada de redução do WT de ${step.waitTime} ${step.waitTimeUnit} para ${step.futureWaitTime} ${step.futureWaitTimeUnit || step.waitTimeUnit} (-${diffPct}%) na etapa #${step.order}.`
+      : `Eliminar desperdícios operacionais e acelerar a etapa #${step.order} (${step.title}).`;
+
+    const newAction: KaizenAction5W2H = {
+      id: `action-${Date.now()}-${step.id}-${Math.random().toString(36).substring(2, 6)}`,
+      stepId: step.id,
+      stepOrder: step.order,
+      what: kaizenText,
+      why: whyText,
+      where: `Etapa #${step.order} • ${step.title}`,
+      who: '', // Em aberto para o workshop definir a pessoa física
+      startDate: today,
+      endDate: addDaysISO(today, days),
+      how: 'Padronização de procedimento e alinhamento da equipe',
+      howMuch: 'R$ 0 (esforço interno)',
+      status: 'planejado',
+      createdAt: new Date().toISOString()
+    };
+
+    onUpdateKaizenRoadmap?.([...(kaizenRoadmap || []), newAction]);
+    // Abre a gaveta 5W2H da etapa para edição imediata
+    setExpandedSteps5W2H(prev => ({ ...prev, [step.id]: true }));
   };
 
   const handleUpdateAction = (actionId: string, updates: Partial<KaizenAction5W2H>) => {
@@ -514,17 +580,35 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
 
       {/* 4. Tabela Interativa: Matriz Auditável do Fluxo de Valor - Estado Futuro */}
       <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800 mb-4">
           <div>
-            <h3 className="text-sm font-bold text-white font-heading flex items-center gap-2">
-              <span>Matriz Auditável do Fluxo de Valor • Estado Futuro</span>
+            <h3 className="text-sm font-bold text-white font-heading flex items-center gap-2 flex-wrap">
+              <span>Matriz Auditável do Fluxo de Valor • Estado Futuro & Planos 5W2H</span>
               <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-slate-300">
                 {steps.length} etapas
               </span>
+              {(kaizenRoadmap || []).length > 0 && (
+                <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-mono font-bold flex items-center gap-1">
+                  <CheckSquare className="w-3 h-3 text-amber-400" />
+                  <span>{(kaizenRoadmap || []).length} ação(ões) 5W2H</span>
+                </span>
+              )}
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Digite o <strong>WT Futuro Estimado</strong> diretamente na coluna verde. Veja a redução e o impacto recalculados na hora.
+              Digite o <strong>WT Futuro Estimado</strong> e preencha logo abaixo de cada etapa as ações <strong>5W2H</strong> que viabilizarão o resultado.
             </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={allSteps5W2HExpanded ? handleCollapseAllSteps5W2H : handleExpandAllSteps5W2H}
+              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-mono font-bold transition-all border border-slate-700 flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Expandir ou recolher os formulários 5W2H abaixo de todas as etapas"
+            >
+              {allSteps5W2HExpanded ? <ChevronUp className="w-3.5 h-3.5 text-amber-400" /> : <ChevronDown className="w-3.5 h-3.5 text-amber-400" />}
+              <span>{allSteps5W2HExpanded ? 'Recolher 5W2H de Todas' : 'Expandir 5W2H de Todas'}</span>
+            </button>
           </div>
         </div>
 
@@ -567,206 +651,610 @@ export const VsmFutureStateView: React.FC<VsmFutureStateViewProps> = ({
                 const diffHours = currentWtHours - futureWtHours;
                 const diffPercent = currentWtHours > 0 ? Math.round((diffHours / currentWtHours) * 100) : 0;
 
+                // Ações 5W2H vinculadas a esta etapa específica
+                const stepActions = (kaizenRoadmap || []).filter(a => a.stepId === step.id);
+                const isStep5W2HOpen = Boolean(expandedSteps5W2H[step.id]);
+
                 return (
-                  <tr
-                    key={step.id}
-                    className={`transition-colors hover:bg-slate-950/70 ${
-                      isBottleneck ? 'bg-rose-950/10' : ''
-                    } ${hasCustom ? 'bg-emerald-950/5' : ''}`}
-                  >
-                    {/* 1. Ordem */}
-                    <td className="p-3 text-center font-bold text-cyan-400">
-                      #{step.order}
-                    </td>
+                  <React.Fragment key={step.id}>
+                    <tr
+                      className={`transition-colors hover:bg-slate-950/70 ${
+                        isBottleneck ? 'bg-rose-950/10' : ''
+                      } ${hasCustom ? 'bg-emerald-950/5' : ''} ${
+                        isStep5W2HOpen ? 'bg-slate-950/90 border-t-2 border-amber-500/30' : ''
+                      }`}
+                    >
+                      {/* 1. Ordem */}
+                      <td className="p-3 text-center font-bold text-cyan-400">
+                        #{step.order}
+                      </td>
 
-                    {/* 2. Título da Etapa */}
-                    <td className="p-3 font-sans font-medium text-white max-w-xs">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span
-                          className="hover:text-cyan-300 cursor-pointer transition-colors"
-                          onClick={() => onSelectStep?.(step.id)}
-                        >
-                          {step.title}
+                      {/* 2. Título da Etapa */}
+                      <td className="p-3 font-sans font-medium text-white max-w-xs">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className="hover:text-cyan-300 cursor-pointer transition-colors"
+                            onClick={() => onSelectStep?.(step.id)}
+                          >
+                            {step.title}
+                          </span>
+                          {step.isParallel && (
+                            <span className="px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[9px] font-mono flex items-center gap-0.5">
+                              <GitBranch className="w-2.5 h-2.5" />
+                              Paralelo
+                            </span>
+                          )}
+                          {isBottleneck && (
+                            <span className="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[9px] font-mono font-bold flex items-center gap-0.5">
+                              <Flame className="w-2.5 h-2.5 text-rose-400" />
+                              Gargalo
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* 3. Papel / Responsável */}
+                      <td className="p-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${roleStyle.bg} ${roleStyle.text} ${roleStyle.border} whitespace-nowrap`}>
+                          {step.role}
                         </span>
-                        {step.isParallel && (
-                          <span className="px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[9px] font-mono flex items-center gap-0.5">
-                            <GitBranch className="w-2.5 h-2.5" />
-                            Paralelo
+                      </td>
+
+                      {/* 4. Oportunidades Kaizen Associadas com Conversão 1-Clique */}
+                      <td className="p-3 font-sans min-w-[280px]">
+                        {kaizens.length > 0 ? (
+                          <div className="space-y-1.5">
+                            {kaizens.map((k, kIdx) => {
+                              const alreadyLinked = stepActions.some(
+                                a => a.what.trim().toLowerCase() === k.trim().toLowerCase()
+                              );
+                              return (
+                                <div
+                                  key={kIdx}
+                                  className="p-2 rounded-lg bg-amber-950/25 border border-amber-500/25 text-amber-200 text-xs leading-relaxed flex flex-col gap-1.5 shadow-xs"
+                                >
+                                  <div className="flex items-start gap-1.5">
+                                    <span className="shrink-0 text-amber-400 text-xs mt-0.5">💡</span>
+                                    <span className="break-words font-normal flex-1">{k}</span>
+                                  </div>
+                                  <div className="flex items-center justify-end">
+                                    {alreadyLinked ? (
+                                      <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[9px] font-mono font-bold flex items-center gap-1">
+                                        <Check className="w-2.5 h-2.5 text-emerald-400" />
+                                        <span>5W2H Ativo</span>
+                                      </span>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleConvertKaizenTo5W2H(step, k);
+                                        }}
+                                        className="px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-mono font-bold transition-all flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
+                                        title="Transformar esta oportunidade Kaizen em ação 5W2H com metas pactuadas"
+                                      >
+                                        <Sparkles className="w-2.5 h-2.5" />
+                                        <span>+ Criar 5W2H</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <span className="text-slate-500 italic text-xs">Sem Kaizens registrados</span>
+                        )}
+                      </td>
+
+                      {/* 5. PT Atual */}
+                      <td className="p-3 text-right text-cyan-300 font-bold whitespace-nowrap">
+                        {step.processTime} {step.processTimeUnit}
+                      </td>
+
+                      {/* 6. WT Atual */}
+                      <td className="p-3 text-right whitespace-nowrap">
+                        <div className="font-bold text-amber-300 font-mono">
+                          {step.waitTime} {step.waitTimeUnit}
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-mono">
+                          ≈ {formatHoursCompact(currentWtHours)}
+                        </div>
+                      </td>
+
+                      {/* 7. WT Futuro Estimado (INPUT INTERATIVO) */}
+                      <td className="p-3 bg-emerald-950/25 border-x border-emerald-500/20">
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={hasCustom ? step.futureWaitTime : ''}
+                            placeholder={String(step.waitTime)}
+                            onChange={e => {
+                              const val = e.target.value === '' ? undefined : Number(e.target.value);
+                              onUpdateStep(step.id, {
+                                futureWaitTime: val,
+                                futureWaitTimeUnit: step.futureWaitTimeUnit || step.waitTimeUnit
+                              });
+                            }}
+                            className={`w-20 px-2 py-1.5 rounded-lg text-xs font-bold font-mono border focus:outline-none focus:ring-1 transition-all ${
+                              hasCustom
+                                ? 'bg-emerald-950 border-emerald-400 text-emerald-200 focus:ring-emerald-400'
+                                : 'bg-slate-950 border-slate-700 text-slate-400 focus:border-cyan-400 focus:ring-cyan-400'
+                            }`}
+                          />
+
+                          <select
+                            value={effectiveFutureUnit}
+                            onChange={e => {
+                              onUpdateStep(step.id, {
+                                futureWaitTime: effectiveFutureWaitTime,
+                                futureWaitTimeUnit: e.target.value as TimeUnit
+                              });
+                            }}
+                            className="bg-slate-950 border border-slate-700 text-slate-300 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-emerald-400"
+                          >
+                            <option value="minutos">min</option>
+                            <option value="horas">horas</option>
+                            <option value="dias">dias</option>
+                          </select>
+                        </div>
+                        <div className="text-[9px] font-mono text-emerald-400/80 mt-1 pl-1">
+                          ≈ {formatHoursCompact(futureWtHours)} {hasCustom ? '(meta pactuada)' : '(base atual)'}
+                        </div>
+                      </td>
+
+                      {/* 8. Redução / Ganho Estimado (Delta) */}
+                      <td className="p-3 text-center whitespace-nowrap">
+                        {hasCustom && diffHours > 0.01 ? (
+                          <div className="inline-flex flex-col items-center">
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black font-mono">
+                              -{diffPercent}%
+                            </span>
+                            <span className="text-[10px] text-emerald-400 font-mono mt-0.5">
+                              -{formatHoursCompact(diffHours)}
+                            </span>
+                          </div>
+                        ) : hasCustom && diffHours < -0.01 ? (
+                          <div className="inline-flex flex-col items-center">
+                            <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-black font-mono">
+                              +{Math.abs(diffPercent)}%
+                            </span>
+                            <span className="text-[10px] text-rose-400 font-mono mt-0.5">
+                              +{formatHoursCompact(Math.abs(diffHours))}
+                            </span>
+                          </div>
+                        ) : hasCustom ? (
+                          <span className="text-[11px] text-slate-400 font-mono">
+                            0% (Mantido)
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-slate-500 font-mono">
+                            - (Sem meta)
                           </span>
                         )}
-                        {isBottleneck && (
-                          <span className="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[9px] font-mono font-bold flex items-center gap-0.5">
-                            <Flame className="w-2.5 h-2.5 text-rose-400" />
-                            Gargalo
-                          </span>
-                        )}
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* 3. Papel / Responsável */}
-                    <td className="p-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${roleStyle.bg} ${roleStyle.text} ${roleStyle.border} whitespace-nowrap`}>
-                        {step.role}
-                      </span>
-                    </td>
+                      {/* 9. Ações Rápidas por Linha */}
+                      <td className="p-3 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setStepReduction(step, 50)}
+                            className="px-2 py-1 rounded bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-300 text-[10px] font-mono font-bold transition-colors cursor-pointer"
+                            title="Reduzir 50% do WT atual"
+                          >
+                            -50%
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setStepReduction(step, 75)}
+                            className="px-2 py-1 rounded bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-300 text-[10px] font-mono font-bold transition-colors cursor-pointer"
+                            title="Reduzir 75% do WT atual"
+                          >
+                            -75%
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onUpdateStep(step.id, {
+                                futureWaitTime: 0,
+                                futureWaitTimeUnit: step.waitTimeUnit
+                              });
+                            }}
+                            className="px-2 py-1 rounded bg-emerald-950/60 hover:bg-emerald-500 hover:text-slate-950 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono font-bold transition-colors cursor-pointer"
+                            title="Zerar o tempo de espera (Fluxo Contínuo / Fila Zero)"
+                          >
+                            Zerar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleStep5W2H(step.id)}
+                            className={`px-2 py-1 rounded border text-[10px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                              isStep5W2HOpen
+                                ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm'
+                                : stepActions.length > 0
+                                ? 'bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 border-amber-500/40'
+                                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                            }`}
+                            title={isStep5W2HOpen ? 'Recolher gaveta 5W2H desta etapa' : 'Abrir/Preencher ações 5W2H desta etapa'}
+                          >
+                            <ClipboardList className="w-3 h-3" />
+                            <span>5W2H</span>
+                            {stepActions.length > 0 && (
+                              <span className={`px-1 py-0.2 rounded text-[9px] font-mono font-bold ${
+                                isStep5W2HOpen ? 'bg-slate-900 text-amber-300' : 'bg-amber-500/30 text-amber-200'
+                              }`}>
+                                {stepActions.length}
+                              </span>
+                            )}
+                            {isStep5W2HOpen ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
+                          </button>
+                        </div>
+                      </td>
 
-                    {/* 4. Oportunidades Kaizen Associadas */}
-                    <td className="p-3 font-sans min-w-[280px]">
-                      {kaizens.length > 0 ? (
-                        <div className="space-y-1.5">
-                          {kaizens.map((k, kIdx) => (
-                            <div
-                              key={kIdx}
-                              className="p-2 rounded-lg bg-amber-950/25 border border-amber-500/25 text-amber-200 text-xs leading-relaxed flex items-start gap-2 shadow-xs"
-                            >
-                              <span className="shrink-0 text-amber-400 text-xs mt-0.5">💡</span>
-                              <span className="break-words font-normal flex-1">{k}</span>
+                    </tr>
+
+                    {/* Linha Expansível (Sub-row): Plano 5W2H Integrado da Etapa */}
+                    {isStep5W2HOpen && (
+                      <tr className="bg-slate-950/95 border-b-2 border-amber-500/40">
+                        <td colSpan={9} className="p-4 sm:p-5 bg-gradient-to-b from-slate-950 to-slate-900/95 border-l-4 border-l-amber-500 shadow-inner">
+                          <div className="space-y-4 font-sans">
+                            {/* Banner Superior da Etapa no 5W2H */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-300 font-mono font-bold text-xs flex items-center justify-center border border-amber-500/30">
+                                  #{step.order}
+                                </span>
+                                <span className="text-sm font-bold text-white font-heading">
+                                  Plano 5W2H • Etapa #{step.order}: {step.title}
+                                </span>
+                                <span className="text-xs text-slate-400 font-mono">
+                                  • WT Atual: <strong className="text-amber-300">{step.waitTime} {step.waitTimeUnit}</strong> ➔ WT Futuro Meta: <strong className="text-emerald-300">{effectiveFutureWaitTime} {effectiveFutureUnit}</strong>
+                                  {diffPercent > 0 && (
+                                    <span className="ml-1.5 px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+                                      -{diffPercent}%
+                                    </span>
+                                  )}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddNewAction(step)}
+                                  className="px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold font-mono transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                  <span>+ Nova Ação 5W2H</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleStep5W2H(step.id)}
+                                  className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-mono transition-colors border border-slate-700 cursor-pointer"
+                                  title="Recolher gaveta 5W2H"
+                                >
+                                  <ChevronUp className="w-3.5 h-3.5 inline mr-1" />
+                                  Recolher
+                                </button>
+                              </div>
                             </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-slate-500 italic text-xs">Sem Kaizens registrados</span>
-                      )}
-                    </td>
 
-                    {/* 5. PT Atual */}
-                    <td className="p-3 text-right text-cyan-300 font-bold whitespace-nowrap">
-                      {step.processTime} {step.processTimeUnit}
-                    </td>
+                            {/* Bloco de Oportunidades Kaizen Mapeadas (Se existirem) */}
+                            {kaizens.length > 0 && (
+                              <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/30 space-y-2">
+                                <div className="text-[11px] font-mono font-bold text-amber-300 uppercase tracking-wide flex items-center gap-1.5">
+                                  <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+                                  <span>Ideias Kaizen Identificadas Nesta Etapa (Clique para transformar em Ação 5W2H):</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                  {kaizens.map((k, kIdx) => {
+                                    const isAlreadyAdded = stepActions.some(
+                                      a => a.what.trim().toLowerCase() === k.trim().toLowerCase()
+                                    );
+                                    return (
+                                      <div
+                                        key={kIdx}
+                                        className="p-2.5 rounded-lg bg-slate-950/80 border border-amber-500/20 flex items-center justify-between gap-3 text-xs"
+                                      >
+                                        <div className="flex items-start gap-2 flex-1 min-w-0">
+                                          <span className="shrink-0 text-amber-400 text-xs mt-0.5">💡</span>
+                                          <span className="text-slate-200 break-words font-sans">{k}</span>
+                                        </div>
+                                        <div className="shrink-0">
+                                          {isAlreadyAdded ? (
+                                            <span className="px-2 py-1 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-bold flex items-center gap-1">
+                                              <Check className="w-3 h-3 text-emerald-400" />
+                                              <span>5W2H Ativo</span>
+                                            </span>
+                                          ) : (
+                                            <button
+                                              type="button"
+                                              onClick={() => handleConvertKaizenTo5W2H(step, k)}
+                                              className="px-2.5 py-1 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-bold font-mono transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs"
+                                              title="Transformar esta ideia em ação 5W2H com metas de redução de WT calculadas"
+                                            >
+                                              <Sparkles className="w-3 h-3 text-slate-950" />
+                                              <span>+ Criar 5W2H</span>
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
 
-                    {/* 6. WT Atual */}
-                    <td className="p-3 text-right whitespace-nowrap">
-                      <div className="font-bold text-amber-300 font-mono">
-                        {step.waitTime} {step.waitTimeUnit}
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-mono">
-                        ≈ {formatHoursCompact(currentWtHours)}
-                      </div>
-                    </td>
+                            {/* Lista de Ações 5W2H da Etapa */}
+                            {stepActions.length === 0 ? (
+                              <div className="p-6 rounded-xl border border-dashed border-slate-800 bg-slate-950/40 text-center space-y-2">
+                                <p className="text-xs text-slate-400 font-sans">
+                                  Nenhuma ação 5W2H cadastrada ainda para a <strong>Etapa #{step.order} ({step.title})</strong>.
+                                </p>
+                                <div className="flex items-center justify-center gap-2 pt-1">
+                                  {kaizens.length > 0 ? (
+                                    <span className="text-[11px] text-amber-400/80 font-mono">
+                                      ☝️ Clique em <strong>&quot;+ Criar 5W2H&quot;</strong> em uma das ideias acima para iniciar
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAddNewAction(step)}
+                                      className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                      <span>Criar Primeira Ação 5W2H Desta Etapa</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+                                  <span className="font-bold text-amber-300">
+                                    {stepActions.length} ação(ões) 5W2H vinculada(s) a esta etapa:
+                                  </span>
+                                  <span className="text-slate-500 text-[10px]">
+                                    As alterações aqui refletem instantaneamente no Roadmap Consolidado e no Relatório Executivo
+                                  </span>
+                                </div>
 
-                    {/* 7. WT Futuro Estimado (INPUT INTERATIVO) */}
-                    <td className="p-3 bg-emerald-950/25 border-x border-emerald-500/20">
-                      <div className="flex items-center gap-1.5">
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={hasCustom ? step.futureWaitTime : ''}
-                          placeholder={String(step.waitTime)}
-                          onChange={e => {
-                            const val = e.target.value === '' ? undefined : Number(e.target.value);
-                            onUpdateStep(step.id, {
-                              futureWaitTime: val,
-                              futureWaitTimeUnit: step.futureWaitTimeUnit || step.waitTimeUnit
-                            });
-                          }}
-                          className={`w-20 px-2 py-1.5 rounded-lg text-xs font-bold font-mono border focus:outline-none focus:ring-1 transition-all ${
-                            hasCustom
-                              ? 'bg-emerald-950 border-emerald-400 text-emerald-200 focus:ring-emerald-400'
-                              : 'bg-slate-950 border-slate-700 text-slate-400 focus:border-cyan-400 focus:ring-cyan-400'
-                          }`}
-                        />
+                                {stepActions.map((action, actionIdx) => {
+                                  const diffDays = calculateDateDiffDays(action.startDate, action.endDate);
+                                  const isCardExpanded = Boolean(expandedActions[action.id]);
 
-                        <select
-                          value={effectiveFutureUnit}
-                          onChange={e => {
-                            onUpdateStep(step.id, {
-                              futureWaitTime: effectiveFutureWaitTime,
-                              futureWaitTimeUnit: e.target.value as TimeUnit
-                            });
-                          }}
-                          className="bg-slate-950 border border-slate-700 text-slate-300 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-emerald-400"
-                        >
-                          <option value="minutos">min</option>
-                          <option value="horas">horas</option>
-                          <option value="dias">dias</option>
-                        </select>
-                      </div>
-                      <div className="text-[9px] font-mono text-emerald-400/80 mt-1 pl-1">
-                        ≈ {formatHoursCompact(futureWtHours)} {hasCustom ? '(meta pactuada)' : '(base atual)'}
-                      </div>
-                    </td>
+                                  return (
+                                    <div
+                                      key={action.id}
+                                      className="p-3.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-amber-500/50 transition-all space-y-3 shadow-md"
+                                    >
+                                      {/* Linha superior: Ação #X, Status, Excluir */}
+                                      <div className="flex items-center justify-between gap-3 pb-2 border-b border-slate-800 flex-wrap">
+                                        <div className="flex items-center gap-2">
+                                          <span className="w-5 h-5 rounded bg-amber-500/20 text-amber-300 font-mono font-bold text-[10px] flex items-center justify-center border border-amber-500/30">
+                                            #{actionIdx + 1}
+                                          </span>
+                                          <span className="text-xs font-bold text-white font-sans truncate max-w-sm">
+                                            {action.what || 'Nova Ação Kaizen'}
+                                          </span>
+                                        </div>
 
-                    {/* 8. Redução / Ganho Estimado (Delta) */}
-                    <td className="p-3 text-center whitespace-nowrap">
-                      {hasCustom && diffHours > 0.01 ? (
-                        <div className="inline-flex flex-col items-center">
-                          <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black font-mono">
-                            -{diffPercent}%
-                          </span>
-                          <span className="text-[10px] text-emerald-400 font-mono mt-0.5">
-                            -{formatHoursCompact(diffHours)}
-                          </span>
-                        </div>
-                      ) : hasCustom && diffHours < -0.01 ? (
-                        <div className="inline-flex flex-col items-center">
-                          <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-black font-mono">
-                            +{Math.abs(diffPercent)}%
-                          </span>
-                          <span className="text-[10px] text-rose-400 font-mono mt-0.5">
-                            +{formatHoursCompact(Math.abs(diffHours))}
-                          </span>
-                        </div>
-                      ) : hasCustom ? (
-                        <span className="text-[11px] text-slate-400 font-mono">
-                          0% (Mantido)
-                        </span>
-                      ) : (
-                        <span className="text-[11px] text-slate-500 font-mono">
-                          - (Sem meta)
-                        </span>
-                      )}
-                    </td>
+                                        <div className="flex items-center gap-2">
+                                          <select
+                                            value={action.status || 'planejado'}
+                                            onChange={e => handleUpdateAction(action.id, { status: e.target.value as any })}
+                                            className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-[11px] font-mono font-bold text-slate-300 focus:outline-none focus:border-amber-500 cursor-pointer"
+                                          >
+                                            <option value="planejado">Planejado</option>
+                                            <option value="em_andamento">Em Andamento</option>
+                                            <option value="concluido">Concluído</option>
+                                          </select>
 
-                    {/* 9. Ações Rápidas por Linha */}
-                    <td className="p-3 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setStepReduction(step, 50)}
-                          className="px-2 py-1 rounded bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-300 text-[10px] font-mono font-bold transition-colors cursor-pointer"
-                          title="Reduzir 50% do WT atual"
-                        >
-                          -50%
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setStepReduction(step, 75)}
-                          className="px-2 py-1 rounded bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-300 text-[10px] font-mono font-bold transition-colors cursor-pointer"
-                          title="Reduzir 75% do WT atual"
-                        >
-                          -75%
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            onUpdateStep(step.id, {
-                              futureWaitTime: 0,
-                              futureWaitTimeUnit: step.waitTimeUnit
-                            });
-                          }}
-                          className="px-2 py-1 rounded bg-emerald-950/60 hover:bg-emerald-500 hover:text-slate-950 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono font-bold transition-colors cursor-pointer"
-                          title="Zerar o tempo de espera (Fluxo Contínuo / Fila Zero)"
-                        >
-                          Zerar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleAddNewAction(step);
-                            const el = document.getElementById('vsm-5w2h-section');
-                            if (el) el.scrollIntoView({ behavior: 'smooth' });
-                          }}
-                          className="px-2 py-1 rounded bg-amber-950/60 hover:bg-amber-500 hover:text-slate-950 text-amber-300 border border-amber-500/30 text-[10px] font-mono font-bold transition-colors cursor-pointer flex items-center gap-1"
-                          title="Criar ação Kaizen 5W2H vinculada a esta etapa"
-                        >
-                          <Plus className="w-2.5 h-2.5" />
-                          <span>5W2H</span>
-                        </button>
-                      </div>
-                    </td>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleDeleteAction(action.id)}
+                                            className="p-1 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
+                                            title="Excluir ação"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      </div>
 
-                  </tr>
+                                      {/* Campos principais do 5W2H */}
+                                      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 font-sans">
+                                        {/* What (O que fazer) */}
+                                        <div className="md:col-span-6 space-y-1">
+                                          <label className="text-[10px] font-mono uppercase font-bold text-amber-400 flex items-center gap-1">
+                                            <CheckSquare className="w-3 h-3" />
+                                            <span>O Que Fazer (What - Ação Kaizen)</span>
+                                          </label>
+                                          <textarea
+                                            rows={2}
+                                            value={action.what}
+                                            onChange={e => handleUpdateAction(action.id, { what: e.target.value })}
+                                            placeholder="Descreva a ação de melhoria Kaizen pactuada..."
+                                            className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500 transition-colors resize-none leading-relaxed"
+                                          />
+                                        </div>
+
+                                        {/* Why (Por Que / Meta de WT) */}
+                                        <div className="md:col-span-6 space-y-1">
+                                          <label className="text-[10px] font-mono uppercase font-bold text-emerald-400 flex items-center gap-1">
+                                            <Target className="w-3 h-3" />
+                                            <span>Por Que / Meta (Why - Redução de WT)</span>
+                                          </label>
+                                          <textarea
+                                            rows={2}
+                                            value={action.why}
+                                            onChange={e => handleUpdateAction(action.id, { why: e.target.value })}
+                                            placeholder="Meta de redução de espera ou ganho de fluidez..."
+                                            className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors resize-none leading-relaxed"
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* Responsável (Who) e Prazos (When) */}
+                                      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-1 font-sans">
+                                        {/* Onde (Where) */}
+                                        <div className="md:col-span-3 space-y-1">
+                                          <label className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1">
+                                            <MapPin className="w-3 h-3 text-cyan-400" />
+                                            <span>Onde (Where)</span>
+                                          </label>
+                                          <input
+                                            type="text"
+                                            value={action.where}
+                                            onChange={e => handleUpdateAction(action.id, { where: e.target.value })}
+                                            placeholder="Etapa ou local..."
+                                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500"
+                                          />
+                                        </div>
+
+                                        {/* Quem (Who) - Pessoa Física */}
+                                        <div className="md:col-span-4 space-y-1">
+                                          <label className="text-[10px] font-mono uppercase font-bold text-amber-300 flex items-center justify-between">
+                                            <span className="flex items-center gap-1">
+                                              <User className="w-3 h-3 text-amber-400" />
+                                              <span>Quem (Nome do Responsável)</span>
+                                            </span>
+                                            <span className="text-[9px] font-sans font-normal text-amber-400/80">
+                                              Pessoa física
+                                            </span>
+                                          </label>
+                                          <input
+                                            type="text"
+                                            value={action.who}
+                                            onChange={e => handleUpdateAction(action.id, { who: e.target.value })}
+                                            placeholder="Ex: Mariana Prestes, Carlos Silva..."
+                                            className={`w-full rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all ${
+                                              !action.who.trim()
+                                                ? 'bg-amber-950/20 border border-amber-500/50 text-amber-200 placeholder-amber-400/50 focus:border-amber-400'
+                                                : 'bg-slate-950 border border-slate-800 text-amber-200 focus:border-amber-400'
+                                            }`}
+                                          />
+                                        </div>
+
+                                        {/* Quando (When) - Data Inicial e Final */}
+                                        <div className="md:col-span-5 space-y-1">
+                                          <label className="text-[10px] font-mono uppercase font-bold text-cyan-300 flex items-center justify-between">
+                                            <span className="flex items-center gap-1">
+                                              <Calendar className="w-3 h-3 text-cyan-400" />
+                                              <span>Quando (Data Inicial e Final)</span>
+                                            </span>
+                                            {diffDays !== null && (
+                                              <span className="text-[9px] font-mono text-cyan-400 font-bold">
+                                                {diffDays} dias
+                                              </span>
+                                            )}
+                                          </label>
+
+                                          <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                              <div className="text-[9px] font-mono text-slate-400 mb-0.5">Início:</div>
+                                              <input
+                                                type="date"
+                                                value={action.startDate || ''}
+                                                onChange={e => handleUpdateAction(action.id, { startDate: e.target.value })}
+                                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-400 cursor-pointer"
+                                              />
+                                            </div>
+                                            <div>
+                                              <div className="text-[9px] font-mono text-slate-400 mb-0.5">Término:</div>
+                                              <input
+                                                type="date"
+                                                value={action.endDate || ''}
+                                                onChange={e => handleUpdateAction(action.id, { endDate: e.target.value })}
+                                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-400 cursor-pointer"
+                                              />
+                                            </div>
+                                          </div>
+
+                                          {/* Atalhos Rápidos de Prazo */}
+                                          <div className="flex items-center gap-1 pt-0.5">
+                                            <span className="text-[9px] font-mono text-slate-500">Atalhos:</span>
+                                            {[15, 30, 45, 60, 90].map(d => (
+                                              <button
+                                                key={d}
+                                                type="button"
+                                                onClick={() => {
+                                                  const base = action.startDate || getTodayISO();
+                                                  handleUpdateAction(action.id, {
+                                                    startDate: base,
+                                                    endDate: addDaysISO(base, d)
+                                                  });
+                                                }}
+                                                className="px-1.5 py-0.5 rounded bg-slate-950 hover:bg-cyan-950 hover:text-cyan-300 text-[9px] font-mono text-slate-400 border border-slate-800 cursor-pointer transition-colors"
+                                              >
+                                                +{d}d
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Expansor Opcional: Como (How) e Quanto Custa (How Much) */}
+                                      <div className="pt-1 font-sans">
+                                        <button
+                                          type="button"
+                                          onClick={() => toggleExpand(action.id)}
+                                          className="text-[11px] text-slate-400 hover:text-slate-200 font-mono flex items-center gap-1 transition-colors cursor-pointer"
+                                        >
+                                          {isCardExpanded ? (
+                                            <>
+                                              <ChevronUp className="w-3 h-3 text-slate-400" />
+                                              <span>Ocultar detalhes de execução (How / How Much)</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <ChevronDown className="w-3 h-3 text-slate-400" />
+                                              <span>Editar detalhes de execução (How / How Much)</span>
+                                            </>
+                                          )}
+                                        </button>
+
+                                        {isCardExpanded && (
+                                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 mt-2 border-t border-slate-800/60 animate-in slide-in-from-top-1 duration-200">
+                                            <div>
+                                              <label className="text-[10px] font-mono uppercase font-bold text-slate-400 block mb-1">
+                                                Como Fazer (How):
+                                              </label>
+                                              <input
+                                                type="text"
+                                                value={action.how || ''}
+                                                onChange={e => handleUpdateAction(action.id, { how: e.target.value })}
+                                                placeholder="Método, procedimento ou tecnologia..."
+                                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500"
+                                              />
+                                            </div>
+
+                                            <div>
+                                              <label className="text-[10px] font-mono uppercase font-bold text-slate-400 block mb-1">
+                                                Quanto Custa (How Much):
+                                              </label>
+                                              <input
+                                                type="text"
+                                                value={action.howMuch || ''}
+                                                onChange={e => handleUpdateAction(action.id, { howMuch: e.target.value })}
+                                                placeholder="Ex: R$ 0 (esforço interno) ou valor estimado..."
+                                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500"
+                                              />
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </tbody>
